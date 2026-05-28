@@ -1,0 +1,27 @@
+site_name: kaicrit
+site_url: https://kaijen.github.io/kaicrit/
+repo_url: https://github.com/kaijen/kaicrit
+repo_name: kaijen/kaicrit
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+
+plugins:
+  - search
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
+      version_selector: true
+
+extra:
+  version:
+    provider: mike
+
+nav:
+  - Overview: index.md
+  - Markup Types: markup.md
+  - Keybindings: keybindings.md
