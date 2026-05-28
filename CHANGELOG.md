@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-28
+
+### Fixed
+- Wrap notification auto-dismisses after 3 seconds instead of
+  requiring manual close (#1)
+- Comment decoration now has a light gray background (#e0e0e0) and
+  dark gray text (#555555) by default (#2)
+
+### Changed
+- Extension version at build time always matches the git tag;
+  `package.json` is the canonical source for local development (#3)
+
 ## [0.1.0] - 2026-05-28
 
 ### Added
@@ -75,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/kaijen/kaicrit/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/kaijen/kaicrit/compare/v0.0.8...v0.1.0
 [0.0.8]: https://github.com/kaijen/kaicrit/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/kaijen/kaicrit/compare/v0.0.6...v0.0.7

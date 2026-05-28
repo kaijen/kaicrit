@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup editing support for VS Code",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -16,81 +16,230 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other", "Formatters"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other",
+    "Formatters"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      { "command": "kaicrit.insertDeletion",     "title": "Insert Deletion",       "category": "CriticMarkup" },
-      { "command": "kaicrit.insertAddition",     "title": "Insert Addition",       "category": "CriticMarkup" },
-      { "command": "kaicrit.insertSubstitution", "title": "Insert Substitution",   "category": "CriticMarkup" },
-      { "command": "kaicrit.insertHighlight",    "title": "Insert Highlight",      "category": "CriticMarkup" },
-      { "command": "kaicrit.insertComment",      "title": "Insert Comment",        "category": "CriticMarkup" },
-      { "command": "kaicrit.nextChange",         "title": "Next Change",           "category": "CriticMarkup" },
-      { "command": "kaicrit.prevChange",         "title": "Previous Change",       "category": "CriticMarkup" },
-      { "command": "kaicrit.firstChange",        "title": "First Change",          "category": "CriticMarkup" },
-      { "command": "kaicrit.lastChange",         "title": "Last Change",           "category": "CriticMarkup" },
-      { "command": "kaicrit.acceptChange",       "title": "Accept Change at Cursor", "category": "CriticMarkup" },
-      { "command": "kaicrit.rejectChange",       "title": "Reject Change at Cursor", "category": "CriticMarkup" },
-      { "command": "kaicrit.acceptAll",          "title": "Accept All Changes",    "category": "CriticMarkup" },
-      { "command": "kaicrit.rejectAll",          "title": "Reject All Changes",    "category": "CriticMarkup" }
+      {
+        "command": "kaicrit.insertDeletion",
+        "title": "Insert Deletion",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.insertAddition",
+        "title": "Insert Addition",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.insertSubstitution",
+        "title": "Insert Substitution",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.insertHighlight",
+        "title": "Insert Highlight",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.insertComment",
+        "title": "Insert Comment",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.nextChange",
+        "title": "Next Change",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.prevChange",
+        "title": "Previous Change",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.firstChange",
+        "title": "First Change",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.lastChange",
+        "title": "Last Change",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.acceptChange",
+        "title": "Accept Change at Cursor",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.rejectChange",
+        "title": "Reject Change at Cursor",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.acceptAll",
+        "title": "Accept All Changes",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.rejectAll",
+        "title": "Reject All Changes",
+        "category": "CriticMarkup"
+      }
     ],
     "colors": [
       {
         "id": "kaicrit.deletionForeground",
         "description": "Foreground color for deleted text.",
-        "defaults": { "dark": "editorError.foreground", "light": "editorError.foreground", "highContrast": "editorError.foreground", "highContrastLight": "editorError.foreground" }
+        "defaults": {
+          "dark": "editorError.foreground",
+          "light": "editorError.foreground",
+          "highContrast": "editorError.foreground",
+          "highContrastLight": "editorError.foreground"
+        }
       },
       {
         "id": "kaicrit.additionForeground",
         "description": "Foreground color for added text.",
-        "defaults": { "dark": "gitDecoration.addedResourceForeground", "light": "gitDecoration.addedResourceForeground", "highContrast": "gitDecoration.addedResourceForeground", "highContrastLight": "gitDecoration.addedResourceForeground" }
+        "defaults": {
+          "dark": "gitDecoration.addedResourceForeground",
+          "light": "gitDecoration.addedResourceForeground",
+          "highContrast": "gitDecoration.addedResourceForeground",
+          "highContrastLight": "gitDecoration.addedResourceForeground"
+        }
       },
       {
         "id": "kaicrit.substitutionOldForeground",
         "description": "Foreground color for the removed part of a substitution.",
-        "defaults": { "dark": "editorError.foreground", "light": "editorError.foreground", "highContrast": "editorError.foreground", "highContrastLight": "editorError.foreground" }
+        "defaults": {
+          "dark": "editorError.foreground",
+          "light": "editorError.foreground",
+          "highContrast": "editorError.foreground",
+          "highContrastLight": "editorError.foreground"
+        }
       },
       {
         "id": "kaicrit.substitutionNewForeground",
         "description": "Foreground color for the inserted part of a substitution.",
-        "defaults": { "dark": "gitDecoration.addedResourceForeground", "light": "gitDecoration.addedResourceForeground", "highContrast": "gitDecoration.addedResourceForeground", "highContrastLight": "gitDecoration.addedResourceForeground" }
+        "defaults": {
+          "dark": "gitDecoration.addedResourceForeground",
+          "light": "gitDecoration.addedResourceForeground",
+          "highContrast": "gitDecoration.addedResourceForeground",
+          "highContrastLight": "gitDecoration.addedResourceForeground"
+        }
       },
       {
         "id": "kaicrit.highlightBackground",
         "description": "Background color for highlighted text.",
-        "defaults": { "dark": "#ffff00", "light": "#ffff00", "highContrast": "#ffff00", "highContrastLight": "#ffff00" }
+        "defaults": {
+          "dark": "#ffff00",
+          "light": "#ffff00",
+          "highContrast": "#ffff00",
+          "highContrastLight": "#ffff00"
+        }
       },
       {
         "id": "kaicrit.highlightForeground",
         "description": "Foreground color for highlighted text.",
-        "defaults": { "dark": "#333333", "light": "#333333", "highContrast": "#333333", "highContrastLight": "#333333" }
+        "defaults": {
+          "dark": "#333333",
+          "light": "#333333",
+          "highContrast": "#333333",
+          "highContrastLight": "#333333"
+        }
       },
       {
         "id": "kaicrit.commentBackground",
         "description": "Background color for comment text.",
-        "defaults": { "dark": "#e0e0e0", "light": "#e0e0e0", "highContrast": "#e0e0e0", "highContrastLight": "#e0e0e0" }
+        "defaults": {
+          "dark": "#e0e0e0",
+          "light": "#e0e0e0",
+          "highContrast": "#e0e0e0",
+          "highContrastLight": "#e0e0e0"
+        }
       },
       {
         "id": "kaicrit.commentForeground",
         "description": "Foreground color for comment text.",
-        "defaults": { "dark": "#555555", "light": "#555555", "highContrast": "#555555", "highContrastLight": "#555555" }
+        "defaults": {
+          "dark": "#555555",
+          "light": "#555555",
+          "highContrast": "#555555",
+          "highContrastLight": "#555555"
+        }
       }
     ],
     "keybindings": [
-      { "command": "kaicrit.nextChange",         "key": "alt+k alt+down",  "when": "editorTextFocus" },
-      { "command": "kaicrit.prevChange",         "key": "alt+k alt+up",    "when": "editorTextFocus" },
-      { "command": "kaicrit.firstChange",        "key": "alt+k alt+home",  "when": "editorTextFocus" },
-      { "command": "kaicrit.lastChange",         "key": "alt+k alt+end",   "when": "editorTextFocus" },
-      { "command": "kaicrit.acceptChange",       "key": "alt+a",           "when": "editorTextFocus" },
-      { "command": "kaicrit.rejectChange",       "key": "alt+r",           "when": "editorTextFocus" },
-      { "command": "kaicrit.acceptAll",          "key": "alt+k enter",     "when": "editorTextFocus" },
-      { "command": "kaicrit.rejectAll",          "key": "alt+k backspace", "when": "editorTextFocus" },
-      { "command": "kaicrit.insertDeletion",     "key": "alt+k alt+d",     "when": "editorTextFocus" },
-      { "command": "kaicrit.insertAddition",     "key": "alt+k alt+a",     "when": "editorTextFocus" },
-      { "command": "kaicrit.insertSubstitution", "key": "alt+k alt+s",     "when": "editorTextFocus" },
-      { "command": "kaicrit.insertHighlight",    "key": "alt+k alt+h",     "when": "editorTextFocus" },
-      { "command": "kaicrit.insertComment",      "key": "alt+k alt+c",     "when": "editorTextFocus" }
+      {
+        "command": "kaicrit.nextChange",
+        "key": "alt+k alt+down",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.prevChange",
+        "key": "alt+k alt+up",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.firstChange",
+        "key": "alt+k alt+home",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.lastChange",
+        "key": "alt+k alt+end",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.acceptChange",
+        "key": "alt+a",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.rejectChange",
+        "key": "alt+r",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.acceptAll",
+        "key": "alt+k enter",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.rejectAll",
+        "key": "alt+k backspace",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.insertDeletion",
+        "key": "alt+k alt+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.insertAddition",
+        "key": "alt+k alt+a",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.insertSubstitution",
+        "key": "alt+k alt+s",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.insertHighlight",
+        "key": "alt+k alt+h",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.insertComment",
+        "key": "alt+k alt+c",
+        "when": "editorTextFocus"
+      }
     ]
   },
   "scripts": {
