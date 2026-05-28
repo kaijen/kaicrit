@@ -8,6 +8,10 @@ kaicrit adds [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit
 
 [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit) is a plain-text standard for tracking changes and inline comments. It works in any text file using simple bracket syntax. The [full specification](https://github.com/CriticMarkup/CriticMarkup-toolkit/blob/master/README.md) is maintained in the CriticMarkup-toolkit repository on GitHub.
 
+## About
+
+Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).
+
 ## Installation
 
 Download the latest `kaicrit-*.vsix` from the [Releases page](https://github.com/kaijen/kaicrit/releases), then install it:

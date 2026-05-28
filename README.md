@@ -72,6 +72,10 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
 
+## About
+
+Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).
+
 ## Installation
 
 Download the latest `kaicrit-*.vsix` from the [Releases page](https://github.com/kaijen/kaicrit/releases), then install it:

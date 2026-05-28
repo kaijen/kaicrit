@@ -3,7 +3,11 @@
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup editing support for VS Code",
   "version": "0.0.0",
-  "publisher": "kaijendrian",
+  "publisher": "0x2e6b6169",
+  "author": {
+    "name": "0x2e6b6169",
+    "url": "https://blog.0x2e6b6169.de"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kaijen/kaicrit.git"
