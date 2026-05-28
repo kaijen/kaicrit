@@ -25,3 +25,24 @@ Accepting or rejecting a change strips the markup and resolves the content:
 | Comment `{>>T<<}` | removes entirely | removes entirely |
 
 Accept All / Reject All apply all resolutions atomically in a single edit.
+
+## Colors
+
+Each change type uses a configurable decoration color. Defaults follow the active theme; override any color via `workbench.colorCustomizations` in `settings.json`:
+
+```json
+"workbench.colorCustomizations": {
+  "kaicrit.highlightBackground": "#ffe066",
+  "kaicrit.deletionForeground": "#cc0000"
+}
+```
+
+| Color ID | Default | Applied to |
+|---|---|---|
+| `kaicrit.deletionForeground` | `editorError.foreground` | Deletion text |
+| `kaicrit.additionForeground` | `gitDecoration.addedResourceForeground` | Addition text |
+| `kaicrit.substitutionOldForeground` | `editorError.foreground` | Substitution — removed part |
+| `kaicrit.substitutionNewForeground` | `gitDecoration.addedResourceForeground` | Substitution — inserted part |
+| `kaicrit.highlightBackground` | `#ffff00` | Highlight background |
+| `kaicrit.highlightForeground` | `#333333` | Highlight text |
+| `kaicrit.commentForeground` | `descriptionForeground` | Comment text |

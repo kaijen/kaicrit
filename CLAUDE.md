@@ -18,6 +18,14 @@ npx vsce package
 code --install-extension kaicrit-*.vsix
 ```
 
+## Documentation
+
+After every code change, update all affected documentation artifacts before closing the task:
+
+- **README.md** — for any user-facing feature, behavior, or configuration change
+- **docs/** — mirror README changes; add detail where the README only summarizes
+- **CLAUDE.md** — update architecture notes, color/command lists, and the checklist below whenever the internal structure changes
+
 ## Architecture
 
 Six source files in [src/](src/), one responsibility each:
@@ -26,7 +34,7 @@ Six source files in [src/](src/), one responsibility each:
 |---|---|
 | [types.ts](src/types.ts) | `ChangeType` const enum + `CriticChange` interface |
 | [parser.ts](src/parser.ts) | `parseCriticMarkup(doc)` — single-pass regex, returns `CriticChange[]` |
-| [decorator.ts](src/decorator.ts) | `DecoratorManager` — creates decoration types, debounced apply/clear per editor |
+| [decorator.ts](src/decorator.ts) | `DecoratorManager` — creates decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor |
 | [navigator.ts](src/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
 | [commands.ts](src/commands.ts) | Registers all 13 commands; calls navigator + accept/reject helpers |
 | [extension.ts](src/extension.ts) | `activate()` / `deactivate()`; wires document listeners + commands |
@@ -63,3 +71,5 @@ Every resolution replaces `fullRange` with a computed string via one `WorkspaceE
 3. Add a `TextEditorDecorationType` and handle it in `applyDecorations()` in [decorator.ts](src/decorator.ts)
 4. Add insert command and accept/reject case in [commands.ts](src/commands.ts)
 5. Add command entry to `contributes.commands` in [package.json](package.json)
+6. Add one or more `contributes.colors` entries in [package.json](package.json) for the new decoration color(s)
+7. Update README.md, docs/markup.md, and CLAUDE.md

@@ -21,26 +21,27 @@ export class DecoratorManager {
   constructor() {
     this.deletionType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'line-through',
-      color: themeColor('editorError.foreground'),
+      color: themeColor('kaicrit.deletionForeground'),
     });
     this.additionType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'underline',
-      color: themeColor('gitDecoration.addedResourceForeground'),
+      color: themeColor('kaicrit.additionForeground'),
     });
     this.substitutionOldType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'line-through',
-      color: themeColor('editorError.foreground'),
+      color: themeColor('kaicrit.substitutionOldForeground'),
     });
     this.substitutionNewType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'underline',
-      color: themeColor('gitDecoration.addedResourceForeground'),
+      color: themeColor('kaicrit.substitutionNewForeground'),
     });
     this.highlightType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: themeColor('editor.findMatchHighlightBackground'),
+      backgroundColor: themeColor('kaicrit.highlightBackground'),
+      color: themeColor('kaicrit.highlightForeground'),
     });
     this.commentType = vscode.window.createTextEditorDecorationType({
       fontStyle: 'italic',
-      color: themeColor('descriptionForeground'),
+      color: themeColor('kaicrit.commentForeground'),
       before: { contentText: '⟨ ', color: new vscode.ThemeColor('editorLineNumber.foreground') },
       after:  { contentText: ' ⟩', color: new vscode.ThemeColor('editorLineNumber.foreground') },
     });

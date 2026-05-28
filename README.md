@@ -21,6 +21,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 ## Features
 
 - **Syntax highlighting** — each change type gets a distinct color; markers are visually de-emphasized
+- **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 
@@ -71,6 +72,27 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 | Comment `{>>T<<}` | removes entirely | removes entirely |
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
+
+## Customization
+
+All decoration colors are configurable via `workbench.colorCustomizations` in `settings.json`:
+
+```json
+"workbench.colorCustomizations": {
+  "kaicrit.highlightBackground": "#ffe066",
+  "kaicrit.deletionForeground": "#cc0000"
+}
+```
+
+| Color ID | Default | Applied to |
+|---|---|---|
+| `kaicrit.deletionForeground` | `editorError.foreground` | Deletion text |
+| `kaicrit.additionForeground` | `gitDecoration.addedResourceForeground` | Addition text |
+| `kaicrit.substitutionOldForeground` | `editorError.foreground` | Substitution — removed part |
+| `kaicrit.substitutionNewForeground` | `gitDecoration.addedResourceForeground` | Substitution — inserted part |
+| `kaicrit.highlightBackground` | `#ffff00` | Highlight background |
+| `kaicrit.highlightForeground` | `#333333` | Highlight text |
+| `kaicrit.commentForeground` | `descriptionForeground` | Comment text |
 
 ## About
 

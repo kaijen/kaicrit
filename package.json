@@ -35,6 +35,43 @@
       { "command": "kaicrit.acceptAll",          "title": "Accept All Changes",    "category": "CriticMarkup" },
       { "command": "kaicrit.rejectAll",          "title": "Reject All Changes",    "category": "CriticMarkup" }
     ],
+    "colors": [
+      {
+        "id": "kaicrit.deletionForeground",
+        "description": "Foreground color for deleted text.",
+        "defaults": { "dark": "editorError.foreground", "light": "editorError.foreground", "highContrast": "editorError.foreground", "highContrastLight": "editorError.foreground" }
+      },
+      {
+        "id": "kaicrit.additionForeground",
+        "description": "Foreground color for added text.",
+        "defaults": { "dark": "gitDecoration.addedResourceForeground", "light": "gitDecoration.addedResourceForeground", "highContrast": "gitDecoration.addedResourceForeground", "highContrastLight": "gitDecoration.addedResourceForeground" }
+      },
+      {
+        "id": "kaicrit.substitutionOldForeground",
+        "description": "Foreground color for the removed part of a substitution.",
+        "defaults": { "dark": "editorError.foreground", "light": "editorError.foreground", "highContrast": "editorError.foreground", "highContrastLight": "editorError.foreground" }
+      },
+      {
+        "id": "kaicrit.substitutionNewForeground",
+        "description": "Foreground color for the inserted part of a substitution.",
+        "defaults": { "dark": "gitDecoration.addedResourceForeground", "light": "gitDecoration.addedResourceForeground", "highContrast": "gitDecoration.addedResourceForeground", "highContrastLight": "gitDecoration.addedResourceForeground" }
+      },
+      {
+        "id": "kaicrit.highlightBackground",
+        "description": "Background color for highlighted text.",
+        "defaults": { "dark": "#ffff00", "light": "#ffff00", "highContrast": "#ffff00", "highContrastLight": "#ffff00" }
+      },
+      {
+        "id": "kaicrit.highlightForeground",
+        "description": "Foreground color for highlighted text.",
+        "defaults": { "dark": "#333333", "light": "#333333", "highContrast": "#333333", "highContrastLight": "#333333" }
+      },
+      {
+        "id": "kaicrit.commentForeground",
+        "description": "Foreground color for comment text.",
+        "defaults": { "dark": "descriptionForeground", "light": "descriptionForeground", "highContrast": "descriptionForeground", "highContrastLight": "descriptionForeground" }
+      }
+    ],
     "keybindings": [
       { "command": "kaicrit.nextChange",         "key": "alt+k alt+down",  "when": "editorTextFocus" },
       { "command": "kaicrit.prevChange",         "key": "alt+k alt+up",    "when": "editorTextFocus" },
