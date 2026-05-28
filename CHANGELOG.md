@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Accepting or rejecting a single change now auto-advances the cursor to the
+  next change in the document. If there is no next change, the cursor stays at
+  the resolved change's location.
+
 ## [0.1.2] - 2026-05-28
 
 ### Fixed
