@@ -107,10 +107,10 @@ function navigate(dm: DecoratorManager, direction: 'next' | 'prev' | 'first' | '
   }
   if (!target) {
     if (direction === 'next') {
-      vscode.window.showInformationMessage('Wrapped to first change.');
+      vscode.window.setStatusBarMessage('Wrapped to first change.', 3000);
       target = findFirst(changes);
     } else if (direction === 'prev') {
-      vscode.window.showInformationMessage('Wrapped to last change.');
+      vscode.window.setStatusBarMessage('Wrapped to last change.', 3000);
       target = findLast(changes);
     } else {
       return;
