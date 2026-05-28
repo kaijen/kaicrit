@@ -1,7 +1,5 @@
 # kaicrit — CriticMarkup for VS Code
 
-![kaicrit logo](assets/images/kaicrit_logo.png)
-
 CriticMarkup editing support: insert, navigate, and accept or reject tracked changes directly in VS Code.
 
 ## What is CriticMarkup?
