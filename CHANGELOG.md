@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-05-28
+
+### Changed
+- README and docs landing page now credit 0x2e6b6169 as the
+  author/publisher and link back to the blog
+- package.json sets `publisher: 0x2e6b6169` for the VS Code
+  Marketplace listing
+
+### Fixed
+- Docs site now applies the `{ width=200 }` attribute on the logo
+  image (mkdocs `attr_list` extension enabled)
+
 ## [0.0.5] - 2026-05-28
 
 ### Changed
@@ -44,7 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.0.5...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.0.6...HEAD
+[0.0.6]: https://github.com/kaijen/kaicrit/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/kaijen/kaicrit/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/kaijen/kaicrit/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/kaijen/kaicrit/compare/v0.0.2...v0.0.3
