@@ -18,6 +18,15 @@ npx vsce package
 code --install-extension kaicrit-*.vsix
 ```
 
+## Releasing
+
+1. Bump `"version"` in [package.json](package.json) to the new version (e.g. `0.2.0`)
+2. Update [CHANGELOG.md](CHANGELOG.md)
+3. Commit: `chore(changelog): Prepare release vX.Y.Z`
+4. Push a matching tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
+
+The CI workflow builds the `.vsix` with `vsce package --version <tag>`, so the published package always reflects the git tag. The `package.json` version is the canonical source for local development (shown when pressing F5).
+
 ## Documentation
 
 After every code change, update all affected documentation artifacts before closing the task:
