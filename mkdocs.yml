@@ -10,6 +10,9 @@ theme:
     - navigation.tracking
     - content.code.copy
 
+markdown_extensions:
+  - attr_list
+
 plugins:
   - search
   - mike:
