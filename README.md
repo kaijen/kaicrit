@@ -4,7 +4,7 @@ CriticMarkup editing support: insert, navigate, and accept or reject tracked cha
 
 ## What is CriticMarkup?
 
-[CriticMarkup](http://criticmarkup.com/) is a plain-text markup standard for tracking changes and comments in documents. It uses simple bracket-based syntax that works in any text file — Markdown, prose, or code. The [full specification](http://criticmarkup.com/spec.php) and reference implementations are available at [github.com/CriticMarkup](https://github.com/CriticMarkup).
+[CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit) is a plain-text markup standard for tracking changes and comments in documents. It uses simple bracket-based syntax that works in any text file — Markdown, prose, or code. The [full specification](https://github.com/CriticMarkup/CriticMarkup-toolkit/blob/master/README.md) is maintained in the CriticMarkup-toolkit repository.
 
 ## Markup Types
 
