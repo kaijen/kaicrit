@@ -1,5 +1,7 @@
 # kaicrit — CriticMarkup for VS Code
 
+![kaicrit logo](assets/kaicrit_logo.png){ width=200 }
+
 kaicrit adds [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit) editing support to VS Code: insert change markers, navigate between them, and accept or reject changes — all without leaving the editor.
 
 ## What is CriticMarkup?

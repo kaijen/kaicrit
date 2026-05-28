@@ -4,6 +4,11 @@
   "description": "CriticMarkup editing support for VS Code",
   "version": "0.0.0",
   "publisher": "kaijendrian",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaijen/kaicrit.git"
+  },
+  "icon": "images/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
