@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-28
+
+### Added
+- All five change-type colors configurable via
+  `workbench.colorCustomizations` (#2)
+- Highlight defaults to yellow background with dark gray text (#2)
+
 ## [0.0.8] - 2026-05-28
 
 ### Added
@@ -68,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.0.8...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/kaijen/kaicrit/compare/v0.0.8...v0.1.0
 [0.0.8]: https://github.com/kaijen/kaicrit/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/kaijen/kaicrit/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/kaijen/kaicrit/compare/v0.0.5...v0.0.6
