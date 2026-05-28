@@ -106,14 +106,17 @@ function navigate(dm: DecoratorManager, direction: 'next' | 'prev' | 'first' | '
     case 'last':  target = findLast(changes); break;
   }
   if (!target) {
-    vscode.window.showInformationMessage(
-      direction === 'next' || direction === 'last'
-        ? 'No more changes after this position.'
-        : 'No more changes before this position.',
-    );
-    return;
+    if (direction === 'next') {
+      vscode.window.showInformationMessage('Wrapped to first change.');
+      target = findFirst(changes);
+    } else if (direction === 'prev') {
+      vscode.window.showInformationMessage('Wrapped to last change.');
+      target = findLast(changes);
+    } else {
+      return;
+    }
   }
-  revealChange(editor, target);
+  revealChange(editor, target!);
 }
 
 function applyAtCursor(dm: DecoratorManager, mode: 'accept' | 'reject'): void {

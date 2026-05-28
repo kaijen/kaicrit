@@ -47,6 +47,8 @@ Wrap a selection before triggering to mark existing text; trigger without a sele
 | First Change | `Alt+K Alt+Home` |
 | Last Change | `Alt+K Alt+End` |
 
+Next/Previous wrap around at document boundaries with a brief notification.
+
 ### Accept / Reject
 
 | Action | Keybinding |
