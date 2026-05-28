@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-28
+
+### Changed
+- Install instructions now point at the prebuilt vsix attached to the
+  GitHub release instead of a local `vsce package` build
+
 ## [0.0.1] - 2026-05-28
 
 ### Added
@@ -19,5 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.0.1...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.0.2...HEAD
+[0.0.2]: https://github.com/kaijen/kaicrit/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/kaijen/kaicrit/releases/tag/v0.0.1
