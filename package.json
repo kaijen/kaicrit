@@ -67,9 +67,14 @@
         "defaults": { "dark": "#333333", "light": "#333333", "highContrast": "#333333", "highContrastLight": "#333333" }
       },
       {
+        "id": "kaicrit.commentBackground",
+        "description": "Background color for comment text.",
+        "defaults": { "dark": "#e0e0e0", "light": "#e0e0e0", "highContrast": "#e0e0e0", "highContrastLight": "#e0e0e0" }
+      },
+      {
         "id": "kaicrit.commentForeground",
         "description": "Foreground color for comment text.",
-        "defaults": { "dark": "descriptionForeground", "light": "descriptionForeground", "highContrast": "descriptionForeground", "highContrastLight": "descriptionForeground" }
+        "defaults": { "dark": "#555555", "light": "#555555", "highContrast": "#555555", "highContrastLight": "#555555" }
       }
     ],
     "keybindings": [

@@ -40,6 +40,7 @@ export class DecoratorManager {
       color: themeColor('kaicrit.highlightForeground'),
     });
     this.commentType = vscode.window.createTextEditorDecorationType({
+      backgroundColor: themeColor('kaicrit.commentBackground'),
       fontStyle: 'italic',
       color: themeColor('kaicrit.commentForeground'),
       before: { contentText: '⟨ ', color: new vscode.ThemeColor('editorLineNumber.foreground') },

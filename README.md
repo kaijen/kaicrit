@@ -92,7 +92,8 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 | `kaicrit.substitutionNewForeground` | `gitDecoration.addedResourceForeground` | Substitution — inserted part |
 | `kaicrit.highlightBackground` | `#ffff00` | Highlight background |
 | `kaicrit.highlightForeground` | `#333333` | Highlight text |
-| `kaicrit.commentForeground` | `descriptionForeground` | Comment text |
+| `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
+| `kaicrit.commentForeground` | `#555555` | Comment text |
 
 ## About
 
