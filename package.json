@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup editing support for VS Code",
-  "version": "0.0.0",
+  "version": "0.0.6",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -16,7 +16,7 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
+  "categories": ["Other", "Formatters"],
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
   "contributes": {
