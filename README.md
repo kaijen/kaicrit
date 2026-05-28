@@ -72,9 +72,8 @@ Accept All / Reject All apply all resolutions in a single atomic edit — no off
 
 ## Installation
 
-Install from the VS Code Marketplace, or build and install a local package:
+Download the latest `kaicrit-*.vsix` from the [Releases page](https://github.com/kaijen/kaicrit/releases), then install it:
 
 ```bash
-npx vsce package
 code --install-extension kaicrit-*.vsix
 ```
