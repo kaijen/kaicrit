@@ -33,3 +33,13 @@ Next/Previous wrap around at document boundaries with a brief notification.
 | Reject Change at Cursor | `Alt+R` |
 | Accept All Changes | `Alt+K Enter` |
 | Reject All Changes | `Alt+K Backspace` |
+
+## Customize
+
+Any keybinding can be overridden via **File › Preferences › Keyboard Shortcuts** (search for `kaicrit`) or by editing `keybindings.json` directly:
+
+```json
+{ "key": "ctrl+alt+down", "command": "kaicrit.nextChange", "when": "editorTextFocus" }
+```
+
+The `when` clause `editorTextFocus` is the same condition used by all default bindings.

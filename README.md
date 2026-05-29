@@ -95,6 +95,10 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 | `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
 | `kaicrit.commentForeground` | `#555555` | Comment text |
 
+### Keybindings
+
+All keybindings can be rebound via **File › Preferences › Keyboard Shortcuts** (search for `kaicrit`) or by editing `keybindings.json` directly. See the [keybindings reference](docs/keybindings.md#customize) for an example.
+
 ## About
 
 Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).
