@@ -1,13 +1,6 @@
 import * as vscode from 'vscode';
-import { ChangeType, CriticChange } from './types';
-
-// Single-pass regex — group indices:
-// [1] deletion content
-// [2] addition content
-// [3] substitution old, [4] substitution new
-// [5] highlight content
-// [6] comment content
-const RE_ALL = /\{--(.*?)--\}|\{\+\+(.*?)\+\+\}|\{~~(.*?)~>(.*?)~~\}|\{==(.*?)==\}|\{>>(.*?)<<\}/gs;
+import { ChangeType, CriticChange } from '../core/types';
+import { RE_ALL } from '../core/markers';
 
 export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
   const text = doc.getText();

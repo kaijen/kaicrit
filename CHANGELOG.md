@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-30
+
+### Added
+- **Compare** — diff two files into a single CriticMarkup document, via the
+  Command Palette or the Explorer context menu. Configurable through
+  `kaicrit.compare.granularity`, `kaicrit.compare.combineSubstitutions`, and
+  `kaicrit.compare.outputLanguage`. (merged from the former kaicritcompare extension)
+- **Markdown preview** — CriticMarkup now renders inline in VS Code's built-in
+  Markdown preview, with no webview or build step. (merged from the former
+  kaicritview extension)
+
+### Changed
+- Source is reorganized by feature into `src/core`, `src/edit`, `src/compare`,
+  and `src/preview`, sharing one marker vocabulary in `core/markers.ts`.
+
 ## [0.1.3] - 2026-05-29
 
 ### Changed
