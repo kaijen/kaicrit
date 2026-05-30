@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ChangeType, CriticChange } from './types';
+import { ChangeType, CriticChange } from '../core/types';
 import { parseCriticMarkup } from './parser';
 
 function themeColor(id: string): vscode.ThemeColor {

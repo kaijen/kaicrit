@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CriticChange } from './types';
+import { CriticChange } from '../core/types';
 
 export function findAtCursor(changes: CriticChange[], cursor: vscode.Position): CriticChange | undefined {
   return changes.find(c =>

@@ -37,20 +37,47 @@ After every code change, update all affected documentation artifacts before clos
 
 ## Architecture
 
-Six source files in [src/](src/), one responsibility each:
+The extension bundles three CriticMarkup features — **edit**, **compare**, and **preview** — around one shared marker vocabulary. Source is grouped by feature under [src/](src/):
+
+### `src/core/` — shared vocabulary
 
 | File | Role |
 |---|---|
-| [types.ts](src/types.ts) | `ChangeType` const enum + `CriticChange` interface |
-| [parser.ts](src/parser.ts) | `parseCriticMarkup(doc)` — single-pass regex, returns `CriticChange[]` |
-| [decorator.ts](src/decorator.ts) | `DecoratorManager` — creates decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor |
-| [navigator.ts](src/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
-| [commands.ts](src/commands.ts) | Registers all 13 commands; calls navigator + accept/reject helpers |
-| [extension.ts](src/extension.ts) | `activate()` / `deactivate()`; wires document listeners + commands |
+| [core/types.ts](src/core/types.ts) | `ChangeType` const enum + `CriticChange` interface |
+| [core/markers.ts](src/core/markers.ts) | `MARKERS` delimiter table + `RE_ALL` regex — the single source of truth for marker syntax, consumed by the edit parser and the compare renderer |
+
+### `src/edit/` — editor decorations, navigation, accept/reject
+
+| File | Role |
+|---|---|
+| [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]` |
+| [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor |
+| [edit/navigator.ts](src/edit/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
+| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 13 insert/navigate/accept/reject commands |
+
+### `src/compare/` — diff two files into CriticMarkup
+
+| File | Role |
+|---|---|
+| [compare/diff.ts](src/compare/diff.ts) | Myers diff over tokenized text → `DiffOp[]`; whitespace-preserving tokenizer |
+| [compare/criticmarkup.ts](src/compare/criticmarkup.ts) | `render(ops)` — emits markers using `MARKERS` from core |
+| [compare/compare.ts](src/compare/compare.ts) | Orchestration: read two files, diff, open result; reads `kaicrit.compare.*` settings |
+| [compare/commands.ts](src/compare/commands.ts) | `registerCompareCommands()` — 5 compare commands |
+| `compare/*.test.ts` | Node `--test` suites for diff + render (run via `npm test`) |
+
+### `src/preview/` — built-in Markdown preview
+
+| File | Role |
+|---|---|
+| [preview/markdownIt.ts](src/preview/markdownIt.ts) | `criticMarkupPlugin(md)` — markdown-it inline rule; its own tokenizer (different engine), styled by [media/critic.css](media/critic.css) |
+
+### Entry point
+
+[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the compare commands, and **returns** `{ extendMarkdownIt }` so the built-in preview picks up the plugin.
 
 ## CriticMarkup Types
 
-The parser uses a single `RE_ALL` regex in [parser.ts](src/parser.ts) with six capture groups (one per type, two for substitution). `document.positionAt()` converts string offsets to VSCode positions — no manual line/column arithmetic.
+The edit parser uses the single `RE_ALL` regex from [core/markers.ts](src/core/markers.ts) with six capture groups (one per type, two for substitution). `document.positionAt()` converts string offsets to VSCode positions — no manual line/column arithmetic. The preview ([preview/markdownIt.ts](src/preview/markdownIt.ts)) keeps a separate inline tokenizer because it integrates with markdown-it's own parser, but shares the delimiter literals via `MARKERS`.
 
 Each `CriticChange` carries:
 - `fullRange` — the entire `{--...--}` span, used for all edits
@@ -75,10 +102,11 @@ Every resolution replaces `fullRange` with a computed string via one `WorkspaceE
 
 ## Adding a New Markup Type
 
-1. Add to `ChangeType` in [types.ts](src/types.ts)
-2. Add a capture group to `RE_ALL` and a branch in the parse loop in [parser.ts](src/parser.ts)
-3. Add a `TextEditorDecorationType` and handle it in `applyDecorations()` in [decorator.ts](src/decorator.ts)
-4. Add insert command and accept/reject case in [commands.ts](src/commands.ts)
-5. Add command entry to `contributes.commands` in [package.json](package.json)
-6. Add one or more `contributes.colors` entries in [package.json](package.json) for the new decoration color(s)
-7. Update README.md, docs/markup.md, and CLAUDE.md
+1. Add to `ChangeType` in [core/types.ts](src/core/types.ts)
+2. Add the delimiters to `MARKERS` and a capture group to `RE_ALL` in [core/markers.ts](src/core/markers.ts), plus a branch in the parse loop in [edit/parser.ts](src/edit/parser.ts)
+3. Add a `TextEditorDecorationType` and handle it in `applyDecorations()` in [edit/decorator.ts](src/edit/decorator.ts)
+4. Add insert command and accept/reject case in [edit/commands.ts](src/edit/commands.ts)
+5. Render the new type in [preview/markdownIt.ts](src/preview/markdownIt.ts) (+ a `.critic-*` class in [media/critic.css](media/critic.css)) if it should appear in the preview
+6. Add command entry to `contributes.commands` in [package.json](package.json)
+7. Add one or more `contributes.colors` entries in [package.json](package.json) for the new decoration color(s)
+8. Update README.md, docs/markup.md, and CLAUDE.md

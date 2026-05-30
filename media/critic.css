@@ -1,0 +1,29 @@
+/* Styling for CriticMarkup spans rendered into the built-in Markdown preview.
+   Colors are intentionally semi-transparent so they read well on both the
+   light and dark preview themes. */
+
+.critic-ins {
+  background-color: rgba(70, 200, 70, 0.25);
+  text-decoration: none;
+}
+
+.critic-del {
+  background-color: rgba(220, 60, 60, 0.25);
+  text-decoration: line-through;
+}
+
+.critic-mark {
+  background-color: rgba(255, 220, 40, 0.45);
+  color: inherit;
+}
+
+.critic-comment {
+  background-color: rgba(120, 160, 255, 0.20);
+  border-bottom: 1px dotted rgba(120, 160, 255, 0.9);
+  font-style: italic;
+}
+
+.critic-comment::before {
+  content: "\00a0\00bb\00a0"; /* » */
+  opacity: 0.6;
+}

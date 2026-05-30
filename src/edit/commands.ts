@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
-import { ChangeType, CriticChange } from './types';
+import { ChangeType, CriticChange } from '../core/types';
 import { DecoratorManager } from './decorator';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
 
-export function registerAllCommands(
+export function registerEditCommands(
   ctx: vscode.ExtensionContext,
   dm: DecoratorManager,
 ): void {

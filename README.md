@@ -1,6 +1,10 @@
 # kaicrit — CriticMarkup for VS Code
 
-CriticMarkup editing support: insert, navigate, and accept or reject tracked changes directly in VS Code.
+A complete CriticMarkup workflow in one extension:
+
+- **Edit** — insert, navigate, and accept or reject tracked changes directly in the editor.
+- **Compare** — diff two files into a single CriticMarkup document.
+- **Preview** — render CriticMarkup in VS Code's built-in Markdown preview.
 
 ## What is CriticMarkup?
 
@@ -24,6 +28,8 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
+- **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
+- **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
 
 ## Keybindings
 
@@ -72,6 +78,31 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 | Comment `{>>T<<}` | removes entirely | removes entirely |
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
+
+## Compare two files → CriticMarkup
+
+Generate a CriticMarkup document that describes how a first file (the original) becomes a second file (the modified version). The result is a normal text document you can read, edit, and resolve with the accept/reject commands above.
+
+| Action | How |
+|---|---|
+| Compare two arbitrary files | Command Palette → **Compare Two Files → CriticMarkup** |
+| Compare the open file with another | Command Palette → **Compare Active File With… → CriticMarkup** |
+| Two-step compare from the Explorer | Right-click file 1 → **Select for CriticMarkup Compare**, then right-click file 2 → **Compare with Selected → CriticMarkup** |
+| Compare two selected files | Select two files in the Explorer → right-click → **Compare Selected Files → CriticMarkup** |
+
+The output upholds a strict reconstruction invariant: rejecting every marker reproduces file 1, accepting every marker reproduces file 2. No keybindings are bound to the compare commands by default.
+
+### Compare settings
+
+| Setting | Default | Description |
+|---|---|---|
+| `kaicrit.compare.granularity` | `word` | Diff unit: `character`, `word` (whitespace-preserving), or `line`. |
+| `kaicrit.compare.combineSubstitutions` | `true` | Merge an adjacent deletion + addition into one `{~~old~>new~~}` substitution. |
+| `kaicrit.compare.outputLanguage` | `auto` | Language mode for the result: `auto` (match file 2), `plaintext`, or `markdown`. |
+
+## Markdown preview
+
+Open any Markdown file containing CriticMarkup and launch the built-in preview (`Ctrl+Shift+V` / `Cmd+Shift+V`). CriticMarkup spans render inline — insertions, deletions, highlights, comments, and substitutions — and span bodies are re-parsed as Markdown, so nested formatting such as `{++ **bold** ++}` is preserved. CriticMarkup inside inline code or fenced code blocks is left untouched. The preview styling lives in `media/critic.css`.
 
 ## Customization
 

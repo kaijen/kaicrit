@@ -1,8 +1,8 @@
 {
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
-  "description": "CriticMarkup editing support for VS Code",
-  "version": "0.1.2",
+  "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
+  "version": "0.2.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -19,6 +19,15 @@
   "categories": [
     "Other",
     "Formatters"
+  ],
+  "keywords": [
+    "criticmarkup",
+    "markdown",
+    "track changes",
+    "diff",
+    "compare",
+    "preview",
+    "review"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -89,6 +98,31 @@
       {
         "command": "kaicrit.rejectAll",
         "title": "Reject All Changes",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.compareFiles",
+        "title": "Compare Two Files → CriticMarkup",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.compareActiveFileWith",
+        "title": "Compare Active File With… → CriticMarkup",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.selectForCompare",
+        "title": "Select for CriticMarkup Compare",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.compareWithSelected",
+        "title": "Compare with Selected → CriticMarkup",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.compareSelected",
+        "title": "Compare Selected Files → CriticMarkup",
         "category": "CriticMarkup"
       }
     ],
@@ -240,12 +274,82 @@
         "key": "alt+k alt+c",
         "when": "editorTextFocus"
       }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "kaicrit.selectForCompare",
+          "when": "false"
+        },
+        {
+          "command": "kaicrit.compareWithSelected",
+          "when": "false"
+        },
+        {
+          "command": "kaicrit.compareSelected",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "kaicrit.selectForCompare",
+          "when": "!explorerResourceIsFolder",
+          "group": "3_compare@1"
+        },
+        {
+          "command": "kaicrit.compareWithSelected",
+          "when": "!explorerResourceIsFolder",
+          "group": "3_compare@2"
+        },
+        {
+          "command": "kaicrit.compareSelected",
+          "when": "!explorerResourceIsFolder && listDoubleSelection",
+          "group": "3_compare@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "kaicrit",
+      "properties": {
+        "kaicrit.compare.granularity": {
+          "type": "string",
+          "enum": ["character", "word", "line"],
+          "enumDescriptions": [
+            "Diff character by character (most precise, noisiest output).",
+            "Diff word by word while preserving whitespace (recommended for prose).",
+            "Diff line by line (best for code and structured text)."
+          ],
+          "default": "word",
+          "description": "Granularity used when diffing two files into CriticMarkup."
+        },
+        "kaicrit.compare.combineSubstitutions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Merge an adjacent deletion and addition into a single CriticMarkup substitution {~~old~>new~~} instead of emitting separate {--old--}{++new++} markers."
+        },
+        "kaicrit.compare.outputLanguage": {
+          "type": "string",
+          "enum": ["auto", "plaintext", "markdown"],
+          "enumDescriptions": [
+            "Use the language of the second (modified) file.",
+            "Always open the result as plain text.",
+            "Always open the result as Markdown."
+          ],
+          "default": "auto",
+          "description": "Language mode applied to the generated CriticMarkup document."
+        }
+      }
+    },
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/critic.css"
     ]
   },
   "scripts": {
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "test": "tsc -p ./ && node --test out/compare/*.test.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
