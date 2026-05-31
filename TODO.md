@@ -122,7 +122,7 @@ Text dagegen als Deletion. Beide Engines sollten sich identisch verhalten.
 
 ---
 
-## 4. Cursor-Positionierung von `insertSubstitution` robust machen
+## ✅ 4. Cursor-Positionierung von `insertSubstitution` robust machen
 
 **Problem:** `insertSubstitution` ([src/edit/commands.ts](src/edit/commands.ts):151-158)
 sucht das `~>` per `lastIndexOf` nur in der **aktuellen Zeile** vor dem Cursor.

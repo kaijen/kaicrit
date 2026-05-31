@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { ChangeType, CriticChange } from '../core/types';
+import { MARKERS } from '../core/markers';
 import { DecoratorManager } from './decorator';
 import { TrackChangesManager } from './trackChanges';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
@@ -151,26 +152,24 @@ function isoToday(): string {
 function insertSubstitution(): void {
   const editor = activeEditor();
   if (!editor) { return; }
+  const { open, sep, close } = MARKERS[ChangeType.Substitution];
   editor.edit(eb => {
     for (const sel of editor.selections) {
       const selected = sel.isEmpty ? 'old' : editor.document.getText(sel);
-      eb.replace(sel, `{~~${selected}~>~~}`);
+      eb.replace(sel, `${open}${selected}${sep}${close}`);
     }
   }).then(() => {
-    // Move cursor between ~> and ~~} so user can type the replacement
+    // Move cursor between the `~>` separator and the closing `~~}` so the user
+    // can type the replacement. After the replace, the cursor sits at the end
+    // of the inserted text; the desired point is exactly `close.length` units
+    // before it. Computing from that offset (rather than searching the text for
+    // `~>`) stays correct for multi-line selections and for replaced text that
+    // itself contains a `~>`.
     if (editor.selections.length === 1) {
       const doc = editor.document;
-      const anchor = editor.selection.active;
-      // After replacement the cursor sits at the end of the inserted text.
-      // Find the last inserted ~> before the cursor and position after it.
-      const lineText = doc.lineAt(anchor.line).text;
-      const cursorCol = anchor.character;
-      const searchArea = lineText.slice(0, cursorCol);
-      const separatorIdx = searchArea.lastIndexOf('~>');
-      if (separatorIdx !== -1) {
-        const newPos = new vscode.Position(anchor.line, separatorIdx + 2);
-        editor.selection = new vscode.Selection(newPos, newPos);
-      }
+      const end = doc.offsetAt(editor.selection.active);
+      const pos = doc.positionAt(end - close.length);
+      editor.selection = new vscode.Selection(pos, pos);
     }
   });
 }
