@@ -93,10 +93,18 @@ export class DecoratorManager {
   }
 
   update(editor: vscode.TextEditor): void {
+    // An explicit update parses the document's *current* text, so any debounced
+    // update still pending for it (e.g. the one scheduled by the change event an
+    // accept/reject edit fires) would only re-parse the same text. Cancel it so
+    // the document is parsed once per resolution, not twice.
+    const key = editor.document.uri.toString();
+    const pending = this.timers.get(key);
+    if (pending) { clearTimeout(pending); this.timers.delete(key); }
+
     const changes = this.isEnabled(editor.document)
       ? parseCriticMarkup(editor.document)
       : [];
-    this.changeCache.set(editor.document.uri.toString(), changes);
+    this.changeCache.set(key, changes);
     this.applyDecorations(editor, changes);
     this._onDidUpdate.fire(editor);
   }

@@ -236,7 +236,7 @@ daher nach den Korrektheits-Fixes.
 
 ---
 
-## 8. Doppeltes Re-Parse nach Accept/Reject vermeiden
+## ✅ 8. Doppeltes Re-Parse nach Accept/Reject vermeiden
 
 **Problem:** `applyAt`/`applyAll` rufen nach `applyEdit` explizit `dm.update(editor)`
 auf ([src/edit/commands.ts](src/edit/commands.ts):217 und :232), während die durch
@@ -264,7 +264,7 @@ aber redundant.
 
 ---
 
-## 9. Tests für Edit & Preview
+## ✅ 9. Tests für Edit & Preview
 
 **Ziel:** Test-Abdeckung für die bisher ungetesteten Bereiche: Parser,
 Navigator, Accept/Reject-Semantik und Preview-Rendering – inkl. der Edge-Cases,

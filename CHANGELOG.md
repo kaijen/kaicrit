@@ -69,6 +69,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CriticMarkup spec where `~>` is required for a substitution.
 - Multi-line comments (`{>>line 1\nline 2<<}`) now render in full in the
   Markdown preview, with their line breaks preserved.
+- Accepting or rejecting a change now re-parses the document only once instead
+  of twice: the explicit refresh cancels the debounced update the edit's change
+  event would otherwise also trigger. No visible behavior change.
+
+### Internal
+- Unit tests for the edit parser, navigation helpers, accept/reject semantics,
+  and additional Markdown-preview cases. The accept/reject mapping moved into a
+  VS Code-free `edit/resolve.ts` helper, and parser/navigator tests run outside
+  the Extension Host via a small `require('vscode')` stub (`edit/vscodeStub.ts`).
+  `npm test` runs them all.
 
 ## [0.2.0] - 2026-05-30
 
