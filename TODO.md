@@ -206,7 +206,7 @@ empfehlenswert, aber unabhängig vom Laufzeitverhalten.
 
 ---
 
-## 7. Parser-Vorabprüfung gegen unnötige Vollscans
+## ✅ 7. Parser-Vorabprüfung gegen unnötige Vollscans
 
 **Problem:** `onDidChangeTextDocument` ([src/extension.ts](src/extension.ts):67)
 löst `scheduleUpdate` aus, das bei jedem (debounced) Tastendruck einen Vollscan

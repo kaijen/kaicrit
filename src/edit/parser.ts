@@ -7,6 +7,16 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
   const text = doc.getText();
   const results: CriticChange[] = [];
 
+  // Cheap pre-check: every CriticMarkup marker opens with '{'. A document
+  // without one cannot contain a marker, so we skip the full regex scan (and
+  // the configuration read below) entirely. This keeps the per-keystroke
+  // (debounced) update path free for large source files that never carry
+  // CriticMarkup. Returning an empty array also lets the caller's cache make a
+  // correct "had changes → none" transition once the last marker is removed.
+  if (text.indexOf('{') === -1) {
+    return results;
+  }
+
   // The author/date convention is opt-out: when disabled, comments are parsed
   // as plain text and no metadata is extracted.
   const metaEnabled = vscode.workspace
