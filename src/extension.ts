@@ -53,12 +53,14 @@ export function activate(ctx: vscode.ExtensionContext) {
     tcm.applyDefault(vscode.window.activeTextEditor.document);
   }
   tcm.syncActiveEditor(vscode.window.activeTextEditor);
+  dm.syncContext(vscode.window.activeTextEditor);
 
   ctx.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
       if (editor) { dm.update(editor); tcm.applyDefault(editor.document); }
       sb.update(editor);
       tcm.syncActiveEditor(editor);
+      dm.syncContext(editor);
     }),
     vscode.workspace.onDidChangeTextDocument(event => {
       // Track Changes runs first: it may apply a compensating edit, which fires
@@ -73,7 +75,10 @@ export function activate(ctx: vscode.ExtensionContext) {
     // Refresh the status bar whenever the active editor's changes are re-parsed
     // (typing, accept/reject, navigation-triggered updates).
     dm.onDidUpdate(editor => {
-      if (editor === vscode.window.activeTextEditor) { sb.update(editor); }
+      if (editor === vscode.window.activeTextEditor) {
+        sb.update(editor);
+        dm.syncContext(editor);
+      }
     }),
   );
 

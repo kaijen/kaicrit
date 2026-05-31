@@ -2,6 +2,11 @@ import * as vscode from 'vscode';
 import { ChangeType, CriticChange } from '../core/types';
 import { parseCriticMarkup } from './parser';
 
+// Context key reflecting whether the active editor's document has ≥ 1 change.
+// Drives the `when` clauses of the accept/reject keybindings so they don't fire
+// in documents without CriticMarkup.
+const HAS_CHANGES_KEY = 'kaicrit.hasChanges';
+
 function themeColor(id: string): vscode.ThemeColor {
   return new vscode.ThemeColor(id);
 }
@@ -99,6 +104,13 @@ export class DecoratorManager {
 
   getChanges(doc: vscode.TextDocument): CriticChange[] {
     return this.changeCache.get(doc.uri.toString()) ?? [];
+  }
+
+  // Keep the `kaicrit.hasChanges` context key in sync with the given editor's
+  // change count. Called for the active editor on update + editor switches.
+  syncContext(editor: vscode.TextEditor | undefined): void {
+    const has = !!editor && this.getChanges(editor.document).length > 0;
+    void vscode.commands.executeCommand('setContext', HAS_CHANGES_KEY, has);
   }
 
   private applyDecorations(editor: vscode.TextEditor, changes: CriticChange[]): void {

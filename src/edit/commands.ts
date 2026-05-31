@@ -209,7 +209,9 @@ function applyAt(dm: DecoratorManager, mode: 'accept' | 'reject', position: vsco
   const changes = dm.getChanges(editor.document);
   const change = findAtCursor(changes, position);
   if (!change) {
-    vscode.window.showInformationMessage('Cursor is not inside a CriticMarkup change.');
+    // Non-modal: a stray Alt+A/Alt+R with the cursor outside a change should be
+    // a quiet no-op, not an interruptive box.
+    vscode.window.setStatusBarMessage('Cursor is not inside a CriticMarkup change.', 3000);
     return;
   }
   const edit = new vscode.WorkspaceEdit();

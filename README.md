@@ -71,6 +71,8 @@ Next/Previous wrap around at document boundaries with a brief notification.
 | Accept All Changes | `Alt+K Enter` |
 | Reject All Changes | `Alt+K Backspace` |
 
+`Alt+A` / `Alt+R` are only active while the current document actually contains CriticMarkup changes, so they don't shadow those keys in ordinary files. When the cursor isn't inside a change, the command is a quiet no-op (a brief status-bar notice, no modal dialog).
+
 All commands are also available via the Command Palette (`Ctrl+Shift+P`) under the **CriticMarkup** category.
 
 ## Accept / Reject Semantics
