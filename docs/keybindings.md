@@ -34,6 +34,8 @@ Next/Previous wrap around at document boundaries with a brief notification.
 | Accept All Changes | `Alt+K Enter` |
 | Reject All Changes | `Alt+K Backspace` |
 
+`Alt+A` / `Alt+R` carry an extra `kaicrit.hasChanges` condition, so they only fire while the active document contains at least one CriticMarkup change — in plain files those keys keep their normal behavior. With the cursor outside a change the command is a quiet no-op (brief status-bar notice, no modal dialog).
+
 ## Customize
 
 Any keybinding can be overridden via **File › Preferences › Keyboard Shortcuts** (search for `kaicrit`) or by editing `keybindings.json` directly:
@@ -42,4 +44,4 @@ Any keybinding can be overridden via **File › Preferences › Keyboard Shortcu
 { "key": "ctrl+alt+down", "command": "kaicrit.nextChange", "when": "editorTextFocus" }
 ```
 
-The `when` clause `editorTextFocus` is the same condition used by all default bindings.
+The `when` clause `editorTextFocus` is the condition used by most default bindings; the accept/reject bindings additionally require `kaicrit.hasChanges`.

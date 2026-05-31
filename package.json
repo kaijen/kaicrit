@@ -272,12 +272,12 @@
       {
         "command": "kaicrit.acceptChange",
         "key": "alt+a",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && kaicrit.hasChanges"
       },
       {
         "command": "kaicrit.rejectChange",
         "key": "alt+r",
-        "when": "editorTextFocus"
+        "when": "editorTextFocus && kaicrit.hasChanges"
       },
       {
         "command": "kaicrit.acceptAll",

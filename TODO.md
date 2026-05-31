@@ -25,7 +25,7 @@ Die Aufgaben 1–8 stammen aus dem Code-Review der bestehenden Extension
 
 ---
 
-## 1. Accept/Reject-Keybindings kapern jeden Editor
+## ✅ 1. Accept/Reject-Keybindings kapern jeden Editor
 
 **Problem:** Die Tastenkürzel für `kaicrit.acceptChange` (`alt+a`) und
 `kaicrit.rejectChange` (`alt+r`) sind in [package.json](package.json) nur mit
