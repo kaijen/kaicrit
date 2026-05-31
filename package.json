@@ -501,7 +501,7 @@
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/edit/*.test.js"
+    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/edit/*.test.js out/preview/*.test.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

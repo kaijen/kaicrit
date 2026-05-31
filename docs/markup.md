@@ -10,7 +10,7 @@ In the editor, every change is also mirrored as a colored mark on the **overview
 |---|---|---|
 | Deletion | `{--deleted text--}` | Mark text for removal |
 | Addition | `{++added text++}` | Mark text for insertion |
-| Substitution | `{~~old~>new~~}` | Mark a replacement pair |
+| Substitution | `{~~old~>new~~}` | Mark a replacement pair (the `~>` arrow is **required**) |
 | Highlight | `{==highlighted text==}` | Mark text for attention |
 | Comment | `{>>comment text<<}` | Inline annotation |
 
@@ -27,6 +27,12 @@ Accepting or rejecting a change strips the markup and resolves the content:
 | Comment `{>>T<<}` | removes entirely | removes entirely |
 
 Accept All / Reject All apply all resolutions atomically in a single edit.
+
+> **Note on substitution syntax:** the `~>` separator is mandatory. An arrow-less
+> `{~~text~~}` is **not** a valid CriticMarkup marker (it is neither a substitution
+> nor a deletion, per the [CriticMarkup spec](https://github.com/CriticMarkup/CriticMarkup-toolkit)).
+> Both the editor and the Markdown preview ignore it: it is left as plain text
+> rather than being rendered as a change. Use `{--text--}` to mark a deletion.
 
 ## Inline-Aktionen (CodeLens)
 

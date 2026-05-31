@@ -75,7 +75,7 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 | File | Role |
 |---|---|
-| [preview/markdownIt.ts](src/preview/markdownIt.ts) | `criticMarkupPlugin(md, { commentMetadata })` — markdown-it inline rule; its own tokenizer (different engine), styled by [media/critic.css](media/critic.css). Splits the comment author/date prefix into a `.critic-comment-meta` span via `parseCommentMeta` when `commentMetadata` is on |
+| [preview/markdownIt.ts](src/preview/markdownIt.ts) | `criticMarkupPlugin(md, { commentMetadata })` — markdown-it inline rule; its own tokenizer (different engine), styled by [media/critic.css](media/critic.css). Splits the comment author/date prefix into a `.critic-comment-meta` span via `parseCommentMeta` when `commentMetadata` is on. Substitution requires the `~>` arrow: an arrow-less `{~~…~~}` makes the rule return `false` so it falls back to markdown-it's normal text rules — matching the edit parser's `RE_ALL`, which ignores it too (per the CriticMarkup spec, arrow-less `{~~…~~}` is neither a substitution nor a deletion). Covered by `markdownIt.test.ts`, which drives the inline rule with a VS Code-free fake markdown-it `state` |
 
 ### Entry point
 

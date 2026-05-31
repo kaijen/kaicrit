@@ -50,6 +50,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scrollbar, reusing the existing per-type `kaicrit.*` colors.
 
 ### Fixed
+- Arrow-less substitutions (`{~~text~~}` without `~>`) are now treated
+  consistently: the Markdown preview no longer renders them as a deletion.
+  Both the editor parser and the preview now ignore them, matching the
+  CriticMarkup spec where `~>` is required for a substitution.
 - Multi-line comments (`{>>line 1\nline 2<<}`) now render in full in the
   Markdown preview, with their line breaks preserved.
 
