@@ -63,10 +63,10 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 | File | Role |
 |---|---|
-| [compare/diff.ts](src/compare/diff.ts) | Myers diff over tokenized text → `DiffOp[]`; whitespace-preserving tokenizer |
+| [compare/diff.ts](src/compare/diff.ts) | Myers diff over tokenized text → `DiffOp[]`; whitespace-preserving tokenizer. Optional `ignoreWhitespace`: matches tokens with whitespace stripped (`git diff -w` style) + a `suppressWhitespaceOps` pass that drops residual whitespace-only markers, while `myers` always emits file-1 tokens on equal so reject→file-1 holds |
 | [compare/criticmarkup.ts](src/compare/criticmarkup.ts) | `render(ops)` — emits markers using `MARKERS` from core |
-| [compare/compare.ts](src/compare/compare.ts) | Orchestration: read two files, diff, open result; reads `kaicrit.compare.*` settings |
-| [compare/commands.ts](src/compare/commands.ts) | `registerCompareCommands()` — 5 compare commands |
+| [compare/compare.ts](src/compare/compare.ts) | Orchestration: reads `kaicrit.compare.*` settings; `compareTextToCriticMarkup(originalText, modifiedText, autoLanguageId)` is the shared core, `compareToCriticMarkup(uri, uri)` opens both files and delegates |
+| [compare/commands.ts](src/compare/commands.ts) | `registerCompareCommands()` — 6 compare commands; `compareWithGitHead` reads the active file's HEAD via the built-in `vscode.git` extension API (`getRepository(uri).show('HEAD', path)`) and diffs it against the live buffer |
 | `compare/*.test.ts` | Node `--test` suites for diff + render (run via `npm test`) |
 
 ### `src/preview/` — built-in Markdown preview

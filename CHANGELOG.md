@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Compare with Git HEAD** — a new **Compare Active File with Git HEAD →
+  CriticMarkup** command (Command Palette and editor right-click) diffs the
+  active editor's contents against the last committed version of the file,
+  reading HEAD through the built-in Git extension, so uncommitted edits can be
+  reviewed as CriticMarkup.
+- **Ignore whitespace in compare** — a new `kaicrit.compare.ignoreWhitespace`
+  setting (default `false`) makes the diff treat tokens that differ only in
+  whitespace as equal (similar to `git diff -w`); whitespace-only differences
+  are no longer marked while rejecting every marker still reproduces file 1.
 - **Changes sidebar** — a dedicated **CriticMarkup** view in the Activity Bar
   lists every change of the active document grouped by type with per-group
   counts. Click an entry to jump to the change, resolve it with inline

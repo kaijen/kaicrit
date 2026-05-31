@@ -37,11 +37,26 @@ export function tokenize(text: string, granularity: Granularity): string[] {
 
 type Edit = { type: 'equal' | 'delete' | 'insert'; token: string };
 
+/** Token equality used by Myers; `===` by default. */
+type TokenEq = (x: string, y: string) => boolean;
+
+const strictEq: TokenEq = (x, y) => x === y;
+
+/**
+ * Whitespace-insensitive token comparison: two tokens match when they are
+ * identical once every whitespace character is stripped. This treats differing
+ * amounts of whitespace (and pure-whitespace tokens) as equal, mirroring
+ * `git diff -w`, while the original tokens are kept verbatim for reconstruction.
+ */
+const ignoreWhitespaceEq: TokenEq = (x, y) =>
+  x === y || x.replace(/\s+/g, '') === y.replace(/\s+/g, '');
+
 /**
  * Myers' shortest edit script over two token arrays. Returns a flat list of
- * per-token edits in original order.
+ * per-token edits in original order. Equal edits always carry the token from
+ * `a` (file 1), so rejecting them reproduces file 1 regardless of `eq`.
  */
-function myers(a: string[], b: string[]): Edit[] {
+function myers(a: string[], b: string[], eq: TokenEq): Edit[] {
   const n = a.length;
   const m = b.length;
   const max = n + m;
@@ -61,7 +76,7 @@ function myers(a: string[], b: string[]): Edit[] {
         x = v[offset + k - 1] + 1; // move right (deletion from a)
       }
       let y = x - k;
-      while (x < n && y < m && a[x] === b[y]) {
+      while (x < n && y < m && eq(a[x], b[y])) {
         x++;
         y++;
       }
@@ -118,14 +133,21 @@ function myers(a: string[], b: string[]): Edit[] {
 
 /**
  * Diff two strings and return a list of CriticMarkup-ready operations.
+ *
+ * When `ignoreWhitespace` is set, tokens that differ only in whitespace are
+ * treated as equal during matching, so pure-whitespace differences are not
+ * reported as changes. The original tokens are still emitted verbatim, so
+ * rejecting every marker continues to reproduce file 1 exactly.
  */
 export function diff(
   text1: string,
   text2: string,
   granularity: Granularity,
   combineSubstitutions: boolean,
+  ignoreWhitespace = false,
 ): DiffOp[] {
-  const edits = myers(tokenize(text1, granularity), tokenize(text2, granularity));
+  const eq = ignoreWhitespace ? ignoreWhitespaceEq : strictEq;
+  const edits = myers(tokenize(text1, granularity), tokenize(text2, granularity), eq);
 
   // Coalesce consecutive edits of the same kind into runs.
   const runs: Array<{ type: Edit['type']; text: string }> = [];
@@ -168,5 +190,53 @@ export function diff(
     }
   }
 
-  return ops;
+  return ignoreWhitespace ? suppressWhitespaceOps(ops) : ops;
+}
+
+const WHITESPACE_ONLY = /^\s*$/;
+
+/**
+ * Final pass for `ignoreWhitespace`: drop markers that are purely whitespace.
+ * `ignoreWhitespaceEq` already collapses tokens that differ only in whitespace,
+ * but a count mismatch in standalone whitespace tokens (most visible at
+ * `character` granularity) can still leave a whitespace-only insertion or
+ * deletion. Suppressing them keeps the reject→file-1 invariant intact:
+ *
+ *   - a whitespace-only deletion becomes equal text (file 1 keeps it on reject);
+ *   - a whitespace-only insertion is dropped (it is absent from file 1 anyway);
+ *   - a substitution whose two sides differ only in whitespace keeps file 1's side.
+ */
+function suppressWhitespaceOps(ops: DiffOp[]): DiffOp[] {
+  const result: DiffOp[] = [];
+  const pushEqual = (text: string): void => {
+    if (text.length === 0) {
+      return;
+    }
+    const last = result[result.length - 1];
+    if (last && last.type === 'equal') {
+      last.text += text;
+    } else {
+      result.push({ type: 'equal', text });
+    }
+  };
+
+  for (const op of ops) {
+    if (op.type === 'delete' && WHITESPACE_ONLY.test(op.text)) {
+      pushEqual(op.text);
+    } else if (op.type === 'insert' && WHITESPACE_ONLY.test(op.text)) {
+      // Drop: inserted whitespace is not part of file 1.
+    } else if (
+      op.type === 'replace' &&
+      WHITESPACE_ONLY.test(op.before) &&
+      WHITESPACE_ONLY.test(op.after)
+    ) {
+      pushEqual(op.before);
+    } else if (op.type === 'equal') {
+      pushEqual(op.text);
+    } else {
+      result.push(op);
+    }
+  }
+
+  return result;
 }

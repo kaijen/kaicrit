@@ -129,10 +129,13 @@ Generate a CriticMarkup document that describes how a first file (the original) 
 |---|---|
 | Compare two arbitrary files | Command Palette → **Compare Two Files → CriticMarkup** |
 | Compare the open file with another | Command Palette → **Compare Active File With… → CriticMarkup** |
+| Compare the open file with its Git HEAD | Command Palette / editor right-click → **Compare Active File with Git HEAD → CriticMarkup** |
 | Two-step compare from the Explorer | Right-click file 1 → **Select for CriticMarkup Compare**, then right-click file 2 → **Compare with Selected → CriticMarkup** |
 | Compare two selected files | Select two files in the Explorer → right-click → **Compare Selected Files → CriticMarkup** |
 
-The output upholds a strict reconstruction invariant: rejecting every marker reproduces file 1, accepting every marker reproduces file 2. No keybindings are bound to the compare commands by default.
+The **Git HEAD** comparison diffs the active editor's current contents against the last committed version of that file (HEAD is file 1 / original, the buffer is file 2 / modified), so you can review your uncommitted edits as CriticMarkup.
+
+The output upholds a strict reconstruction invariant: rejecting every marker reproduces file 1, accepting every marker reproduces file 2. (With `ignoreWhitespace` on, whitespace-only differences are not marked, so the reconstruction is exact up to whitespace.) No keybindings are bound to the compare commands by default.
 
 ### Compare settings
 
@@ -140,6 +143,7 @@ The output upholds a strict reconstruction invariant: rejecting every marker rep
 |---|---|---|
 | `kaicrit.compare.granularity` | `word` | Diff unit: `character`, `word` (whitespace-preserving), or `line`. |
 | `kaicrit.compare.combineSubstitutions` | `true` | Merge an adjacent deletion + addition into one `{~~old~>new~~}` substitution. |
+| `kaicrit.compare.ignoreWhitespace` | `false` | Ignore whitespace-only differences (similar to `git diff -w`); rejecting every marker still reproduces file 1. |
 | `kaicrit.compare.outputLanguage` | `auto` | Language mode for the result: `auto` (match file 2), `plaintext`, or `markdown`. |
 
 ## Markdown preview
