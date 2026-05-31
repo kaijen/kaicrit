@@ -60,7 +60,10 @@ export function activate(ctx: vscode.ExtensionContext) {
   // The preview calls extendMarkdownIt with its live markdown-it instance.
   return {
     extendMarkdownIt(md: any) {
-      return md.use(criticMarkupPlugin);
+      const commentMetadata = vscode.workspace
+        .getConfiguration('kaicrit')
+        .get<boolean>('edit.commentMetadata', true);
+      return md.use(criticMarkupPlugin, { commentMetadata });
     },
   };
 }

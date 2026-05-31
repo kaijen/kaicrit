@@ -37,6 +37,43 @@ Tippen und nach dem Auflösen.
 
 Abschaltbar über die Einstellung `kaicrit.edit.codeLens` (Standard `true`).
 
+## Kommentar-Metadaten (Autor & Datum)
+
+Kommentare können optional mit einem Autor und/oder einem ISO-Datum beginnen, durch
+einen Doppelpunkt vom Kommentartext getrennt:
+
+```text
+{>>@kai 2026-05-31: needs a source<<}
+{>>@kai: looks good<<}
+{>>2026-05-31: revisit later<<}
+```
+
+Das Format lautet `[@autor] [JJJJ-MM-TT]:` – beide Teile sind optional, aber
+mindestens einer muss vorhanden und von einem Doppelpunkt gefolgt sein, damit der
+Vorspann als Metadaten gilt.
+
+Die Konvention ist **rückwärtskompatibel**: Ein Kommentar **ohne** diesen Vorspann
+verhält sich exakt wie bisher. Auch ein gewöhnlicher Doppelpunkt im Fließtext
+(`{>>Note: siehe oben<<}`) wird **nicht** als Metadaten interpretiert, da kein
+`@autor` und kein Datum davorstehen.
+
+Sind Metadaten vorhanden, werden Autor/Datum
+
+- im Editor als **Hover** über dem Kommentar angezeigt, und
+- im Markdown-Preview dem Kommentartext als hervorgehobener Präfix vorangestellt
+  (`.critic-comment-meta`).
+
+Accept/Reject entfernt den Kommentar weiterhin vollständig (Metadaten inklusive).
+
+Beim Einfügen eines Kommentars (`Alt+K Alt+C`) wird `@autor heute: ` vorbefüllt. Der
+Autor stammt aus der Einstellung `kaicrit.edit.commentAuthor`; ist sie leer, greift
+kaicrit auf `git config user.name` des Repositories zurück.
+
+| Einstellung | Standard | Wirkung |
+|---|---|---|
+| `kaicrit.edit.commentMetadata` | `true` | Autor/Datum-Konvention erkennen (Hover, Preview, Vorbefüllung). Bei `false` sind Kommentare reiner Text. |
+| `kaicrit.edit.commentAuthor` | `""` | Beim Einfügen vorbefüllter Autor. Leer ⇒ Rückgriff auf `git config user.name`. |
+
 ## Colors
 
 Each change type uses a configurable decoration color. Defaults follow the active theme; override any color via `workbench.colorCustomizations` in `settings.json`:

@@ -23,4 +23,9 @@ export interface CriticChange {
   text?: string;       // deletion, addition, highlight, comment content
   oldText?: string;    // substitution: old part
   newText?: string;    // substitution: new part
+
+  // Comment metadata (optional convention: {>>@author YYYY-MM-DD: text<<}).
+  // Absent on comments without metadata and on all other types.
+  author?: string;
+  date?: string;
 }

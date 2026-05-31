@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Comment metadata** — comments may carry an optional author and date
+  (`{>>@kai 2026-05-31: text<<}`). When present, the author/date shows in the
+  editor hover and as a distinct label in the Markdown preview; inserting a
+  comment pre-fills `@author today:`. The author is configurable via the new
+  `kaicrit.edit.commentAuthor` setting (falling back to `git config user.name`),
+  and the whole convention can be turned off with `kaicrit.edit.commentMetadata`
+  (default `true`). Comments without the prefix are unchanged.
 - **Inline CodeLens** — clickable **Accept | Reject** actions appear above every
   CriticMarkup change, so edits can be resolved with the mouse without learning
   the shortcuts. Toggle with the new `kaicrit.edit.codeLens` setting (default

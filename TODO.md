@@ -149,7 +149,7 @@ Inline-Aktionen vor, die später auch die Sidebar (Aufgabe 6) verwendet.
 
 ---
 
-## 5. Kommentar-Metadaten (Autor & Datum)
+## 5. Kommentar-Metadaten (Autor & Datum) ✅ erledigt
 
 **Ziel:** Kommentare optional mit Autor und Datum versehen, z. B.
 `{>>@kai 2026-05-31: Text<<}`, und diese Metadaten in Editor-Hover und Preview

@@ -31,6 +31,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Inline CodeLens actions** — clickable **Accept | Reject** appear above every change, so edits can be resolved with the mouse without learning the shortcuts (toggle with `kaicrit.edit.codeLens`)
+- **Comment metadata** — comments may carry an optional author and date (`{>>@kai 2026-05-31: text<<}`), shown in editor hovers and the preview; the author is configurable and the whole convention can be turned off
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
 - **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
 
@@ -89,6 +90,25 @@ Above every CriticMarkup change, kaicrit shows clickable **Accept | Reject** act
 | Setting | Values | Default | Effect |
 |---|---|---|---|
 | `kaicrit.edit.codeLens` | `true`, `false` | `true` | Show the inline Accept / Reject CodeLens actions |
+
+## Comment metadata (author & date)
+
+Comments may optionally start with an author and/or an ISO date, separated from the comment body by a colon:
+
+```text
+{>>@kai 2026-05-31: needs a source<<}
+{>>@kai: looks good<<}
+{>>2026-05-31: revisit later<<}
+```
+
+This is a backwards-compatible convention on top of CriticMarkup — a comment **without** this prefix (`{>>plain note<<}`, or even `{>>Note: see above<<}`) is treated exactly as before. When metadata is present, the author/date is shown distinctly in the editor hover and in the Markdown preview, and accept/reject still removes the whole comment.
+
+Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata is one keystroke away. The author comes from `kaicrit.edit.commentAuthor`; when that is empty, kaicrit falls back to the repository's `git config user.name`.
+
+| Setting | Values | Default | Effect |
+|---|---|---|---|
+| `kaicrit.edit.commentMetadata` | `true`, `false` | `true` | Recognize the author/date convention (hover, preview, insert pre-fill). When `false`, comments are plain text. |
+| `kaicrit.edit.commentAuthor` | string | `""` | Author pre-filled on insert. Empty falls back to `git config user.name`. |
 
 ## Compare two files → CriticMarkup
 

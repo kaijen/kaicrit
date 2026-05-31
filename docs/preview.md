@@ -47,10 +47,20 @@ line breaks stay visible in the preview instead of collapsing onto one line.
 Keep a multi-line comment within a single paragraph — a fully blank line ends the
 Markdown paragraph and therefore the comment span.
 
+## Comment metadata
+
+When a comment carries the optional `@author YYYY-MM-DD:` prefix
+(see [Markup Types → Kommentar-Metadaten](markup.md#kommentar-metadaten-autor-datum)),
+the preview renders the author/date as a distinct `.critic-comment-meta` label
+ahead of the comment body; the body itself is still re-parsed as inline Markdown.
+A plain comment renders unchanged. Set `kaicrit.edit.commentMetadata` to `false`
+to render the whole comment body verbatim (the prefix is then shown as ordinary
+text). Toggling the setting takes effect when the preview is reopened/reloaded.
+
 ## Styling
 
 Preview colors are defined in `media/critic.css` and are intentionally
 semi-transparent so they read well on both light and dark preview themes. To
-customize them, override the `.critic-ins`, `.critic-del`, `.critic-mark`, and
-`.critic-comment` classes in your own
+customize them, override the `.critic-ins`, `.critic-del`, `.critic-mark`,
+`.critic-comment`, and `.critic-comment-meta` classes in your own
 [Markdown preview stylesheet](https://code.visualstudio.com/docs/languages/markdown#_using-your-own-css).

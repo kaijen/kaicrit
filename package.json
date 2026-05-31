@@ -334,6 +334,16 @@
           "default": true,
           "description": "Show inline \"Accept | Reject\" CodeLens actions above each CriticMarkup change in the editor."
         },
+        "kaicrit.edit.commentMetadata": {
+          "type": "boolean",
+          "default": true,
+          "description": "Recognize the optional author/date convention in comments ({>>@author YYYY-MM-DD: text<<}): show the metadata in editor hovers and the preview, and pre-fill it when inserting a comment. When off, comments are treated as plain text."
+        },
+        "kaicrit.edit.commentAuthor": {
+          "type": "string",
+          "default": "",
+          "description": "Author name pre-filled when inserting a comment with metadata. When empty, falls back to the repository's git config user.name."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": ["character", "word", "line"],
@@ -372,7 +382,7 @@
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "tsc -p ./ && node --test out/compare/*.test.js"
+    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

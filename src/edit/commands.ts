@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { execFileSync } from 'child_process';
 import { ChangeType, CriticChange } from '../core/types';
 import { DecoratorManager } from './decorator';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
@@ -15,7 +16,7 @@ export function registerEditCommands(
   reg('kaicrit.insertDeletion', () => wrapSelection('{--', '--}'));
   reg('kaicrit.insertAddition', () => wrapSelection('{++', '++}'));
   reg('kaicrit.insertHighlight', () => wrapSelection('{==', '==}'));
-  reg('kaicrit.insertComment',   () => wrapSelection('{>>', '<<}'));
+  reg('kaicrit.insertComment',   insertComment);
   reg('kaicrit.insertSubstitution', insertSubstitution);
 
   // ── Navigation commands ──────────────────────────────────────────────────────
@@ -70,6 +71,41 @@ function wrapSelection(open: string, close: string): void {
       editor.selection = new vscode.Selection(pos, pos);
     }
   });
+}
+
+// Insert a comment, optionally pre-filled with author + today's date so the
+// metadata convention ({>>@author YYYY-MM-DD: text<<}) is one keystroke away.
+// When `kaicrit.edit.commentMetadata` is off, falls back to a plain comment.
+function insertComment(): void {
+  const cfg = vscode.workspace.getConfiguration('kaicrit');
+  let open = '{>>';
+  if (cfg.get<boolean>('edit.commentMetadata', true)) {
+    const author = resolveAuthor(cfg);
+    const date = isoToday();
+    open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
+  }
+  wrapSelection(open, '<<}');
+}
+
+// Author for a new comment: the configured name wins; otherwise fall back to
+// the repository's `git config user.name`. Returns '' when neither is available
+// (the metadata then carries just the date).
+function resolveAuthor(cfg: vscode.WorkspaceConfiguration): string {
+  const configured = (cfg.get<string>('edit.commentAuthor', '') ?? '').trim();
+  if (configured) { return configured; }
+  try {
+    const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    return execFileSync('git', ['config', 'user.name'], {
+      cwd: folder,
+      timeout: 1000,
+    }).toString().trim();
+  } catch {
+    return '';
+  }
+}
+
+function isoToday(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function insertSubstitution(): void {

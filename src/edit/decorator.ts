@@ -107,7 +107,9 @@ export class DecoratorManager {
     const substOldRanges: vscode.Range[] = [];
     const substNewRanges: vscode.Range[] = [];
     const highlightRanges: vscode.Range[] = [];
-    const commentRanges: vscode.Range[] = [];
+    // Comments carry an optional hover (author/date), so they use the richer
+    // DecorationOptions shape instead of a bare Range.
+    const commentDecorations: vscode.DecorationOptions[] = [];
     const markerRanges: vscode.Range[] = [];
 
     for (const c of changes) {
@@ -131,7 +133,12 @@ export class DecoratorManager {
           collectMarkers(c, markerRanges, editor.document, 3, 3);
           break;
         case ChangeType.Comment:
-          if (c.contentRange) { commentRanges.push(c.contentRange); }
+          if (c.contentRange) {
+            commentDecorations.push({
+              range: c.contentRange,
+              hoverMessage: commentHover(c),
+            });
+          }
           collectMarkers(c, markerRanges, editor.document, 3, 3);
           break;
       }
@@ -142,7 +149,7 @@ export class DecoratorManager {
     editor.setDecorations(this.substitutionOldType, substOldRanges);
     editor.setDecorations(this.substitutionNewType, substNewRanges);
     editor.setDecorations(this.highlightType,      highlightRanges);
-    editor.setDecorations(this.commentType,        commentRanges);
+    editor.setDecorations(this.commentType,        commentDecorations);
     editor.setDecorations(this.markerType,         markerRanges);
   }
 
@@ -157,6 +164,16 @@ export class DecoratorManager {
     this._onDidUpdate.dispose();
     for (const t of this.timers.values()) { clearTimeout(t); }
   }
+}
+
+// Build the hover for a comment: shows author/date when present, otherwise
+// undefined (no hover) so plain comments behave exactly as before.
+function commentHover(c: CriticChange): vscode.MarkdownString | undefined {
+  if (c.author === undefined && c.date === undefined) { return undefined; }
+  const parts: string[] = [];
+  if (c.author !== undefined) { parts.push(`**@${c.author}**`); }
+  if (c.date !== undefined) { parts.push(c.date); }
+  return new vscode.MarkdownString(parts.join(' · '));
 }
 
 function collectMarkers(

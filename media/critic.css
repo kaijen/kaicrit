@@ -30,3 +30,12 @@
   content: "\00a0\00bb\00a0"; /* » */
   opacity: 0.6;
 }
+
+/* Author/date prefix of a comment ({>>@author 2026-05-31: …<<}), shown ahead of
+   the comment body in a non-italic, slightly emphasized style. */
+.critic-comment-meta {
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-right: 0.4em;
+}
