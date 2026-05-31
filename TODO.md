@@ -177,7 +177,7 @@ reentranter Nutzung eine Fehlerquelle.
 
 ---
 
-## 6. ESLint einrichten (oder tote Direktive entfernen)
+## ✅ 6. ESLint einrichten (oder tote Direktive entfernen)
 
 **Problem:** [src/compare/commands.ts](src/compare/commands.ts):77 enthält
 `// eslint-disable-next-line @typescript-eslint/no-explicit-any`, aber es gibt
