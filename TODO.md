@@ -18,6 +18,10 @@ Die Aufgaben 1–8 stammen aus dem Code-Review der bestehenden Extension
 - Der einheitliche Marker-Wortschatz lebt in [src/core/markers.ts](src/core/markers.ts)
   und [src/core/types.ts](src/core/types.ts) – nicht duplizieren, sondern wiederverwenden.
 - `npm run compile` muss fehlerfrei durchlaufen, `npm test` grün bleiben.
+- **Erledigte Aufgaben markieren:** Sobald eine Aufgabe vollständig umgesetzt,
+  getestet und dokumentiert ist, wird ihre Überschrift mit einem vorangestellten
+  ✅ gekennzeichnet (z. B. `## ✅ 3. …`). So bleibt auf einen Blick erkennbar,
+  was noch offen ist.
 
 ---
 
@@ -86,7 +90,7 @@ einer Sekunde einfrieren, falls Git langsam/hängend ist.
 
 ---
 
-## 3. Preview und Parser bei pfeilloser Substitution angleichen
+## ✅ 3. Preview und Parser bei pfeilloser Substitution angleichen
 
 **Problem:** Ein malformes `{~~x~~}` (ohne `~>`) wird vom Editor-Parser ignoriert –
 `RE_ALL` ([src/core/markers.ts](src/core/markers.ts):31) verlangt das `~>`, also
