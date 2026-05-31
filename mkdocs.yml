@@ -28,6 +28,7 @@ nav:
   - Overview: index.md
   - Markup Types: markup.md
   - Changes Sidebar: overview.md
+  - Activation: activation.md
   - Keybindings: keybindings.md
   - Compare: compare.md
   - Preview: preview.md

@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Per-language activation & per-file toggle** — kaicrit's editor features
+  (decorations, inline CodeLens, status-bar counts, the Changes view, and
+  accept/reject) now run only for the file types you choose. The new
+  `kaicrit.enabledLanguages` setting takes a list of language ids and defaults
+  to `["markdown", "plaintext"]`; use `"*"` to enable every language. A new
+  **`$(eye) CriticMarkup`** status-bar toggle (and the **Toggle CriticMarkup for
+  This File** command) overrides the language default for a single file for the
+  session — turn kaicrit on for a non-listed file or off for a listed one.
+  While a file is off, kaicrit treats it as plain text (no decorations, counts,
+  or active accept/reject keybindings).
 - **Track Changes (Annotate) mode** — a per-document recorder that captures
   your edits as CriticMarkup instead of changing the text directly: deletions
   become `{--…--}`, insertions `{++…++}`, and selection replacements

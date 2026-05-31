@@ -36,6 +36,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Comment metadata** — comments may carry an optional author and date (`{>>@kai 2026-05-31: text<<}`), shown in editor hovers and the preview; the author is configurable and the whole convention can be turned off
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
 - **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
+- **Per-language activation & per-file toggle** — editor features run only for the file types you choose (`kaicrit.enabledLanguages`, default Markdown + plain text), and a status-bar toggle turns kaicrit on or off for the current file on the fly
 
 ## Keybindings
 
@@ -164,6 +165,18 @@ The output upholds a strict reconstruction invariant: rejecting every marker rep
 ## Markdown preview
 
 Open any Markdown file containing CriticMarkup and launch the built-in preview (`Ctrl+Shift+V` / `Cmd+Shift+V`). CriticMarkup spans render inline — insertions, deletions, highlights, comments, and substitutions — and span bodies are re-parsed as Markdown, so nested formatting such as `{++ **bold** ++}` is preserved. Multi-line comments (`{>>line 1`<br>`line 2<<}`) render in full with their line breaks preserved. CriticMarkup inside inline code or fenced code blocks is left untouched. The preview styling lives in `media/critic.css`.
+
+## Where kaicrit is active
+
+By default kaicrit's editor features — decorations, inline CodeLens, the status-bar counts, the Changes view, and accept/reject — run only in **Markdown** and **plain-text** files. Adjust the list with the `kaicrit.enabledLanguages` setting, which matches a document's [language id](https://code.visualstudio.com/docs/languages/identifiers):
+
+```json
+"kaicrit.enabledLanguages": ["markdown", "plaintext", "latex"]
+```
+
+Use `"*"` to enable kaicrit for every language.
+
+For one-off exceptions there's a **`$(eye) CriticMarkup`** toggle in the status bar (right side, next to Track Changes): click it to turn kaicrit on for a file whose language isn't listed, or off for one that is. The override applies to that single file and lasts only for the session — reopening the file falls back to the language default. While a file is toggled off, kaicrit treats it as plain text: no decorations, no counts, and the accept/reject keybindings stay dormant until you turn it back on. The same toggle is available as the **Toggle CriticMarkup for This File** command.
 
 ## Customization
 
