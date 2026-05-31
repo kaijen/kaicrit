@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DecoratorManager } from './edit/decorator';
 import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
+import { ChangesTreeProvider } from './edit/changesView';
 import { registerEditCommands } from './edit/commands';
 import { registerCompareCommands } from './compare/commands';
 import { criticMarkupPlugin } from './preview/markdownIt';
@@ -27,6 +28,14 @@ export function activate(ctx: vscode.ExtensionContext) {
       [{ scheme: 'file' }, { scheme: 'untitled' }],
       codeLens,
     ),
+  );
+
+  // Sidebar overview: lists the active document's changes grouped by type, with
+  // click-to-jump and inline accept/reject. Fed from the same change cache.
+  const changesView = new ChangesTreeProvider(dm);
+  ctx.subscriptions.push(
+    changesView,
+    vscode.window.createTreeView('kaicrit.changes', { treeDataProvider: changesView }),
   );
 
   // Decorate already-open editors on activation

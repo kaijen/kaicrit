@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Changes sidebar** — a dedicated **CriticMarkup** view in the Activity Bar
+  lists every change of the active document grouped by type with per-group
+  counts. Click an entry to jump to the change, resolve it with inline
+  Accept / Reject buttons, or Accept-All / Reject-All from the view title. The
+  view tracks the active editor and updates live, reusing the existing
+  parsed-change cache.
 - **Comment metadata** — comments may carry an optional author and date
   (`{>>@kai 2026-05-31: text<<}`). When present, the author/date shows in the
   editor hover and as a distinct label in the Markdown preview; inserting a

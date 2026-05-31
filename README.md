@@ -28,6 +28,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
 - **Overview ruler markers** — changes are mirrored as colored marks on the scrollbar, so you can see where they sit without scrolling
 - **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`); click the entry to jump to the first change
+- **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document grouped by type; click an entry to jump to it, resolve it inline, or accept/reject all from the view title
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Inline CodeLens actions** — clickable **Accept | Reject** appear above every change, so edits can be resolved with the mouse without learning the shortcuts (toggle with `kaicrit.edit.codeLens`)
@@ -90,6 +91,16 @@ Above every CriticMarkup change, kaicrit shows clickable **Accept | Reject** act
 | Setting | Values | Default | Effect |
 |---|---|---|---|
 | `kaicrit.edit.codeLens` | `true`, `false` | `true` | Show the inline Accept / Reject CodeLens actions |
+
+## Changes sidebar (overview)
+
+kaicrit adds a **CriticMarkup** view to the Activity Bar that lists every change in the active document, grouped by type (Deletions, Additions, Substitutions, Highlights, Comments) with a per-group count. The view tracks the active editor and updates live as you type or resolve changes.
+
+- **Click** a change to jump to it in the editor (it scrolls into view and selects the marker).
+- **Inline Accept / Reject** buttons on each entry resolve exactly that change.
+- **Accept All / Reject All** buttons in the view title resolve the whole document at once.
+
+Each entry shows a short preview of the change (for substitutions, `old → new`) and its line number; comments with metadata also show the author and date. When the active document has no changes, the view shows a short empty-state hint.
 
 ## Comment metadata (author & date)
 

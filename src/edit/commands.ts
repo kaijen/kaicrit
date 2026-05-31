@@ -42,6 +42,22 @@ export function registerEditCommands(
     vscode.commands.registerCommand('kaicrit.rejectChangeAt',
       (pos: vscode.Position) => applyAt(dm, 'reject', pos)),
   );
+
+  // Tree-View actions: reveal a change on click, and inline accept/reject on a
+  // node. The Tree items carry their start position; everything else reuses the
+  // shared navigate/resolve logic.
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand('kaicrit.revealChangeAt',
+      (pos: vscode.Position) => revealAt(dm, pos)),
+    vscode.commands.registerCommand('kaicrit.acceptChangeNode',
+      (node?: { position?: vscode.Position }) => {
+        if (node?.position) { applyAt(dm, 'accept', node.position); }
+      }),
+    vscode.commands.registerCommand('kaicrit.rejectChangeNode',
+      (node?: { position?: vscode.Position }) => {
+        if (node?.position) { applyAt(dm, 'reject', node.position); }
+      }),
+  );
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -163,6 +179,13 @@ function navigate(dm: DecoratorManager, direction: 'next' | 'prev' | 'first' | '
     }
   }
   revealChange(editor, target!);
+}
+
+function revealAt(dm: DecoratorManager, position: vscode.Position): void {
+  const editor = activeEditor();
+  if (!editor) { return; }
+  const change = findAtCursor(dm.getChanges(editor.document), position);
+  if (change) { revealChange(editor, change); }
 }
 
 function applyAtCursor(dm: DecoratorManager, mode: 'accept' | 'reject'): void {
