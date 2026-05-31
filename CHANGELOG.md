@@ -50,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   scrollbar, reusing the existing per-type `kaicrit.*` colors.
 
 ### Fixed
+- Resolving the comment author from `git config user.name` now runs
+  asynchronously (and is cached per workspace folder), so inserting a comment no
+  longer risks freezing the editor while git is slow or hanging.
 - Arrow-less substitutions (`{~~text~~}` without `~>`) are now treated
   consistently: the Markdown preview no longer renders them as a deletion.
   Both the editor parser and the preview now ignore them, matching the

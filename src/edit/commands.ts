@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { execFileSync } from 'child_process';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { ChangeType, CriticChange } from '../core/types';
 import { DecoratorManager } from './decorator';
 import { TrackChangesManager } from './trackChanges';
@@ -101,32 +102,46 @@ function wrapSelection(open: string, close: string): void {
 // Insert a comment, optionally pre-filled with author + today's date so the
 // metadata convention ({>>@author YYYY-MM-DD: text<<}) is one keystroke away.
 // When `kaicrit.edit.commentMetadata` is off, falls back to a plain comment.
-function insertComment(): void {
+async function insertComment(): Promise<void> {
   const cfg = vscode.workspace.getConfiguration('kaicrit');
   let open = '{>>';
   if (cfg.get<boolean>('edit.commentMetadata', true)) {
-    const author = resolveAuthor(cfg);
+    const author = await resolveAuthor(cfg);
     const date = isoToday();
     open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
   }
   wrapSelection(open, '<<}');
 }
 
+const execFileAsync = promisify(execFile);
+
+// Cache the resolved `git config user.name` per workspace-folder path so each
+// comment doesn't spawn a fresh git process. Keyed by fsPath (or '' when there
+// is no folder); the stored value may be '' (no name / git failed).
+const gitAuthorCache = new Map<string, string>();
+
 // Author for a new comment: the configured name wins; otherwise fall back to
 // the repository's `git config user.name`. Returns '' when neither is available
-// (the metadata then carries just the date).
-function resolveAuthor(cfg: vscode.WorkspaceConfiguration): string {
+// (the metadata then carries just the date). The git lookup runs asynchronously
+// (and is cached) so it never blocks the extension host.
+async function resolveAuthor(cfg: vscode.WorkspaceConfiguration): Promise<string> {
   const configured = (cfg.get<string>('edit.commentAuthor', '') ?? '').trim();
   if (configured) { return configured; }
+  const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  const cached = gitAuthorCache.get(folder);
+  if (cached !== undefined) { return cached; }
+  let author = '';
   try {
-    const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-    return execFileSync('git', ['config', 'user.name'], {
-      cwd: folder,
+    const { stdout } = await execFileAsync('git', ['config', 'user.name'], {
+      cwd: folder || undefined,
       timeout: 1000,
-    }).toString().trim();
+    });
+    author = stdout.toString().trim();
   } catch {
-    return '';
+    author = '';
   }
+  gitAuthorCache.set(folder, author);
+  return author;
 }
 
 function isoToday(): string {
