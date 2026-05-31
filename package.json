@@ -93,12 +93,14 @@
       {
         "command": "kaicrit.acceptAll",
         "title": "Accept All Changes",
-        "category": "CriticMarkup"
+        "category": "CriticMarkup",
+        "icon": "$(check-all)"
       },
       {
         "command": "kaicrit.rejectAll",
         "title": "Reject All Changes",
-        "category": "CriticMarkup"
+        "category": "CriticMarkup",
+        "icon": "$(close-all)"
       },
       {
         "command": "kaicrit.acceptChangeAt",
@@ -109,6 +111,23 @@
         "command": "kaicrit.rejectChangeAt",
         "title": "Reject Change (at position)",
         "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.revealChangeAt",
+        "title": "Reveal Change (at position)",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.acceptChangeNode",
+        "title": "Accept Change",
+        "category": "CriticMarkup",
+        "icon": "$(check)"
+      },
+      {
+        "command": "kaicrit.rejectChangeNode",
+        "title": "Reject Change",
+        "category": "CriticMarkup",
+        "icon": "$(x)"
       },
       {
         "command": "kaicrit.compareFiles",
@@ -296,6 +315,18 @@
           "when": "false"
         },
         {
+          "command": "kaicrit.revealChangeAt",
+          "when": "false"
+        },
+        {
+          "command": "kaicrit.acceptChangeNode",
+          "when": "false"
+        },
+        {
+          "command": "kaicrit.rejectChangeNode",
+          "when": "false"
+        },
+        {
           "command": "kaicrit.selectForCompare",
           "when": "false"
         },
@@ -324,8 +355,56 @@
           "when": "!explorerResourceIsFolder && listDoubleSelection",
           "group": "3_compare@3"
         }
+      ],
+      "view/title": [
+        {
+          "command": "kaicrit.acceptAll",
+          "when": "view == kaicrit.changes",
+          "group": "navigation@1"
+        },
+        {
+          "command": "kaicrit.rejectAll",
+          "when": "view == kaicrit.changes",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "kaicrit.acceptChangeNode",
+          "when": "view == kaicrit.changes && viewItem == kaicrit.change",
+          "group": "inline@1"
+        },
+        {
+          "command": "kaicrit.rejectChangeNode",
+          "when": "view == kaicrit.changes && viewItem == kaicrit.change",
+          "group": "inline@2"
+        }
       ]
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "kaicrit",
+          "title": "CriticMarkup",
+          "icon": "$(checklist)"
+        }
+      ]
+    },
+    "views": {
+      "kaicrit": [
+        {
+          "id": "kaicrit.changes",
+          "name": "Changes",
+          "contextualTitle": "CriticMarkup Changes"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "kaicrit.changes",
+        "contents": "No CriticMarkup changes in the active editor.\nOpen a document with CriticMarkup, or insert a change to see it listed here grouped by type."
+      }
+    ],
     "configuration": {
       "title": "kaicrit",
       "properties": {

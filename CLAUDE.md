@@ -53,10 +53,11 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 |---|---|
 | [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]`; extracts comment `author`/`date` via `parseCommentMeta` when `kaicrit.edit.commentMetadata` is on |
 | [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, comment author/date hover (`commentHover`), and an `onDidUpdate` event fired after each cache refresh |
-| [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange` |
+| [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange`. Also exports the shared `ORDER`/`LABELS`/`SYMBOLS` tables and `countByType` helper, reused by the changes Tree View |
+| [edit/changesView.ts](src/edit/changesView.ts) | `ChangesTreeProvider` (`TreeDataProvider`) — sidebar view (`kaicrit.changes` in the `kaicrit` Activity-Bar container) listing the active document's changes grouped by type; reads the decorator cache, refreshes on `onDidUpdate` + active-editor switch. Leaves carry the change start position and a `kaicrit.revealChangeAt` click command; inline `kaicrit.acceptChangeNode`/`rejectChangeNode` buttons + `view/title` Accept-All/Reject-All |
 | [edit/navigator.ts](src/edit/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
 | [edit/codeLens.ts](src/edit/codeLens.ts) | `CriticCodeLensProvider` — inline `Accept`/`Reject` lenses above each change; reads the decorator cache, refreshes on `onDidUpdate`, honors `kaicrit.edit.codeLens` |
-| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 15 insert/navigate/accept/reject commands (incl. position-targeted `acceptChangeAt`/`rejectChangeAt` used by CodeLens); `insertComment` pre-fills `@author today:` from `kaicrit.edit.commentAuthor` (falling back to `git config user.name`) when metadata is enabled |
+| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — insert/navigate/accept/reject commands (incl. position-targeted `acceptChangeAt`/`rejectChangeAt` used by CodeLens, plus `revealChangeAt` and node-targeted `acceptChangeNode`/`rejectChangeNode` used by the Tree View); `insertComment` pre-fills `@author today:` from `kaicrit.edit.commentAuthor` (falling back to `git config user.name`) when metadata is enabled |
 
 ### `src/compare/` — diff two files into CriticMarkup
 
@@ -76,7 +77,7 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 ### Entry point
 
-[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the CodeLens provider (`languages.registerCodeLensProvider` for `file`/`untitled` schemes), registers the compare commands, and **returns** `{ extendMarkdownIt }` (passing the current `kaicrit.edit.commentMetadata` value into `criticMarkupPlugin`) so the built-in preview picks up the plugin.
+[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the CodeLens provider (`languages.registerCodeLensProvider` for `file`/`untitled` schemes), creates the changes Tree View (`window.createTreeView('kaicrit.changes', …)`), registers the compare commands, and **returns** `{ extendMarkdownIt }` (passing the current `kaicrit.edit.commentMetadata` value into `criticMarkupPlugin`) so the built-in preview picks up the plugin.
 
 ## CriticMarkup Types
 
@@ -111,8 +112,9 @@ Every resolution replaces `fullRange` with a computed string via one `WorkspaceE
 1. Add to `ChangeType` in [core/types.ts](src/core/types.ts)
 2. Add the delimiters to `MARKERS` and a capture group to `RE_ALL` in [core/markers.ts](src/core/markers.ts), plus a branch in the parse loop in [edit/parser.ts](src/edit/parser.ts)
 3. Add a `TextEditorDecorationType` and handle it in `applyDecorations()` in [edit/decorator.ts](src/edit/decorator.ts)
-4. Add insert command and accept/reject case in [edit/commands.ts](src/edit/commands.ts)
-5. Render the new type in [preview/markdownIt.ts](src/preview/markdownIt.ts) (+ a `.critic-*` class in [media/critic.css](media/critic.css)) if it should appear in the preview
-6. Add command entry to `contributes.commands` in [package.json](package.json)
-7. Add one or more `contributes.colors` entries in [package.json](package.json) for the new decoration color(s)
-8. Update README.md, docs/markup.md, and CLAUDE.md
+4. Extend the shared `ORDER`/`LABELS`/`SYMBOLS` tables in [edit/statusBar.ts](src/edit/statusBar.ts) and the `ICONS` table in [edit/changesView.ts](src/edit/changesView.ts) so the status bar and sidebar pick up the new type
+5. Add insert command and accept/reject case in [edit/commands.ts](src/edit/commands.ts)
+6. Render the new type in [preview/markdownIt.ts](src/preview/markdownIt.ts) (+ a `.critic-*` class in [media/critic.css](media/critic.css)) if it should appear in the preview
+7. Add command entry to `contributes.commands` in [package.json](package.json)
+8. Add one or more `contributes.colors` entries in [package.json](package.json) for the new decoration color(s)
+9. Update README.md, docs/markup.md, and CLAUDE.md

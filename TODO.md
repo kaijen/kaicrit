@@ -191,7 +191,7 @@ damit die Übersicht die Metadaten direkt mit anzeigen kann.
 
 ---
 
-## 6. Sidebar-Übersicht aller Änderungen (Tree View)
+## 6. Sidebar-Übersicht aller Änderungen (Tree View) ✅ erledigt
 
 **Ziel:** Eine eigene View im Explorer/Activity-Bar, die alle Änderungen des
 aktiven Dokuments auflistet – gruppiert nach Typ, klickbar zum Anspringen,

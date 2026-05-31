@@ -4,7 +4,7 @@ import { DecoratorManager } from './decorator';
 
 // One glyph per change type, shown left-to-right in the status bar entry, e.g.
 // `⊟3 ⊞5 ⇄2 ☰1 💬4` (deletions / additions / substitutions / highlights / comments).
-const SYMBOLS: Record<ChangeType, string> = {
+export const SYMBOLS: Record<ChangeType, string> = {
   [ChangeType.Deletion]:     '⊟',
   [ChangeType.Addition]:     '⊞',
   [ChangeType.Substitution]: '⇄',
@@ -12,7 +12,7 @@ const SYMBOLS: Record<ChangeType, string> = {
   [ChangeType.Comment]:      '💬',
 };
 
-const LABELS: Record<ChangeType, string> = {
+export const LABELS: Record<ChangeType, string> = {
   [ChangeType.Deletion]:     'Deletions',
   [ChangeType.Addition]:     'Additions',
   [ChangeType.Substitution]: 'Substitutions',
@@ -20,8 +20,9 @@ const LABELS: Record<ChangeType, string> = {
   [ChangeType.Comment]:      'Comments',
 };
 
-// Stable display order (matches SYMBOLS/LABELS insertion order).
-const ORDER: ChangeType[] = [
+// Stable display order (matches SYMBOLS/LABELS insertion order). Shared with the
+// changes Tree View so the status bar and the sidebar list types identically.
+export const ORDER: ChangeType[] = [
   ChangeType.Deletion,
   ChangeType.Addition,
   ChangeType.Substitution,
@@ -60,7 +61,7 @@ export class StatusBarManager {
   }
 }
 
-function countByType(changes: CriticChange[]): Record<ChangeType, number> {
+export function countByType(changes: CriticChange[]): Record<ChangeType, number> {
   const counts: Record<ChangeType, number> = {
     [ChangeType.Deletion]:     0,
     [ChangeType.Addition]:     0,
