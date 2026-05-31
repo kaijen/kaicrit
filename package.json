@@ -472,6 +472,12 @@
           "default": false,
           "description": "Start newly opened documents with Track Changes recording on: edits are captured as CriticMarkup (deletions → {--…--}, insertions → {++…++}, replacements → {~~…~>…~~}) instead of changing the text directly. Toggle per document with the \"Toggle Track Changes\" command (Alt+K Alt+T)."
         },
+        "kaicrit.edit.decorationDebounce": {
+          "type": "integer",
+          "default": 150,
+          "minimum": 0,
+          "description": "Delay in milliseconds between a document edit and the re-parse that refreshes CriticMarkup decorations, the status bar, and the Changes view. Higher values coalesce bursts of typing into a single parse (helpful in large documents that already contain markers); lower values update more eagerly. Accept/Reject still refresh immediately regardless of this value. Set to 0 to parse on the next tick."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": ["character", "word", "line"],

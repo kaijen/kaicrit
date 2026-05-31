@@ -153,6 +153,8 @@ The **Git HEAD** comparison diffs the active editor's current contents against t
 
 The output upholds a strict reconstruction invariant: rejecting every marker reproduces file 1, accepting every marker reproduces file 2. (With `ignoreWhitespace` on, whitespace-only differences are not marked, so the reconstruction is exact up to whitespace.) No keybindings are bound to the compare commands by default.
 
+When the two inputs are identical (no differences — also possible with `ignoreWhitespace` on, where only whitespace differs), kaicrit reports "no differences" and does **not** open a marker-free result document.
+
 ### Compare settings
 
 | Setting | Default | Description |
@@ -200,6 +202,12 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 | `kaicrit.highlightForeground` | `#333333` | Highlight text |
 | `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
 | `kaicrit.commentForeground` | `#555555` | Comment text |
+
+### Performance
+
+| Setting | Default | Effect |
+|---|---|---|
+| `kaicrit.edit.decorationDebounce` | `150` | Milliseconds to wait after an edit before re-parsing the document to refresh decorations, the status bar, and the Changes view. Higher values coalesce bursts of typing into one parse (helpful in large documents that already contain markers); accept/reject still refresh immediately regardless of this value. `0` parses on the next tick. |
 
 ### Keybindings
 

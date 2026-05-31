@@ -34,6 +34,13 @@ Accept All / Reject All apply all resolutions atomically in a single edit.
 > Both the editor and the Markdown preview ignore it: it is left as plain text
 > rather than being rendered as a change. Use `{--text--}` to mark a deletion.
 
+> **Inserting a substitution:** with a selection, **Insert Substitution** wraps it
+> as the "old" side (`{~~selection~>~~}`) and parks the cursor before `~~}` so you
+> type the replacement. With **no** selection it inserts an empty pair
+> (`{~~~>~~}`) and parks the cursor on the empty "old" side (before `~>`) — there
+> is no literal placeholder to delete; type the original, then move past `~>` for
+> the replacement.
+
 ## Inline-Aktionen (CodeLens)
 
 Über jeder Änderung erscheinen klickbare **Accept | Reject**-Aktionen. Ein Klick

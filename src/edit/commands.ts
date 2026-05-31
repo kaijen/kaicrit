@@ -163,22 +163,28 @@ function insertSubstitution(): void {
   const editor = activeEditor();
   if (!editor) { return; }
   const { open, sep, close } = MARKERS[ChangeType.Substitution];
+  const noSelection = editor.selections.length === 1 && editor.selection.isEmpty;
   editor.edit(eb => {
     for (const sel of editor.selections) {
-      const selected = sel.isEmpty ? 'old' : editor.document.getText(sel);
+      // With no selection, leave the "old" side empty ({~~~>~~}) rather than
+      // inserting a literal "old" placeholder the user would have to delete.
+      const selected = sel.isEmpty ? '' : editor.document.getText(sel);
       eb.replace(sel, `${open}${selected}${sep}${close}`);
     }
   }).then(() => {
-    // Move cursor between the `~>` separator and the closing `~~}` so the user
-    // can type the replacement. After the replace, the cursor sits at the end
-    // of the inserted text; the desired point is exactly `close.length` units
-    // before it. Computing from that offset (rather than searching the text for
-    // `~>`) stays correct for multi-line selections and for replaced text that
-    // itself contains a `~>`.
+    // After the replace, the cursor sits at the end of the inserted text.
+    // Computing the caret from that offset (rather than searching the text for
+    // `~>`) stays correct for multi-line selections and replaced text that
+    // itself contains a `~>`:
+    //   • With a selection, park it on the "new" side (before `~~}`) so the user
+    //     types the replacement: end − close.length.
+    //   • With no selection, park it on the empty "old" side (before `~>`) so the
+    //     user types the original first: end − close.length − sep.length.
     if (editor.selections.length === 1) {
       const doc = editor.document;
       const end = doc.offsetAt(editor.selection.active);
-      const pos = doc.positionAt(end - close.length);
+      const back = noSelection ? close.length + sep.length : close.length;
+      const pos = doc.positionAt(end - back);
       editor.selection = new vscode.Selection(pos, pos);
     }
   });

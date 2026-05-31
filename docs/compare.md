@@ -47,6 +47,13 @@ whitespace only: rejecting every marker still reproduces file 1 exactly, while
 purely whitespace differences are never marked (so accepting the result keeps
 file 1's spacing in those spots rather than file 2's).
 
+## Identical inputs
+
+When the diff finds no differences — the two inputs are identical (or differ
+only in whitespace with `ignoreWhitespace` on) — the result would be a
+marker-free copy of the text, which is just noise. In that case kaicrit reports
+**"no differences between the two inputs"** and does not open a result document.
+
 ## Settings
 
 | Setting | Default | Description |

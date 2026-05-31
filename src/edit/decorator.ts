@@ -7,6 +7,14 @@ import { parseCriticMarkup } from './parser';
 // in documents without CriticMarkup.
 const HAS_CHANGES_KEY = 'kaicrit.hasChanges';
 
+// Default debounce (ms) between a document change and the re-parse that refreshes
+// decorations. A single frame (~16 ms) effectively meant a full `RE_ALL` scan on
+// every keystroke in a large document that already contains markers (where the
+// `indexOf('{')` early-out doesn't apply); 150 ms coalesces bursts of typing into
+// one parse while staying visually immediate. Configurable via
+// `kaicrit.edit.decorationDebounce`.
+const DEFAULT_DEBOUNCE_MS = 150;
+
 function themeColor(id: string): vscode.ThemeColor {
   return new vscode.ThemeColor(id);
 }
@@ -89,7 +97,17 @@ export class DecoratorManager {
       this.timers.delete(key);
       const editor = vscode.window.visibleTextEditors.find(e => e.document === doc);
       if (editor) { this.update(editor); }
-    }, 16));
+    }, this.debounceMs()));
+  }
+
+  // Debounce interval read fresh from the setting each schedule, so a config edit
+  // takes effect on the next keystroke without needing a reload. Negative values
+  // are clamped to 0 (parse on the next tick).
+  private debounceMs(): number {
+    const ms = vscode.workspace
+      .getConfiguration('kaicrit.edit')
+      .get<number>('decorationDebounce', DEFAULT_DEBOUNCE_MS);
+    return Math.max(0, ms);
   }
 
   update(editor: vscode.TextEditor): void {

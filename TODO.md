@@ -11,7 +11,8 @@ Die Aufgaben 10–12 stammen aus einem Folge-Review (Aufgaben 1–9 alle erledig
 10 ist der einzige wirklich lohnende Robustheits-Fix, 11–12 sind kleinere Punkte.
 Die Aufgaben 13–19 stammen aus einem weiteren Folge-Review (Aufgaben 1–12 alle
 erledigt): 13 ist der einzige echte Fehler, 14 eine eng verwandte Härtung, 15–19
-sind Optimierungen und Kleinigkeiten.
+sind Optimierungen und Kleinigkeiten. Davon sind 15, 16 und 18 erledigt; offen
+bleiben noch 17 (defensive Härtung des Track-Changes-`shadow`) und 19 (Lint-Setup).
 
 **Konventionen für alle Aufgaben**
 
@@ -499,7 +500,7 @@ geringe Eintrittswahrscheinlichkeit, daher nach dem eigentlichen Bug.
 
 ---
 
-## 15. Debounce-Intervall des Decorators ist faktisch wirkungslos
+## ✅ 15. Debounce-Intervall des Decorators ist faktisch wirkungslos
 
 **Problem:** `scheduleUpdate` ([src/edit/decorator.ts](src/edit/decorator.ts):88-93)
 verzögert das Neu-Parsen nur **16 ms** (≈ ein Frame). Bei einer großen
@@ -531,7 +532,7 @@ Konstante), aber mit echtem Nutzen bei großen Dateien.
 
 ---
 
-## 16. Compare bei identischen Dateien öffnet ein leeres Ergebnis
+## ✅ 16. Compare bei identischen Dateien öffnet ein leeres Ergebnis
 
 **Problem:** `compareTextToCriticMarkup` ([src/compare/compare.ts](src/compare/compare.ts):107-113)
 öffnet auch dann ein neues Ergebnis-Dokument, wenn die beiden Eingaben **identisch**
@@ -594,7 +595,7 @@ Priorität.
 
 ---
 
-## 18. `insertSubstitution` lässt den Platzhalter `old` literal stehen
+## ✅ 18. `insertSubstitution` lässt den Platzhalter `old` literal stehen
 
 **Problem:** Ohne Auswahl fügt `insertSubstitution`
 ([src/edit/commands.ts](src/edit/commands.ts):167-168) `{~~old~>~~}` ein und parkt
