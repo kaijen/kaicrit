@@ -19,7 +19,7 @@ Erweiterungen hin zu größeren Features.
 
 ---
 
-## 1. Statusbar-Statistik der offenen Änderungen
+## 1. Statusbar-Statistik der offenen Änderungen ✅ erledigt
 
 **Ziel:** Ein Eintrag in der VSCode-Statusleiste, der die Anzahl der CriticMarkup-Änderungen
 im aktiven Editor nach Typ anzeigt, z. B. `⊟3 ⊞5 ⇄2 ☰1 💬4`
@@ -54,7 +54,7 @@ spätere Aufgaben (Sidebar, CodeLens) aufbauen.
 
 ---
 
-## 2. Änderungen im Overview-Ruler / in der Minimap markieren
+## 2. Änderungen im Overview-Ruler / in der Minimap markieren ✅ erledigt
 
 **Ziel:** Farbige Marker am Scrollbalken (Overview Ruler), die zeigen, wo im
 Dokument Änderungen liegen – Überblick ohne Scrollen.
@@ -82,7 +82,7 @@ Infrastruktur. Logische Fortsetzung von Aufgabe 1 (beides „Sichtbarkeit").
 
 ---
 
-## 3. Mehrzeilige Kommentare im Preview robust rendern
+## 3. Mehrzeilige Kommentare im Preview robust rendern ✅ erledigt
 
 **Ziel:** Sicherstellen, dass Kommentare `{>>…<<}` mit Zeilenumbrüchen im
 Markdown-Preview sauber und vollständig dargestellt werden.
