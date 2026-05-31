@@ -7,6 +7,8 @@ zuerst kommen und größere/strukturelle Arbeiten später.
 
 Die Aufgaben 1–8 stammen aus dem Code-Review der bestehenden Extension
 (Verbesserungspotenzial & Fehler); Aufgabe 9 härtet die Codebasis mit Tests ab.
+Die Aufgaben 10–12 stammen aus einem Folge-Review (Aufgaben 1–9 alle erledigt):
+10 ist der einzige wirklich lohnende Robustheits-Fix, 11–12 sind kleinere Punkte.
 
 **Konventionen für alle Aufgaben**
 
@@ -304,6 +306,117 @@ Zwischenstadium. Härtet die Codebasis vor einem Release ab.
 - Edit-Logik und Preview-Rendering sind ohne laufenden Extension-Host testbar.
 
 **Doku:** `CLAUDE.md` (Test-Abschnitt erweitern); ggf. Notiz im README zu `npm test`.
+
+---
+
+## 10. Größen-Guard für den Myers-Diff (Selbst-DoS verhindern)
+
+**Problem:** `myers` in [src/compare/diff.ts](src/compare/diff.ts):96 schnappschießt
+in **jedem** Schritt das vollständige `v`-Array (`trace.push(v.slice())`). Speicher-
+und Zeitbedarf sind damit **O((N+M)·D)**; bei zwei großen, stark unterschiedlichen
+Dateien geht die Editierdistanz D gegen N+M, also **O((N+M)²)**. Es gibt **keinerlei
+Obergrenze** – [src/compare/compare.ts](src/compare/compare.ts):39 ruft `diff()`
+ungebremst auf, ebenso `compareWithGitHead` auf einer großen Datei. Bei
+`character`-Granularität (oder zwei sehr verschiedenen Dateien mit zehntausenden
+Tokens) kann das den **Extension-Host einfrieren oder zum OOM bringen** – ein
+Selbst-DoS, der den ganzen VS-Code-Workspace blockiert.
+
+**Warum lohnend:** Einziger echter Robustheits-Gap der bestehenden Features.
+Normalfall (ähnliche Dateien, `word`-Granularität) bleibt unberührt; nur die
+pathologische Eingabe wird abgefangen.
+
+**Betroffene Dateien**
+- [src/compare/diff.ts](src/compare/diff.ts) – Kosten-/Größenabschätzung vor dem
+  Myers-Lauf (Tokenzahl nach `tokenize`), Schwellwert + Rückgabe-/Fehlersignal.
+- [src/compare/compare.ts](src/compare/compare.ts) – Reaktion auf den Guard
+  (Fallback bzw. Warnung an die UI).
+
+**Umsetzungsschritte**
+1. Nach dem Tokenisieren die Produktgröße `n*m` (oder `n+m` als günstigere Heuristik)
+   gegen einen Schwellwert prüfen.
+2. Variante festlegen: (a) bei Überschreitung automatisch auf `line`-Granularität
+   zurückfallen (deutlich weniger Tokens) und den Diff erneut versuchen, oder
+   (b) abbrechen und via `vscode.window.showWarningMessage(...)` melden, dass die
+   Dateien für den gewählten Vergleich zu groß sind.
+3. Schwellwert dokumentieren und ggf. als Setting (`kaicrit.compare.maxDiffTokens`)
+   konfigurierbar machen.
+4. Test ergänzen: synthetische große, vollständig unterschiedliche Eingaben lösen
+   den Guard aus (Fallback bzw. Abbruch), kleine Eingaben unverändert.
+
+**Akzeptanzkriterien**
+- Zwei große, stark unterschiedliche Dateien blockieren den Extension-Host nicht
+  mehr; entweder erscheint ein Zeilen-Diff oder eine klare Warnung.
+- Reconstruction-Invariante (reject→Datei 1, accept→Datei 2) bleibt für den
+  tatsächlich gewählten Pfad erhalten.
+
+**Doku:** `docs/compare.md` (Grenze/Verhalten), `README.md` (falls Setting),
+`CLAUDE.md` (Architekturnotiz zum Diff-Guard).
+
+---
+
+## 11. CodeLens-Fallback parst markerlose Dateien zu oft
+
+**Problem:** `provideCodeLenses` ([src/edit/codeLens.ts](src/edit/codeLens.ts):52-55)
+fällt bei `changes.length === 0` auf `parseCriticMarkup(doc)` zurück. „Cache kalt"
+und „Cache warm, aber 0 Änderungen" sind so **nicht unterscheidbar**: eine markerlose
+Datei, die aber `{` enthält (Code/JSON), führt bei *jeder* CodeLens-Anfrage – die
+VS Code häufig stellt – einen vollständigen Regex-Vollscan aus, obwohl der
+Decorator-Cache bereits „leer" weiß.
+
+**Warum hier:** Reine Performance-Optimierung, kleiner und lokaler Eingriff,
+geringe Priorität (der `indexOf('{')`-Pre-Check aus Aufgabe 7 entschärft den
+Fall ohne `{` bereits).
+
+**Betroffene Dateien**
+- [src/edit/decorator.ts](src/edit/decorator.ts) – kleine API, um „Cache für dieses
+  Dokument vorhanden?" zu beantworten (z. B. `hasChanges(doc)`/`has(key)` über die
+  `changeCache`-Map).
+- [src/edit/codeLens.ts](src/edit/codeLens.ts) – Fallback-Parse nur noch, wenn der
+  Cache wirklich kalt ist (kein Eintrag), nicht bei einem warmen leeren Eintrag.
+
+**Umsetzungsschritte**
+1. Im `DecoratorManager` eine Methode ergänzen, die `changeCache.has(key)` zurückgibt.
+2. In `provideCodeLenses` den Fallback an `!dm.hasCache(doc)` knüpfen statt an
+   `changes.length === 0`.
+
+**Akzeptanzkriterien**
+- Eine markerlose, aber `{`-haltige Datei löst bei wiederholten CodeLens-Anfragen
+  keinen erneuten Vollscan mehr aus, sobald der Cache einmal warm ist.
+- CodeLens-Verhalten für Dokumente mit Änderungen unverändert.
+
+**Doku:** keine externe Doku nötig (internes Verhalten).
+
+---
+
+## 12. Preview-`commentMetadata` reagiert nicht auf Settingwechsel
+
+**Problem:** `extendMarkdownIt` ([src/extension.ts](src/extension.ts):110-114) liest
+`kaicrit.edit.commentMetadata` beim Aufbau der markdown-it-Instanz und friert den
+Wert ein. Ein Umschalten des Settings wirkt sich erst nach einem Reload auf die
+Vorschau aus (Editor-Dekorationen ziehen ohnehin erst beim nächsten Edit nach, weil
+der Parser den Wert pro Parse frisch liest). Inkonsistent, aber funktional harmlos.
+
+**Warum hier:** Geringe Priorität; entweder kleiner UX-Fix oder bewusst nur als
+dokumentierte Grenze festhalten.
+
+**Betroffene Dateien**
+- [src/extension.ts](src/extension.ts) – Preview-Aktualisierung bei
+  `onDidChangeConfiguration('kaicrit.edit.commentMetadata')` anstoßen, falls die
+  VS-Code-Preview-API ein Neuaufbauen des markdown-it-Plugins erlaubt.
+- alternativ `docs/preview.md` – die Reload-Notwendigkeit als bekannte Grenze
+  dokumentieren.
+
+**Umsetzungsschritte**
+1. Prüfen, ob VS Code `extendMarkdownIt` nach einem Config-Change erneut aufruft
+   (ggf. über `markdown.api`/Reload-Trigger). Wenn ja: Auslöser ergänzen.
+2. Wenn kein sauberer Trigger existiert: Verhalten als bekannte Grenze in
+   `docs/preview.md` dokumentieren statt zu implementieren.
+
+**Akzeptanzkriterien**
+- Entweder spiegelt die Vorschau einen `commentMetadata`-Wechsel ohne Reload, oder
+  die Reload-Notwendigkeit ist dokumentiert.
+
+**Doku:** `docs/preview.md`.
 
 ---
 
