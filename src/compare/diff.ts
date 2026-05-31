@@ -17,6 +17,26 @@ export type DiffOp =
   | { type: 'replace'; before: string; after: string };
 
 /**
+ * Thrown by {@link diff} when the tokenized inputs are too large for the Myers
+ * pass to run safely. Myers' worst-case cost here is O((n+m)·D): every step
+ * snapshots the full `v` array (`trace.push(v.slice())`), and for two very
+ * different files the edit distance D approaches n+m, so memory/time degrade
+ * towards O((n+m)²). The guard estimates that cost as the token product `n·m`
+ * and bails before the run so a pathological compare cannot freeze or OOM the
+ * extension host. The caller decides how to react (e.g. retry at a coarser
+ * granularity, or warn the user).
+ */
+export class DiffTooLargeError extends Error {
+  constructor(
+    readonly tokenProduct: number,
+    readonly limit: number,
+  ) {
+    super(`Diff input too large: ${tokenProduct} token pairs exceeds limit ${limit}`);
+    this.name = 'DiffTooLargeError';
+  }
+}
+
+/**
  * Split text into tokens. Whitespace is preserved as its own tokens so that
  * concatenating the tokens reproduces the original text exactly, which keeps
  * the reconstruction invariant intact for every granularity.
@@ -138,6 +158,11 @@ function myers(a: string[], b: string[], eq: TokenEq): Edit[] {
  * treated as equal during matching, so pure-whitespace differences are not
  * reported as changes. The original tokens are still emitted verbatim, so
  * rejecting every marker continues to reproduce file 1 exactly.
+ *
+ * When `maxDiffTokens > 0`, the token product `n·m` is checked before the Myers
+ * pass and a {@link DiffTooLargeError} is thrown if it exceeds the limit, so a
+ * pathological compare cannot freeze the host (see {@link DiffTooLargeError}).
+ * A value of `0` disables the guard (used by tests and small synthetic inputs).
  */
 export function diff(
   text1: string,
@@ -145,9 +170,17 @@ export function diff(
   granularity: Granularity,
   combineSubstitutions: boolean,
   ignoreWhitespace = false,
+  maxDiffTokens = 0,
 ): DiffOp[] {
   const eq = ignoreWhitespace ? ignoreWhitespaceEq : strictEq;
-  const edits = myers(tokenize(text1, granularity), tokenize(text2, granularity), eq);
+  const a = tokenize(text1, granularity);
+  const b = tokenize(text2, granularity);
+
+  if (maxDiffTokens > 0 && a.length * b.length > maxDiffTokens) {
+    throw new DiffTooLargeError(a.length * b.length, maxDiffTokens);
+  }
+
+  const edits = myers(a, b, eq);
 
   // Coalesce consecutive edits of the same kind into runs.
   const runs: Array<{ type: Edit['type']; text: string }> = [];

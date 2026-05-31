@@ -1,7 +1,7 @@
 // Orchestration: read two files, diff them, and open the CriticMarkup result.
 
 import * as vscode from 'vscode';
-import { diff, Granularity } from './diff';
+import { diff, DiffOp, DiffTooLargeError, Granularity } from './diff';
 import { render } from './criticmarkup';
 
 interface Settings {
@@ -9,6 +9,7 @@ interface Settings {
   combineSubstitutions: boolean;
   ignoreWhitespace: boolean;
   outputLanguage: 'auto' | 'plaintext' | 'markdown';
+  maxDiffTokens: number;
 }
 
 function readSettings(): Settings {
@@ -18,7 +19,56 @@ function readSettings(): Settings {
     combineSubstitutions: config.get<boolean>('combineSubstitutions', true),
     ignoreWhitespace: config.get<boolean>('ignoreWhitespace', false),
     outputLanguage: config.get<'auto' | 'plaintext' | 'markdown'>('outputLanguage', 'auto'),
+    maxDiffTokens: config.get<number>('maxDiffTokens', 4_000_000),
   };
+}
+
+/**
+ * Run the diff with the size guard active. If the chosen granularity is too
+ * large, automatically retry at `line` granularity (far fewer tokens); if even
+ * that is too large, return `undefined` so the caller can warn the user.
+ * Returns the ops plus the granularity actually used (for an informational
+ * fall-back notice).
+ */
+function diffWithGuard(
+  originalText: string,
+  modifiedText: string,
+  settings: Settings,
+): { ops: DiffOp[]; granularity: Granularity } | undefined {
+  try {
+    const ops = diff(
+      originalText,
+      modifiedText,
+      settings.granularity,
+      settings.combineSubstitutions,
+      settings.ignoreWhitespace,
+      settings.maxDiffTokens,
+    );
+    return { ops, granularity: settings.granularity };
+  } catch (error) {
+    if (!(error instanceof DiffTooLargeError)) {
+      throw error;
+    }
+    if (settings.granularity === 'line') {
+      return undefined;
+    }
+    try {
+      const ops = diff(
+        originalText,
+        modifiedText,
+        'line',
+        settings.combineSubstitutions,
+        settings.ignoreWhitespace,
+        settings.maxDiffTokens,
+      );
+      return { ops, granularity: 'line' };
+    } catch (lineError) {
+      if (lineError instanceof DiffTooLargeError) {
+        return undefined;
+      }
+      throw lineError;
+    }
+  }
 }
 
 /**
@@ -36,14 +86,25 @@ export async function compareTextToCriticMarkup(
 ): Promise<void> {
   const settings = readSettings();
 
-  const ops = diff(
-    originalText,
-    modifiedText,
-    settings.granularity,
-    settings.combineSubstitutions,
-    settings.ignoreWhitespace,
-  );
-  const content = render(ops);
+  const result = diffWithGuard(originalText, modifiedText, settings);
+  if (!result) {
+    void vscode.window.showWarningMessage(
+      'kaicrit: these files are too large to compare. Switch ' +
+        '"kaicrit.compare.granularity" to "line", or raise ' +
+        '"kaicrit.compare.maxDiffTokens", then try again.',
+    );
+    return;
+  }
+
+  if (result.granularity !== settings.granularity) {
+    void vscode.window.showInformationMessage(
+      `kaicrit: inputs were too large for "${settings.granularity}" granularity; ` +
+        `compared at "line" granularity instead. Raise ` +
+        `"kaicrit.compare.maxDiffTokens" to force the finer diff.`,
+    );
+  }
+
+  const content = render(result.ops);
 
   const language =
     settings.outputLanguage === 'auto' ? autoLanguageId : settings.outputLanguage;

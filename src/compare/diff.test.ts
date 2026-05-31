@@ -2,7 +2,7 @@
 
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { diff, tokenize, DiffOp, Granularity } from './diff';
+import { diff, tokenize, DiffOp, DiffTooLargeError, Granularity } from './diff';
 
 /** Reconstruct file 1 by rejecting every marker. */
 function rejectAll(ops: DiffOp[]): string {
@@ -165,4 +165,46 @@ test('ignoreWhitespace=false (default) still marks whitespace differences', () =
     ops.some((op) => op.type !== 'equal'),
     'with ignoreWhitespace off, a whitespace change is a normal diff',
   );
+});
+
+test('size guard throws DiffTooLargeError when the token product exceeds the limit', () => {
+  // Two fully different inputs whose token product exceeds a small limit.
+  const a = 'a '.repeat(40); // ~80 tokens at word granularity
+  const b = 'x '.repeat(40);
+  assert.throws(
+    () => diff(a, b, 'word', true, false, 100),
+    (error: unknown) => {
+      assert.ok(error instanceof DiffTooLargeError, 'should be a DiffTooLargeError');
+      assert.ok(error.tokenProduct > error.limit, 'reports the offending product');
+      assert.equal(error.limit, 100);
+      return true;
+    },
+  );
+});
+
+test('size guard leaves small inputs untouched (under the limit)', () => {
+  const ops = diff('the quick fox', 'the slow fox', 'word', true, false, 1_000_000);
+  assert.ok(ops.length > 0, 'a normal diff still runs under the limit');
+  assert.ok(
+    ops.some((op) => op.type !== 'equal'),
+    'the genuine change is still reported',
+  );
+});
+
+test('size guard is disabled when maxDiffTokens is 0 (default)', () => {
+  const a = 'a '.repeat(200);
+  const b = 'x '.repeat(200);
+  // No limit passed → defaults to 0 → no guard, must not throw.
+  assert.doesNotThrow(() => diff(a, b, 'word', true));
+  assert.doesNotThrow(() => diff(a, b, 'word', true, false, 0));
+});
+
+test('coarser granularity stays under a limit that a finer one would exceed', () => {
+  // Many short, fully different lines: word/character products are huge, but
+  // the line-token product is small — this is exactly the auto fall-back path.
+  const a = Array.from({ length: 50 }, (_, i) => `alpha line ${i}`).join('\n');
+  const b = Array.from({ length: 50 }, (_, i) => `omega line ${i}`).join('\n');
+  const limit = 5_000;
+  assert.throws(() => diff(a, b, 'word', true, false, limit), DiffTooLargeError);
+  assert.doesNotThrow(() => diff(a, b, 'line', true, false, limit));
 });
