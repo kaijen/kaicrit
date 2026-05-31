@@ -28,7 +28,11 @@ export class DecoratorManager {
   private readonly _onDidUpdate = new vscode.EventEmitter<vscode.TextEditor>();
   readonly onDidUpdate = this._onDidUpdate.event;
 
-  constructor() {
+  // `isEnabled` gates parsing per document: when a document is disabled (via the
+  // language whitelist or the per-file status-bar toggle) `update` caches an
+  // empty change list and clears decorations, so every downstream reader goes
+  // inert. Defaults to always-on so the manager works standalone (e.g. in tests).
+  constructor(private readonly isEnabled: (doc: vscode.TextDocument) => boolean = () => true) {
     // Each content decoration also paints a marker in the overview ruler so the
     // location of changes is visible on the scrollbar without scrolling. The
     // dimmed marker-character decoration deliberately stays out of the ruler.
@@ -89,7 +93,9 @@ export class DecoratorManager {
   }
 
   update(editor: vscode.TextEditor): void {
-    const changes = parseCriticMarkup(editor.document);
+    const changes = this.isEnabled(editor.document)
+      ? parseCriticMarkup(editor.document)
+      : [];
     this.changeCache.set(editor.document.uri.toString(), changes);
     this.applyDecorations(editor, changes);
     this._onDidUpdate.fire(editor);

@@ -20,7 +20,13 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
   readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event;
   private readonly disposables: vscode.Disposable[] = [];
 
-  constructor(private readonly dm: DecoratorManager) {
+  constructor(
+    private readonly dm: DecoratorManager,
+    // Mirrors the decorator's enablement gate so a disabled document gets no
+    // lenses — without this, the cache-cold fallback parse below would re-add
+    // them. Defaults to always-on so the provider works standalone.
+    private readonly isEnabled: (doc: vscode.TextDocument) => boolean = () => true,
+  ) {
     // Decorator cache refresh → lenses may have changed (debounced upstream).
     this.disposables.push(dm.onDidUpdate(() => this._onDidChangeCodeLenses.fire()));
     // Toggling the setting must add/remove lenses immediately.
@@ -34,6 +40,8 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
   }
 
   provideCodeLenses(doc: vscode.TextDocument): vscode.CodeLens[] {
+    if (!this.isEnabled(doc)) { return []; }
+
     const enabled = vscode.workspace
       .getConfiguration('kaicrit')
       .get<boolean>('edit.codeLens', true);

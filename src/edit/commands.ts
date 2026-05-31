@@ -5,12 +5,14 @@ import { ChangeType, CriticChange } from '../core/types';
 import { MARKERS } from '../core/markers';
 import { DecoratorManager } from './decorator';
 import { TrackChangesManager } from './trackChanges';
+import { EnablementManager } from './enablement';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
 
 export function registerEditCommands(
   ctx: vscode.ExtensionContext,
   dm: DecoratorManager,
   tcm: TrackChangesManager,
+  em: EnablementManager,
 ): void {
   const reg = (id: string, fn: () => void) =>
     ctx.subscriptions.push(vscode.commands.registerCommand(id, fn));
@@ -42,6 +44,13 @@ export function registerEditCommands(
   reg('kaicrit.toggleTrackChanges', () => {
     const editor = activeEditor();
     if (editor) { tcm.toggle(editor.document); }
+  });
+
+  // ── Per-file enable/disable ──────────────────────────────────────────────────
+
+  reg('kaicrit.toggleFileEnabled', () => {
+    const editor = activeEditor();
+    if (editor) { em.toggle(editor.document); }
   });
 
   // Position-targeted variants used by the CodeLens actions. They delegate to

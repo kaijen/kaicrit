@@ -4,13 +4,19 @@ import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
 import { ChangesTreeProvider } from './edit/changesView';
 import { TrackChangesManager } from './edit/trackChanges';
+import { EnablementManager } from './edit/enablement';
 import { registerEditCommands } from './edit/commands';
 import { registerCompareCommands } from './compare/commands';
 import { criticMarkupPlugin } from './preview/markdownIt';
 
 export function activate(ctx: vscode.ExtensionContext) {
   // ── Edit feature: decorate + navigate + accept/reject in the editor ──────────
-  const dm = new DecoratorManager();
+  // Enablement gate: which documents kaicrit acts on (language whitelist +
+  // per-file status-bar toggle). Created first so the decorator can consult it.
+  const em = new EnablementManager();
+  ctx.subscriptions.push(em);
+
+  const dm = new DecoratorManager(doc => em.isEnabled(doc));
   ctx.subscriptions.push(dm);
 
   // Status bar: per-type change counts for the active editor, fed from the
@@ -23,11 +29,12 @@ export function activate(ctx: vscode.ExtensionContext) {
   const tcm = new TrackChangesManager();
   ctx.subscriptions.push(tcm);
 
-  registerEditCommands(ctx, dm, tcm);
+  registerEditCommands(ctx, dm, tcm, em);
 
   // Inline "Accept | Reject" CodeLens above each change. Reuses the decorator's
-  // change cache and refreshes when it updates (debounced).
-  const codeLens = new CriticCodeLensProvider(dm);
+  // change cache and refreshes when it updates (debounced). Shares the
+  // enablement gate so disabled documents get no lenses.
+  const codeLens = new CriticCodeLensProvider(dm, doc => em.isEnabled(doc));
   ctx.subscriptions.push(
     codeLens,
     vscode.languages.registerCodeLensProvider(
@@ -53,6 +60,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     tcm.applyDefault(vscode.window.activeTextEditor.document);
   }
   tcm.syncActiveEditor(vscode.window.activeTextEditor);
+  em.syncStatusBar(vscode.window.activeTextEditor);
   dm.syncContext(vscode.window.activeTextEditor);
 
   ctx.subscriptions.push(
@@ -60,6 +68,7 @@ export function activate(ctx: vscode.ExtensionContext) {
       if (editor) { dm.update(editor); tcm.applyDefault(editor.document); }
       sb.update(editor);
       tcm.syncActiveEditor(editor);
+      em.syncStatusBar(editor);
       dm.syncContext(editor);
     }),
     vscode.workspace.onDidChangeTextDocument(event => {
@@ -71,6 +80,16 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.workspace.onDidCloseTextDocument(doc => {
       dm.clear(doc);
       tcm.forget(doc);
+      em.forget(doc);
+    }),
+    // A per-file toggle or an `enabledLanguages` edit re-decorates the visible
+    // editors and refreshes the active editor's UI to match.
+    em.onDidChange(() => {
+      for (const editor of vscode.window.visibleTextEditors) { dm.update(editor); }
+      const active = vscode.window.activeTextEditor;
+      sb.update(active);
+      dm.syncContext(active);
+      em.syncStatusBar(active);
     }),
     // Refresh the status bar whenever the active editor's changes are re-parsed
     // (typing, accept/reject, navigation-triggered updates).
