@@ -96,6 +96,15 @@ export async function compareTextToCriticMarkup(
     return;
   }
 
+  // Identical inputs produce only `equal` ops, i.e. a marker-free copy of the
+  // text. Opening that as a "comparison" is just noise, so report no differences
+  // and skip the new editor instead.
+  const hasDifference = result.ops.some(op => op.type !== 'equal');
+  if (!hasDifference) {
+    void vscode.window.showInformationMessage('kaicrit: no differences between the two inputs.');
+    return;
+  }
+
   if (result.granularity !== settings.granularity) {
     void vscode.window.showInformationMessage(
       `kaicrit: inputs were too large for "${settings.granularity}" granularity; ` +
