@@ -16,7 +16,7 @@
 //     ready for `document.positionAt` once `applyEdit` has resolved.
 
 import { ChangeType } from '../core/types';
-import { MARKERS, RE_ALL } from '../core/markers';
+import { MARKERS, findMarkers } from '../core/markers';
 
 export interface RawEdit {
   offset: number;     // start of the replaced span in the pre-edit text
@@ -52,9 +52,7 @@ const CLOSE_LEN = 3;  // every marker closer is 3 chars (--}, ++}, ~~}, ==}, <<}
 // adjacent to the region), bounding the work to the text up to the edit.
 function scanMarkers(preText: string, regionEnd: number): MarkerSpan[] {
   const spans: MarkerSpan[] = [];
-  RE_ALL.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = RE_ALL.exec(preText)) !== null) {
+  for (const m of findMarkers(preText)) {
     const start = m.index;
     if (start > regionEnd) { break; }
     const end = start + m[0].length;

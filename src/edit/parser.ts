@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 import { ChangeType, CriticChange } from '../core/types';
-import { RE_ALL } from '../core/markers';
+import { findMarkers } from '../core/markers';
 import { parseCommentMeta } from '../core/comment';
 
 export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
   const text = doc.getText();
   const results: CriticChange[] = [];
-  let match: RegExpExecArray | null;
 
   // The author/date convention is opt-out: when disabled, comments are parsed
   // as plain text and no metadata is extracted.
@@ -14,8 +13,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
     .getConfiguration('kaicrit')
     .get<boolean>('edit.commentMetadata', true);
 
-  RE_ALL.lastIndex = 0;
-  while ((match = RE_ALL.exec(text)) !== null) {
+  for (const match of findMarkers(text)) {
     const start = doc.positionAt(match.index);
     const end = doc.positionAt(match.index + match[0].length);
     const fullRange = new vscode.Range(start, end);

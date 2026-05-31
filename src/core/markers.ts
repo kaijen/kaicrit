@@ -1,7 +1,7 @@
 // Single source of truth for the CriticMarkup marker vocabulary.
 //
 // Three consumers share this file:
-//   - edit/parser.ts   uses RE_ALL to locate markers in a document
+//   - edit/parser.ts   uses findMarkers (over RE_ALL) to locate markers in a document
 //   - compare/criticmarkup.ts uses MARKERS to *emit* markers from a diff
 //   - preview/markdownIt.ts uses MARKERS to render markers into HTML
 //
@@ -29,3 +29,15 @@ export const MARKERS = {
 // [6] comment content
 export const RE_ALL =
   /\{--(.*?)--\}|\{\+\+(.*?)\+\+\}|\{~~(.*?)~>(.*?)~~\}|\{==(.*?)==\}|\{>>(.*?)<<\}/gs;
+
+/**
+ * Iterate over every CriticMarkup marker in `text`, in document order.
+ *
+ * Backed by `String.prototype.matchAll`, which runs against an internal clone
+ * of the regex. The shared, global `RE_ALL` is therefore never mutated — there
+ * is no `lastIndex` state shared between callers, so concurrent / reentrant use
+ * is safe. Prefer this helper over calling `RE_ALL.exec` directly.
+ */
+export function findMarkers(text: string): IterableIterator<RegExpExecArray> {
+  return text.matchAll(RE_ALL) as IterableIterator<RegExpExecArray>;
+}

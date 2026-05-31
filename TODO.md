@@ -147,7 +147,7 @@ der Cursor an der falschen Stelle (oder gar nicht zwischen `~>` und `~~}`).
 
 ---
 
-## 5. Geteilten globalen `RE_ALL`-Regex entschärfen
+## ✅ 5. Geteilten globalen `RE_ALL`-Regex entschärfen
 
 **Problem:** `RE_ALL` ([src/core/markers.ts](src/core/markers.ts):31) trägt die
 Flags `g`/`s` und wird als **geteilter, mutierbarer** Zustand an mehreren Stellen
