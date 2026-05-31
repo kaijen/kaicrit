@@ -106,6 +106,11 @@ export function activate(ctx: vscode.ExtensionContext) {
 
   // ── Preview feature: render CriticMarkup in the built-in Markdown preview ────
   // The preview calls extendMarkdownIt with its live markdown-it instance.
+  // commentMetadata is read once here and frozen into the cached markdown-it
+  // instance: VS Code has no stable API to rebuild that instance on a config
+  // change, so toggling kaicrit.edit.commentMetadata only affects the preview
+  // after a window reload. This is a documented known limitation (see
+  // docs/preview.md); the editor parser re-reads the value per parse instead.
   return {
     extendMarkdownIt(md: any) {
       const commentMetadata = vscode.workspace
