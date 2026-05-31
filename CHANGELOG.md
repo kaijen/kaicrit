@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Inline CodeLens** — clickable **Accept | Reject** actions appear above every
+  CriticMarkup change, so edits can be resolved with the mouse without learning
+  the shortcuts. Toggle with the new `kaicrit.edit.codeLens` setting (default
+  `true`).
 - **Status bar** — a status bar entry summarizes the active editor's open
   changes by type (`⊟ ⊞ ⇄ ☰ 💬`), updating live and hidden when there are no
   changes; clicking it jumps to the first change.

@@ -54,7 +54,8 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 | [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, and an `onDidUpdate` event fired after each cache refresh |
 | [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange` |
 | [edit/navigator.ts](src/edit/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
-| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 13 insert/navigate/accept/reject commands |
+| [edit/codeLens.ts](src/edit/codeLens.ts) | `CriticCodeLensProvider` — inline `Accept`/`Reject` lenses above each change; reads the decorator cache, refreshes on `onDidUpdate`, honors `kaicrit.edit.codeLens` |
+| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 15 insert/navigate/accept/reject commands (incl. position-targeted `acceptChangeAt`/`rejectChangeAt` used by CodeLens) |
 
 ### `src/compare/` — diff two files into CriticMarkup
 
@@ -74,7 +75,7 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 ### Entry point
 
-[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the compare commands, and **returns** `{ extendMarkdownIt }` so the built-in preview picks up the plugin.
+[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the CodeLens provider (`languages.registerCodeLensProvider` for `file`/`untitled` schemes), registers the compare commands, and **returns** `{ extendMarkdownIt }` so the built-in preview picks up the plugin.
 
 ## CriticMarkup Types
 

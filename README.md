@@ -30,6 +30,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`); click the entry to jump to the first change
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
+- **Inline CodeLens actions** — clickable **Accept | Reject** appear above every change, so edits can be resolved with the mouse without learning the shortcuts (toggle with `kaicrit.edit.codeLens`)
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
 - **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
 
@@ -80,6 +81,14 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 | Comment `{>>T<<}` | removes entirely | removes entirely |
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
+
+## Inline actions (CodeLens)
+
+Above every CriticMarkup change, kaicrit shows clickable **Accept | Reject** actions. Clicking one resolves exactly that change using the same logic as the keyboard shortcuts; the lenses update automatically as you edit or resolve changes.
+
+| Setting | Values | Default | Effect |
+|---|---|---|---|
+| `kaicrit.edit.codeLens` | `true`, `false` | `true` | Show the inline Accept / Reject CodeLens actions |
 
 ## Compare two files → CriticMarkup
 
