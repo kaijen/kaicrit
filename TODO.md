@@ -229,7 +229,7 @@ Metadaten aus Aufgabe 5.
 
 ---
 
-## 7. Compare-Optionen erweitern
+## 7. Compare-Optionen erweitern ✅ erledigt
 
 **Ziel:** Den Datei-Vergleich praxistauglicher machen mit (a) „Whitespace ignorieren",
 (b) Vergleich der aktiven Datei gegen ihren Git-HEAD-Stand.
