@@ -309,7 +309,7 @@ Zwischenstadium. Härtet die Codebasis vor einem Release ab.
 
 ---
 
-## 10. Größen-Guard für den Myers-Diff (Selbst-DoS verhindern)
+## ✅ 10. Größen-Guard für den Myers-Diff (Selbst-DoS verhindern)
 
 **Problem:** `myers` in [src/compare/diff.ts](src/compare/diff.ts):96 schnappschießt
 in **jedem** Schritt das vollständige `v`-Array (`trace.push(v.slice())`). Speicher-

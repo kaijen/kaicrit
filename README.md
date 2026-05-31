@@ -161,6 +161,7 @@ The output upholds a strict reconstruction invariant: rejecting every marker rep
 | `kaicrit.compare.combineSubstitutions` | `true` | Merge an adjacent deletion + addition into one `{~~old~>new~~}` substitution. |
 | `kaicrit.compare.ignoreWhitespace` | `false` | Ignore whitespace-only differences (similar to `git diff -w`); rejecting every marker still reproduces file 1. |
 | `kaicrit.compare.outputLanguage` | `auto` | Language mode for the result: `auto` (match file 2), `plaintext`, or `markdown`. |
+| `kaicrit.compare.maxDiffTokens` | `4000000` | Safety guard against pathological diffs: max token product (file 1 × file 2 tokens) before a compare falls back to `line` granularity or aborts with a warning. `0` disables it. |
 
 ## Markdown preview
 

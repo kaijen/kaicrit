@@ -503,6 +503,12 @@
           ],
           "default": "auto",
           "description": "Language mode applied to the generated CriticMarkup document."
+        },
+        "kaicrit.compare.maxDiffTokens": {
+          "type": "integer",
+          "default": 4000000,
+          "minimum": 0,
+          "description": "Safety guard for the diff engine: the maximum allowed token product (tokens in file 1 × tokens in file 2) before a compare is considered too large. Myers' diff degrades towards O((n+m)²) memory/time on two very different files, so an unbounded run on huge inputs (especially at `character` granularity) can freeze VS Code. When the limit is exceeded the compare automatically retries at `line` granularity; if that is still too large it is aborted with a warning. Set to 0 to disable the guard (not recommended)."
         }
       }
     },

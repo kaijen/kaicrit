@@ -55,9 +55,31 @@ file 1's spacing in those spots rather than file 2's).
 | `kaicrit.compare.combineSubstitutions` | `true` | Merge an adjacent deletion + addition into one `{~~old~>new~~}` substitution. |
 | `kaicrit.compare.ignoreWhitespace` | `false` | Ignore whitespace-only differences (similar to `git diff -w`). Tokens that differ only in whitespace — and pure-whitespace insertions/deletions — are not reported as changes. |
 | `kaicrit.compare.outputLanguage` | `auto` | Language mode for the result: `auto` (match file 2), `plaintext`, or `markdown`. |
+| `kaicrit.compare.maxDiffTokens` | `4000000` | Safety guard: the maximum allowed token product (file 1 tokens × file 2 tokens) before a compare is treated as too large. `0` disables the guard. |
 
 The diff engine uses Myers' shortest-edit-script algorithm; whitespace is kept
 as standalone tokens so the reconstruction invariant holds at every
 granularity. When `ignoreWhitespace` is on, tokens are matched after stripping
 whitespace and any residual whitespace-only markers are suppressed, while the
 original tokens are always emitted verbatim.
+
+## Size guard
+
+Myers' diff snapshots its working array on every step, so its worst-case
+cost is **O((n+m)·D)** in time and memory, where `D` is the edit distance. For
+two very different files `D` approaches `n+m`, degrading towards **O((n+m)²)** —
+on huge inputs (especially at `character` granularity) an unbounded run can
+freeze or OOM the extension host.
+
+`kaicrit.compare.maxDiffTokens` caps this. Before each diff the engine estimates
+the cost as the **token product** `n·m` and compares it to the limit
+(default `4 000 000`). When the limit is exceeded:
+
+1. The compare automatically **retries at `line` granularity** (far fewer
+   tokens) and shows an informational notice that it did so.
+2. If even the line-level diff is over the limit, the compare is **aborted** with
+   a warning suggesting you switch to `line` granularity or raise the limit.
+
+The reconstruction invariant (reject → file 1, accept → file 2) always holds for
+whichever granularity actually produced the result. Set the limit to `0` to
+disable the guard entirely (not recommended for untrusted or very large files).
