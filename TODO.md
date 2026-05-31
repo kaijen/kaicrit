@@ -9,6 +9,9 @@ Die Aufgaben 1–8 stammen aus dem Code-Review der bestehenden Extension
 (Verbesserungspotenzial & Fehler); Aufgabe 9 härtet die Codebasis mit Tests ab.
 Die Aufgaben 10–12 stammen aus einem Folge-Review (Aufgaben 1–9 alle erledigt):
 10 ist der einzige wirklich lohnende Robustheits-Fix, 11–12 sind kleinere Punkte.
+Die Aufgaben 13–19 stammen aus einem weiteren Folge-Review (Aufgaben 1–12 alle
+erledigt): 13 ist der einzige echte Fehler, 14 eine eng verwandte Härtung, 15–19
+sind Optimierungen und Kleinigkeiten.
 
 **Konventionen für alle Aufgaben**
 
@@ -417,6 +420,238 @@ dokumentierte Grenze festhalten.
   die Reload-Notwendigkeit ist dokumentiert.
 
 **Doku:** `docs/preview.md`.
+
+---
+
+## 13. Track-Changes-Guard bleibt bei fehlgeschlagenem `applyEdit` hängen
+
+**Problem:** In `handleChange` ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):122-133)
+wird der Re-Entrancy-Guard gesetzt und nur im **Erfolgsfall** zurückgesetzt:
+
+```ts
+this.applyingOwnEdit = true;
+void vscode.workspace.applyEdit(we).then(() => {
+  this.applyingOwnEdit = false; // ← nur wenn applyEdit erfolgreich war
+  …
+});
+```
+
+Es gibt kein `.catch`/`finally`. Rejected `applyEdit` einmal (z. B. konkurrierende
+Edits, schreibgeschütztes Dokument, abgelehntes `WorkspaceEdit`), bleibt
+`applyingOwnEdit === true` **dauerhaft**. Da der Guard in `handleChange` ganz oben
+greift (`if (this.applyingOwnEdit) return;`), hört Track Changes danach **für alle
+Dokumente** still auf zu arbeiten, bis das Fenster neu geladen wird – der einzige
+echte Fehler dieses Reviews.
+
+**Warum zuerst:** Einziger echter Bug; kleiner, klar abgegrenzter Robustheits-Fix
+ohne API-Oberflächenänderung.
+
+**Betroffene Dateien**
+- [src/edit/trackChanges.ts](src/edit/trackChanges.ts) – Guard in **beiden** Zweigen
+  zurücksetzen (Erfolg **und** Fehler), z. B. via `.then(onOk, onErr)` oder
+  `try/finally` in einer kleinen async-Hilfsfunktion.
+
+**Umsetzungsschritte**
+1. `applyEdit`-Aufruf so umbauen, dass `applyingOwnEdit` garantiert zurückgesetzt
+   wird (auch bei Reject/Exception); die Folgeschritte (Shadow-Sync, Caret-Setzen)
+   nur im Erfolgsfall ausführen.
+2. Test ergänzen (sofern ohne Extension-Host abbildbar): ein simuliertes
+   fehlschlagendes `applyEdit` lässt den Guard nicht hängen.
+
+**Akzeptanzkriterien**
+- Nach einem fehlgeschlagenen `applyEdit` zeichnet Track Changes weitere Edits
+  unverändert auf (Guard nicht dauerhaft `true`).
+- Normalfall (erfolgreicher Kompensations-Edit) unverändert.
+
+**Doku:** `CLAUDE.md` (Architekturnotiz zum `TrackChangesManager`), ggf.
+`docs/track-changes.md`.
+
+---
+
+## 14. Track-Changes-Guard ist prozessglobal statt pro Dokument
+
+**Problem:** `applyingOwnEdit` ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):15,81)
+ist ein **einzelnes** Boolean. Während des (asynchronen) `applyEdit`-Fensters für
+Dokument A wird ein Edit in einem **zweiten** getrackten Dokument B in
+`handleChange` verworfen (`if (this.applyingOwnEdit) return;`) **und dessen
+`shadow` nicht nachgezogen** → B desynchronisiert. Das Zeitfenster ist kurz, der
+Fall daher selten, aber latent vorhanden.
+
+**Warum hier:** Eng verwandt mit Aufgabe 13 und idealerweise zusammen umzusetzen;
+geringe Eintrittswahrscheinlichkeit, daher nach dem eigentlichen Bug.
+
+**Betroffene Dateien**
+- [src/edit/trackChanges.ts](src/edit/trackChanges.ts) – `applyingOwnEdit` von
+  einem `boolean` auf ein `Set<string>` der gerade selbst bearbeiteten
+  Dokument-Keys umstellen; Guard und Reset pro Key.
+
+**Umsetzungsschritte**
+1. Boolean durch `Set<string>` ersetzen (`applyingOwnEdit.add(key)` vor dem
+   `applyEdit`, `.delete(key)` im Reset aus Aufgabe 13).
+2. Guard am Anfang von `handleChange` auf `applyingOwnEdit.has(key)` umstellen.
+
+**Akzeptanzkriterien**
+- Ein Edit in Dokument B während eines laufenden Kompensations-Edits in Dokument A
+  wird korrekt verarbeitet und B bleibt synchron.
+- Verhalten bei einem einzelnen getrackten Dokument unverändert.
+
+**Doku:** `CLAUDE.md` (Notiz zum Re-Entrancy-Guard).
+
+---
+
+## 15. Debounce-Intervall des Decorators ist faktisch wirkungslos
+
+**Problem:** `scheduleUpdate` ([src/edit/decorator.ts](src/edit/decorator.ts):88-93)
+verzögert das Neu-Parsen nur **16 ms** (≈ ein Frame). Bei einer großen
+Markdown-Datei, die **bereits Marker enthält** (der `indexOf('{')`-Early-Out aus
+Aufgabe 7 greift dann nicht), läuft damit praktisch auf **jeden Tastendruck** ein
+vollständiger `RE_ALL`-Scan über das gesamte Dokument. Spürbare Verzögerung in
+langen Dokumenten möglich.
+
+**Warum hier:** Reine Performance-Optimierung, sehr kleiner Eingriff (eine
+Konstante), aber mit echtem Nutzen bei großen Dateien.
+
+**Betroffene Dateien**
+- [src/edit/decorator.ts](src/edit/decorator.ts) – Debounce-Konstante anheben
+  (z. B. 120–200 ms), ggf. als benannte Konstante oder Setting.
+
+**Umsetzungsschritte**
+1. Den `16`-Wert in eine benannte Konstante extrahieren und auf einen sinnvollen
+   Wert (Vorschlag: 150 ms) anheben.
+2. Optional als Setting `kaicrit.edit.decorationDebounce` konfigurierbar machen.
+3. Prüfen, dass der explizite `update()` nach Accept/Reject (der die anstehende
+   Debounce abbricht) weiterhin sofort wirkt – das ist unabhängig vom Intervall.
+
+**Akzeptanzkriterien**
+- Dekorationen erscheinen weiterhin praktisch unmittelbar, aber bei schnellem
+  Tippen in großen Dokumenten wird nicht mehr pro Anschlag voll geparst.
+- Accept/Reject-Pfad (einmaliges Re-Parse, Aufgabe 8) unverändert.
+
+**Doku:** `CLAUDE.md` (Decorator-Notiz), `README.md` (falls Setting ergänzt wird).
+
+---
+
+## 16. Compare bei identischen Dateien öffnet ein leeres Ergebnis
+
+**Problem:** `compareTextToCriticMarkup` ([src/compare/compare.ts](src/compare/compare.ts):107-113)
+öffnet auch dann ein neues Ergebnis-Dokument, wenn die beiden Eingaben **identisch**
+sind – das Resultat ist dann nur der unveränderte Text ohne einen einzigen Marker.
+Wenig hilfreich und leicht verwirrend.
+
+**Warum hier:** Kleiner UX-Fix, geringe Priorität.
+
+**Betroffene Dateien**
+- [src/compare/compare.ts](src/compare/compare.ts) – nach dem Diff prüfen, ob
+  überhaupt eine Nicht-`equal`-Operation vorkommt; falls nicht, eine kurze
+  `showInformationMessage('keine Unterschiede')` zeigen und ohne neues Dokument
+  zurückkehren.
+
+**Umsetzungsschritte**
+1. `result.ops` darauf prüfen, ob mindestens eine Operation vom Typ `delete`,
+   `insert` oder `replace` existiert.
+2. Falls keine: Info-Meldung und `return`, statt `openTextDocument`.
+
+**Akzeptanzkriterien**
+- Identische Dateien öffnen kein neues Dokument, sondern melden „keine
+  Unterschiede".
+- Vergleiche mit Unterschieden unverändert.
+
+**Doku:** `docs/compare.md`.
+
+---
+
+## 17. Track-Changes-`shadow` gegen externe Mutationen härten
+
+**Problem:** Der `shadow`-Snapshot ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):13,93-97)
+liefert den vor einem Edit gelöschten Text, den das Change-Event selbst nicht
+mitführt. Er wird bei Undo/Redo, eigenem Kompensations-Edit und am Ende jedes
+verarbeiteten Events nachgezogen – im Normalfall robust. Eine **externe Mutation**
+mit `reason === undefined` (z. B. ein anderer Formatierungs-/Edit-Provider) wird
+jedoch ganz normal verarbeitet, wobei die `pre`-Extraktion des gelöschten Texts am
+`shadow` hängt. Sollte `shadow` je vom echten Vor-Zustand abweichen, sind
+`oldText`-Extraktion und Marker-Scan falsch. Geringes Risiko, aber ein
+Härtungspunkt.
+
+**Warum hier:** Defensive Härtung, kein bekannter Reproduktionsfall; niedrige
+Priorität.
+
+**Betroffene Dateien**
+- [src/edit/trackChanges.ts](src/edit/trackChanges.ts) – Konsistenzprüfung
+  zwischen `shadow` und dem aus dem Event rekonstruierbaren Vor-Zustand; bei
+  Abweichung Shadow neu setzen und den aktuellen Edit nicht wrappen.
+
+**Umsetzungsschritte**
+1. Vor `computeTrackChanges` plausibilisieren, dass `shadow` zur Event-Geometrie
+   passt (z. B. Länge/`rangeOffset+rangeLength` innerhalb `shadow.length`).
+2. Bei Inkonsistenz: `shadow` aus `event.document.getText()` neu setzen und ohne
+   Wrap zurückkehren (kein falscher Marker).
+
+**Akzeptanzkriterien**
+- Eine externe Mutation kann keinen falsch zusammengesetzten Marker mehr erzeugen.
+- Normales Tippen/Löschen unverändert.
+
+**Doku:** `CLAUDE.md` (Notiz zum Shadow-Snapshot).
+
+---
+
+## 18. `insertSubstitution` lässt den Platzhalter `old` literal stehen
+
+**Problem:** Ohne Auswahl fügt `insertSubstitution`
+([src/edit/commands.ts](src/edit/commands.ts):167-168) `{~~old~>~~}` ein und parkt
+den Cursor vor `~~}`. Das wörtliche `old` muss der Nutzer anschließend von Hand
+löschen. Kleine UX-Reibung.
+
+**Warum hier:** Reine Komfort-Verbesserung, sehr niedrige Priorität.
+
+**Betroffene Dateien**
+- [src/edit/commands.ts](src/edit/commands.ts) – Verhalten bei leerer Auswahl
+  anpassen: entweder die alte Seite leer lassen (`{~~~>~~}`, Cursor vor `~>`) oder
+  den Platzhalter als selektierten Text einfügen, sodass das erste Tippen ihn
+  ersetzt.
+
+**Umsetzungsschritte**
+1. Variante festlegen (leere alte Seite + Cursor vor `~>`, oder Platzhalter
+   selektieren).
+2. Caret-/Selection-Berechnung entsprechend anpassen (analog zur bestehenden
+   offsetbasierten Logik, ohne den Text nach `~>` zu durchsuchen).
+
+**Akzeptanzkriterien**
+- Nach dem Einfügen ohne Auswahl muss kein Platzhaltertext manuell gelöscht werden.
+- Verhalten bei vorhandener Auswahl unverändert.
+
+**Doku:** `docs/markup.md` (falls sich das beschriebene Einfügeverhalten ändert).
+
+---
+
+## 19. ESLint (oder vergleichbarer Lint-Schritt) einrichten
+
+**Problem:** Aufgabe 6 wurde durch **Entfernen** einer toten ESLint-Direktive
+gelöst; es existiert weiterhin **kein** Lint-Setup (kein `eslint` in den
+devDependencies, kein `lint`-Script, keine Config). Für ein Projekt dieser Reife
+wäre ein leichtgewichtiger Lint-Schritt sinnvoll, um stilistische Drift und
+einfache Fehlerklassen (ungenutzte Variablen, fehlende `await`, `any`-Lecks) früh
+zu fangen.
+
+**Warum hier:** Tooling-/Qualitätsverbesserung, kein funktionaler Bug; Geschmacks-
+und Aufwandsfrage, daher zuletzt.
+
+**Betroffene Dateien**
+- [package.json](package.json) – `eslint` + `@typescript-eslint/*` als
+  devDependencies, ein `lint`-Script.
+- neue ESLint-Config (`.eslintrc.json` o. ä.).
+- ggf. CI-Workflow, falls Lint dort laufen soll.
+
+**Umsetzungsschritte**
+1. ESLint + TypeScript-Plugin als devDependencies aufnehmen, schlanke Config mit
+   den empfohlenen Regelsätzen anlegen.
+2. `npm run lint`-Script ergänzen und bestehende Verstöße bereinigen.
+3. Optional in den CI-Workflow aufnehmen.
+
+**Akzeptanzkriterien**
+- `npm run lint` läuft fehlerfrei über `src/`.
+- `npm run compile`/`npm test` bleiben grün.
+
+**Doku:** `CLAUDE.md` (Build-&-Run-Abschnitt um den Lint-Schritt ergänzen).
 
 ---
 
