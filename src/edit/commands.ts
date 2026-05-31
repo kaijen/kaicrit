@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { execFileSync } from 'child_process';
 import { ChangeType, CriticChange } from '../core/types';
 import { DecoratorManager } from './decorator';
+import { TrackChangesManager } from './trackChanges';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
 
 export function registerEditCommands(
   ctx: vscode.ExtensionContext,
   dm: DecoratorManager,
+  tcm: TrackChangesManager,
 ): void {
   const reg = (id: string, fn: () => void) =>
     ctx.subscriptions.push(vscode.commands.registerCommand(id, fn));
@@ -32,6 +34,13 @@ export function registerEditCommands(
   reg('kaicrit.rejectChange', () => applyAtCursor(dm, 'reject'));
   reg('kaicrit.acceptAll',    () => applyAll(dm, 'accept'));
   reg('kaicrit.rejectAll',    () => applyAll(dm, 'reject'));
+
+  // ── Track Changes (Annotate) ─────────────────────────────────────────────────
+
+  reg('kaicrit.toggleTrackChanges', () => {
+    const editor = activeEditor();
+    if (editor) { tcm.toggle(editor.document); }
+  });
 
   // Position-targeted variants used by the CodeLens actions. They delegate to
   // the same resolve logic, but act on the change at the supplied position

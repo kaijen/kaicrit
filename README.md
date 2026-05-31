@@ -32,6 +32,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Inline CodeLens actions** — clickable **Accept | Reject** appear above every change, so edits can be resolved with the mouse without learning the shortcuts (toggle with `kaicrit.edit.codeLens`)
+- **Track Changes mode** — record your edits live as CriticMarkup instead of changing the text directly, like "track changes" in a word processor; toggled per document (`Alt+K Alt+T`)
 - **Comment metadata** — comments may carry an optional author and date (`{>>@kai 2026-05-31: text<<}`), shown in editor hovers and the preview; the author is configurable and the whole convention can be turned off
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
 - **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
@@ -120,6 +121,18 @@ Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata 
 |---|---|---|---|
 | `kaicrit.edit.commentMetadata` | `true`, `false` | `true` | Recognize the author/date convention (hover, preview, insert pre-fill). When `false`, comments are plain text. |
 | `kaicrit.edit.commentAuthor` | string | `""` | Author pre-filled on insert. Empty falls back to `git config user.name`. |
+
+## Track Changes (Annotate)
+
+Turn on **Track Changes** to record your edits as CriticMarkup instead of writing them verbatim — like "track changes" in a word processor. While it is on, deleting wraps text in `{--…--}`, typing wraps it in `{++…++}`, and replacing a selection produces `{~~old~>new~~}`. Review and resolve the result with the usual accept/reject actions.
+
+The mode is **per document**: toggle it with **Toggle Track Changes** (`Alt+K Alt+T`) or the editor-title button. A status-bar item (`$(edit) Track Changes`) shows while the active editor is recording. New documents start from the `kaicrit.edit.trackChanges` setting.
+
+Because VS Code applies edits before extensions are notified, each tracked keystroke produces two document edits (your edit plus the marker wrap), so **Undo is two-step**. See [docs/track-changes.md](docs/track-changes.md) for the full behaviour matrix and limitations.
+
+| Setting | Values | Default | Effect |
+|---|---|---|---|
+| `kaicrit.edit.trackChanges` | `true`, `false` | `false` | Start newly opened documents with Track Changes recording on. |
 
 ## Compare two files → CriticMarkup
 

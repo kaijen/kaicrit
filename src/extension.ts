@@ -3,6 +3,7 @@ import { DecoratorManager } from './edit/decorator';
 import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
 import { ChangesTreeProvider } from './edit/changesView';
+import { TrackChangesManager } from './edit/trackChanges';
 import { registerEditCommands } from './edit/commands';
 import { registerCompareCommands } from './compare/commands';
 import { criticMarkupPlugin } from './preview/markdownIt';
@@ -17,7 +18,12 @@ export function activate(ctx: vscode.ExtensionContext) {
   const sb = new StatusBarManager(dm);
   ctx.subscriptions.push(sb);
 
-  registerEditCommands(ctx, dm);
+  // Track Changes: live recorder that rewrites raw edits into CriticMarkup.
+  // State is per document; toggled via kaicrit.toggleTrackChanges.
+  const tcm = new TrackChangesManager();
+  ctx.subscriptions.push(tcm);
+
+  registerEditCommands(ctx, dm, tcm);
 
   // Inline "Accept | Reject" CodeLens above each change. Reuses the decorator's
   // change cache and refreshes when it updates (debounced).
@@ -43,17 +49,26 @@ export function activate(ctx: vscode.ExtensionContext) {
     dm.update(editor);
   }
   sb.update(vscode.window.activeTextEditor);
+  if (vscode.window.activeTextEditor) {
+    tcm.applyDefault(vscode.window.activeTextEditor.document);
+  }
+  tcm.syncActiveEditor(vscode.window.activeTextEditor);
 
   ctx.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor(editor => {
-      if (editor) { dm.update(editor); }
+      if (editor) { dm.update(editor); tcm.applyDefault(editor.document); }
       sb.update(editor);
+      tcm.syncActiveEditor(editor);
     }),
     vscode.workspace.onDidChangeTextDocument(event => {
+      // Track Changes runs first: it may apply a compensating edit, which fires
+      // another change event that re-triggers the decorator refresh below.
+      tcm.handleChange(event);
       dm.scheduleUpdate(event.document);
     }),
     vscode.workspace.onDidCloseTextDocument(doc => {
       dm.clear(doc);
+      tcm.forget(doc);
     }),
     // Refresh the status bar whenever the active editor's changes are re-parsed
     // (typing, accept/reject, navigation-triggered updates).

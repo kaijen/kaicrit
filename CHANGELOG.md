@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Track Changes (Annotate) mode** — a per-document recorder that captures
+  your edits as CriticMarkup instead of changing the text directly: deletions
+  become `{--…--}`, insertions `{++…++}`, and selection replacements
+  `{~~old~>new~~}`. Toggle it with the new **Toggle Track Changes** command
+  (`Alt+K Alt+T`), the editor-title button, or the `kaicrit.edit.trackChanges`
+  setting (default `false`); a status-bar item shows while recording. Continued
+  typing grows an addition, backspace streaks merge into one deletion, and the
+  pure rewrite engine is unit-tested. Undo is two-step by design — see
+  `docs/track-changes.md`.
 - **Compare with Git HEAD** — a new **Compare Active File with Git HEAD →
   CriticMarkup** command (Command Palette and editor right-click) diffs the
   active editor's contents against the last committed version of the file,
