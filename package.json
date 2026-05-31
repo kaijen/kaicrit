@@ -140,6 +140,11 @@
         "category": "CriticMarkup"
       },
       {
+        "command": "kaicrit.compareWithGitHead",
+        "title": "Compare Active File with Git HEAD → CriticMarkup",
+        "category": "CriticMarkup"
+      },
+      {
         "command": "kaicrit.selectForCompare",
         "title": "Select for CriticMarkup Compare",
         "category": "CriticMarkup"
@@ -339,6 +344,13 @@
           "when": "false"
         }
       ],
+      "editor/context": [
+        {
+          "command": "kaicrit.compareWithGitHead",
+          "when": "resourceScheme == file",
+          "group": "3_compare@1"
+        }
+      ],
       "explorer/context": [
         {
           "command": "kaicrit.selectForCompare",
@@ -438,6 +450,11 @@
           "type": "boolean",
           "default": true,
           "description": "Merge an adjacent deletion and addition into a single CriticMarkup substitution {~~old~>new~~} instead of emitting separate {--old--}{++new++} markers."
+        },
+        "kaicrit.compare.ignoreWhitespace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore whitespace-only differences when diffing: tokens that differ only in whitespace are not marked as changes (similar to `git diff -w`). The original text is still reproduced verbatim when rejecting every marker."
         },
         "kaicrit.compare.outputLanguage": {
           "type": "string",

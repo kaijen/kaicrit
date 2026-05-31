@@ -117,3 +117,52 @@ test('character tokenization handles surrogate pairs without splitting', () => {
   const tokens = tokenize('a😀b', 'character');
   assert.deepEqual(tokens, ['a', '😀', 'b']);
 });
+
+test('ignoreWhitespace does not mark pure whitespace-amount differences', () => {
+  for (const granularity of GRANULARITIES) {
+    const ops = diff('the  quick   fox', 'the quick fox', granularity, true, true);
+    assert.ok(
+      !ops.some((op) => op.type !== 'equal'),
+      `expected no markers for whitespace-only diff (${granularity})`,
+    );
+  }
+});
+
+test('ignoreWhitespace still preserves file 1 on reject (strong invariant)', () => {
+  for (const [a, b] of SAMPLES) {
+    for (const granularity of GRANULARITIES) {
+      for (const combine of [true, false]) {
+        const ops = diff(a, b, granularity, combine, true);
+        assert.equal(
+          rejectAll(ops),
+          a,
+          `reject-all should yield file 1 with ignoreWhitespace (${granularity}, combine=${combine}, ${JSON.stringify(a)})`,
+        );
+      }
+    }
+  }
+});
+
+test('ignoreWhitespace still reports genuine content changes', () => {
+  const ops = diff('the quick fox', 'the slow fox', 'word', true, true);
+  assert.ok(
+    ops.some((op) => op.type === 'replace' || op.type === 'delete' || op.type === 'insert'),
+    'a real word change must still be marked even when ignoring whitespace',
+  );
+});
+
+test('ignoreWhitespace ignores indentation differences at line granularity', () => {
+  const ops = diff('    code\n', 'code\n', 'line', true, true);
+  assert.ok(
+    !ops.some((op) => op.type !== 'equal'),
+    'a line that differs only by leading whitespace should not be marked',
+  );
+});
+
+test('ignoreWhitespace=false (default) still marks whitespace differences', () => {
+  const ops = diff('a  b', 'a b', 'word', true);
+  assert.ok(
+    ops.some((op) => op.type !== 'equal'),
+    'with ignoreWhitespace off, a whitespace change is a normal diff',
+  );
+});
