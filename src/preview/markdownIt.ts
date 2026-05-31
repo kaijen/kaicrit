@@ -40,23 +40,25 @@ function critic(state: any, silent: boolean, commentMeta: boolean): boolean {
   const contentStart = start + 3;
 
   // Substitution: {~~ old ~> new ~~}
+  // The `~>` arrow is mandatory (per the CriticMarkup spec and the edit parser's
+  // RE_ALL). An arrow-less `{~~…~~}` is *not* a valid marker, so we leave it for
+  // markdown-it's normal text rules — matching the editor parser, which ignores
+  // it entirely rather than inventing a deletion.
   if (marker === '~~') {
     const closeIdx = src.indexOf('~~}', contentStart);
     if (closeIdx < 0) {
+      return false;
+    }
+    const arrowIdx = src.indexOf('~>', contentStart);
+    if (arrowIdx < 0 || arrowIdx >= closeIdx) {
       return false;
     }
     if (silent) {
       return true;
     }
 
-    const arrowIdx = src.indexOf('~>', contentStart);
-    if (arrowIdx >= 0 && arrowIdx < closeIdx) {
-      pushSpan(state, 'del', 'critic-del', contentStart, arrowIdx);
-      pushSpan(state, 'ins', 'critic-ins', arrowIdx + 2, closeIdx);
-    } else {
-      // No arrow: treat the whole body as a deletion rather than dropping it.
-      pushSpan(state, 'del', 'critic-del', contentStart, closeIdx);
-    }
+    pushSpan(state, 'del', 'critic-del', contentStart, arrowIdx);
+    pushSpan(state, 'ins', 'critic-ins', arrowIdx + 2, closeIdx);
     state.pos = closeIdx + 3;
     return true;
   }

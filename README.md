@@ -16,7 +16,7 @@ A complete CriticMarkup workflow in one extension:
 |---|---|---|
 | Deletion | `{--deleted text--}` | Text marked for removal |
 | Addition | `{++added text++}` | Text marked for insertion |
-| Substitution | `{~~old~>new~~}` | Replacement pair |
+| Substitution | `{~~old~>new~~}` | Replacement pair (the `~>` arrow is required) |
 | Highlight | `{==highlighted text==}` | Text marked for attention |
 | Comment | `{>>comment text<<}` | Inline annotation |
 
