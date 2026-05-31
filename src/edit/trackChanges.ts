@@ -12,7 +12,12 @@ export class TrackChangesManager {
   private readonly enabled = new Set<string>();
   private readonly shadow = new Map<string, string>();
   private readonly seen = new Set<string>();
-  private applyingOwnEdit = false;
+  // Re-entrancy guard, keyed per document: a document is added before its own
+  // compensating `applyEdit` and removed once that edit settles (success OR
+  // failure). A per-document set — rather than a single process-wide flag — keeps
+  // an edit in document B from being dropped while document A's async `applyEdit`
+  // is still in flight.
+  private readonly applyingOwnEdit = new Set<string>();
   private readonly statusItem: vscode.StatusBarItem;
 
   constructor() {
@@ -71,14 +76,15 @@ export class TrackChangesManager {
     this.enabled.delete(key);
     this.shadow.delete(key);
     this.seen.delete(key);
+    this.applyingOwnEdit.delete(key);
   }
 
   handleChange(event: vscode.TextDocumentChangeEvent): void {
     const key = event.document.uri.toString();
     if (!this.enabled.has(key)) { return; }
 
-    // Never re-process our own compensating edit.
-    if (this.applyingOwnEdit) { return; }
+    // Never re-process our own compensating edit (checked per document).
+    if (this.applyingOwnEdit.has(key)) { return; }
 
     // Undo/redo is deliberately left untouched (the two-step undo design); just
     // keep the shadow in sync with the result.
@@ -119,18 +125,27 @@ export class TrackChangesManager {
       we.replace(event.document.uri, range, e.replacement);
     }
 
-    this.applyingOwnEdit = true;
-    void vscode.workspace.applyEdit(we).then(() => {
-      this.applyingOwnEdit = false;
-      this.shadow.set(key, event.document.getText());
-      const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
-      if (editor && result.selections.length > 0) {
-        editor.selections = result.selections.map(off => {
-          const p = event.document.positionAt(off);
-          return new vscode.Selection(p, p);
-        });
-      }
-    });
+    this.applyingOwnEdit.add(key);
+    void vscode.workspace.applyEdit(we).then(
+      (applied) => {
+        // Always clear the guard so a single failure can't wedge the recorder.
+        this.applyingOwnEdit.delete(key);
+        if (!applied) { return; }
+        this.shadow.set(key, event.document.getText());
+        const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
+        if (editor && result.selections.length > 0) {
+          editor.selections = result.selections.map(off => {
+            const p = event.document.positionAt(off);
+            return new vscode.Selection(p, p);
+          });
+        }
+      },
+      () => {
+        // applyEdit rejected (e.g. read-only doc, conflicting edit): release the
+        // guard without the success follow-up so recording stays alive.
+        this.applyingOwnEdit.delete(key);
+      },
+    );
   }
 
   dispose(): void {
@@ -138,5 +153,6 @@ export class TrackChangesManager {
     this.enabled.clear();
     this.shadow.clear();
     this.seen.clear();
+    this.applyingOwnEdit.clear();
   }
 }

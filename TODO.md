@@ -423,7 +423,7 @@ dokumentierte Grenze festhalten.
 
 ---
 
-## 13. Track-Changes-Guard bleibt bei fehlgeschlagenem `applyEdit` hängen
+## ✅ 13. Track-Changes-Guard bleibt bei fehlgeschlagenem `applyEdit` hängen
 
 **Problem:** In `handleChange` ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):122-133)
 wird der Re-Entrancy-Guard gesetzt und nur im **Erfolgsfall** zurückgesetzt:
@@ -468,7 +468,7 @@ ohne API-Oberflächenänderung.
 
 ---
 
-## 14. Track-Changes-Guard ist prozessglobal statt pro Dokument
+## ✅ 14. Track-Changes-Guard ist prozessglobal statt pro Dokument
 
 **Problem:** `applyingOwnEdit` ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):15,81)
 ist ein **einzelnes** Boolean. Während des (asynchronen) `applyEdit`-Fensters für
