@@ -30,7 +30,10 @@ kaicrit cannot intercept your keystroke. Instead it reacts to
    compensating `WorkspaceEdit` that wraps the region in the matching marker
    (`S1 → S2`).
 3. A re-entrancy guard makes sure kaicrit never re-processes its own edit, and
-   the shadow snapshot is refreshed to `S2`.
+   the shadow snapshot is refreshed to `S2`. The guard is released in both the
+   success *and* the failure path of `applyEdit`, so a single rejected
+   compensating edit (e.g. a read-only document or a conflicting edit) cannot
+   permanently stop recording.
 
 To keep continued typing natural, the caret is parked **inside** a freshly
 created addition (just before `++}`). The next character therefore lands in

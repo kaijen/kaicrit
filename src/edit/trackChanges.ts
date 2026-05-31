@@ -12,6 +12,9 @@ export class TrackChangesManager {
   private readonly enabled = new Set<string>();
   private readonly shadow = new Map<string, string>();
   private readonly seen = new Set<string>();
+  // Re-entrancy guard: the recorder ignores the change event raised by its own
+  // compensating edit. The flag is released on BOTH the success and the failure
+  // branch of `applyEdit`, so a single failed edit can't wedge recording.
   private applyingOwnEdit = false;
   private readonly statusItem: vscode.StatusBarItem;
 
@@ -120,17 +123,26 @@ export class TrackChangesManager {
     }
 
     this.applyingOwnEdit = true;
-    void vscode.workspace.applyEdit(we).then(() => {
-      this.applyingOwnEdit = false;
-      this.shadow.set(key, event.document.getText());
-      const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
-      if (editor && result.selections.length > 0) {
-        editor.selections = result.selections.map(off => {
-          const p = event.document.positionAt(off);
-          return new vscode.Selection(p, p);
-        });
-      }
-    });
+    void vscode.workspace.applyEdit(we).then(
+      (applied) => {
+        // Always clear the guard so a single failure can't wedge the recorder.
+        this.applyingOwnEdit = false;
+        if (!applied) { return; }
+        this.shadow.set(key, event.document.getText());
+        const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
+        if (editor && result.selections.length > 0) {
+          editor.selections = result.selections.map(off => {
+            const p = event.document.positionAt(off);
+            return new vscode.Selection(p, p);
+          });
+        }
+      },
+      () => {
+        // applyEdit rejected (e.g. read-only doc, conflicting edit): release the
+        // guard without the success follow-up so recording stays alive.
+        this.applyingOwnEdit = false;
+      },
+    );
   }
 
   dispose(): void {

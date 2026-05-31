@@ -61,6 +61,18 @@ export class TextDocument {
   get uri() { return { toString: () => 'file://stub-test.md' }; }
 }
 
+// A WorkspaceEdit fake that records its replacements so tests can inspect which
+// document an edit targeted. Used by the TrackChangesManager suite.
+export class WorkspaceEdit {
+  readonly edits: { uri: unknown; range: Range; text: string }[] = [];
+  replace(uri: unknown, range: Range, text: string): void {
+    this.edits.push({ uri, range, text });
+  }
+}
+
+export const StatusBarAlignment = { Left: 1, Right: 2 } as const;
+export const TextDocumentChangeReason = { Undo: 1, Redo: 2 } as const;
+
 // Configurable returns for workspace.getConfiguration('kaicrit').get(key, def).
 // Keyed by the `key` argument (e.g. 'edit.commentMetadata'); unset keys fall
 // through to the caller-supplied default.
@@ -68,10 +80,19 @@ const configValues = new Map<string, unknown>();
 export function setConfig(key: string, value: unknown): void { configValues.set(key, value); }
 export function resetConfig(): void { configValues.clear(); }
 
+// `applyEdit` is swappable so the TrackChangesManager tests can make it resolve
+// `true`/`false`, reject, or stay pending. Default: succeed.
+type ApplyEdit = (we: WorkspaceEdit) => Promise<boolean>;
+let applyEditImpl: ApplyEdit = () => Promise.resolve(true);
+export function setApplyEditImpl(fn: ApplyEdit): void { applyEditImpl = fn; }
+
 const vscodeFake = {
   Position,
   Range,
   Selection,
+  WorkspaceEdit,
+  StatusBarAlignment,
+  TextDocumentChangeReason,
   workspace: {
     getConfiguration(_section?: string) {
       return {
@@ -80,6 +101,24 @@ const vscodeFake = {
         },
       };
     },
+    applyEdit(we: WorkspaceEdit) { return applyEditImpl(we); },
+  },
+  window: {
+    activeTextEditor: undefined as unknown,
+    visibleTextEditors: [] as unknown[],
+    createStatusBarItem() {
+      return {
+        text: '',
+        tooltip: '',
+        command: '',
+        show(): void { /* noop */ },
+        hide(): void { /* noop */ },
+        dispose(): void { /* noop */ },
+      };
+    },
+  },
+  commands: {
+    executeCommand() { return Promise.resolve(undefined); },
   },
 };
 
