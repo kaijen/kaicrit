@@ -7,8 +7,7 @@ import { strict as assert } from 'node:assert';
 import * as vscode from 'vscode';
 import { TrackChangesManager } from './trackChanges';
 
-// A throwaway document fake covering just what handleChange touches. Each test
-// uses its own URIs so per-document state never bleeds between suites.
+// A throwaway document fake covering just what handleChange touches.
 function makeDoc(uri: string, text: string) {
   return {
     uri: { toString: () => uri },
@@ -38,7 +37,7 @@ const flush = () => new Promise<void>(r => setImmediate(r));
 
 test('guard is released after applyEdit rejects (task 13)', async () => {
   const mgr = new TrackChangesManager();
-  const doc = makeDoc('file:///task13.md', 'hello');
+  const doc = makeDoc('file:///a.md', 'hello');
   mgr.toggle(doc as unknown as vscode.TextDocument); // enable + snapshot 'hello'
 
   let calls = 0;
@@ -53,6 +52,32 @@ test('guard is released after applyEdit rejects (task 13)', async () => {
   mgr.handleChange(insertEvent(doc));
   await flush();
   assert.equal(calls, 2, 'guard wedged: second edit was dropped after a rejection');
+
+  mgr.dispose();
+});
+
+test('guard is per document, not process-wide (task 14)', async () => {
+  const mgr = new TrackChangesManager();
+  const docA = makeDoc('file:///a.md', 'hello');
+  const docB = makeDoc('file:///b.md', 'hello');
+  mgr.toggle(docA as unknown as vscode.TextDocument);
+  mgr.toggle(docB as unknown as vscode.TextDocument);
+
+  const touched = new Set<string>();
+  setApplyEditImpl((we) => {
+    const uri = (we.edits[0].uri as { toString(): string }).toString();
+    touched.add(uri);
+    // Document A's edit never settles, keeping its guard entry in flight.
+    if (uri === 'file:///a.md') { return new Promise<boolean>(() => {}); }
+    return Promise.resolve(true);
+  });
+
+  mgr.handleChange(insertEvent(docA)); // A's applyEdit stays pending
+  mgr.handleChange(insertEvent(docB)); // must NOT be blocked by A's in-flight edit
+  await flush();
+
+  assert.ok(touched.has('file:///a.md'), 'A should have been attempted');
+  assert.ok(touched.has('file:///b.md'), 'B was blocked by A — guard is not per document');
 
   mgr.dispose();
 });

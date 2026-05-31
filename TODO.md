@@ -468,7 +468,7 @@ ohne API-Oberflächenänderung.
 
 ---
 
-## 14. Track-Changes-Guard ist prozessglobal statt pro Dokument
+## ✅ 14. Track-Changes-Guard ist prozessglobal statt pro Dokument
 
 **Problem:** `applyingOwnEdit` ([src/edit/trackChanges.ts](src/edit/trackChanges.ts):15,81)
 ist ein **einzelnes** Boolean. Während des (asynchronen) `applyEdit`-Fensters für
