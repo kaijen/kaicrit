@@ -266,7 +266,7 @@ Edit-Aufgaben; sinnvoll, sobald die Edit-Seite ausgereift ist.
 
 ---
 
-## 8. Live-„Track-Changes"-Modus (Annotate)
+## 8. Live-„Track-Changes"-Modus (Annotate) ✅ erledigt
 
 **Ziel:** Ein umschaltbarer Modus, in dem Bearbeitungen am Dokument automatisch
 als CriticMarkup festgehalten werden (Löschungen → `{--…--}`, Einfügungen →

@@ -130,6 +130,12 @@
         "icon": "$(x)"
       },
       {
+        "command": "kaicrit.toggleTrackChanges",
+        "title": "Toggle Track Changes",
+        "category": "CriticMarkup",
+        "icon": "$(edit)"
+      },
+      {
         "command": "kaicrit.compareFiles",
         "title": "Compare Two Files → CriticMarkup",
         "category": "CriticMarkup"
@@ -307,6 +313,11 @@
         "command": "kaicrit.insertComment",
         "key": "alt+k alt+c",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.toggleTrackChanges",
+        "key": "alt+k alt+t",
+        "when": "editorTextFocus"
       }
     ],
     "menus": {
@@ -349,6 +360,13 @@
           "command": "kaicrit.compareWithGitHead",
           "when": "resourceScheme == file",
           "group": "3_compare@1"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "kaicrit.toggleTrackChanges",
+          "when": "editorIsOpen",
+          "group": "navigation@9"
         }
       ],
       "explorer/context": [
@@ -435,6 +453,11 @@
           "default": "",
           "description": "Author name pre-filled when inserting a comment with metadata. When empty, falls back to the repository's git config user.name."
         },
+        "kaicrit.edit.trackChanges": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start newly opened documents with Track Changes recording on: edits are captured as CriticMarkup (deletions → {--…--}, insertions → {++…++}, replacements → {~~…~>…~~}) instead of changing the text directly. Toggle per document with the \"Toggle Track Changes\" command (Alt+K Alt+T)."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": ["character", "word", "line"],
@@ -478,7 +501,7 @@
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js"
+    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/edit/*.test.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
