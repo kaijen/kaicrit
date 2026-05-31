@@ -113,7 +113,7 @@ eine verlässliche Basis, bevor in Aufgabe 5 die Kommentar-Semantik erweitert wi
 
 ---
 
-## 4. Inline-Aktionen via CodeLens
+## 4. Inline-Aktionen via CodeLens ✅ erledigt
 
 **Ziel:** Über jeder Änderung erscheinen klickbare „Accept | Reject"-Aktionen
 (CodeLens), sodass Auflösen ohne Tastenkürzel-Kenntnis möglich ist.

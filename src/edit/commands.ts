@@ -31,6 +31,16 @@ export function registerEditCommands(
   reg('kaicrit.rejectChange', () => applyAtCursor(dm, 'reject'));
   reg('kaicrit.acceptAll',    () => applyAll(dm, 'accept'));
   reg('kaicrit.rejectAll',    () => applyAll(dm, 'reject'));
+
+  // Position-targeted variants used by the CodeLens actions. They delegate to
+  // the same resolve logic, but act on the change at the supplied position
+  // instead of the cursor.
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand('kaicrit.acceptChangeAt',
+      (pos: vscode.Position) => applyAt(dm, 'accept', pos)),
+    vscode.commands.registerCommand('kaicrit.rejectChangeAt',
+      (pos: vscode.Position) => applyAt(dm, 'reject', pos)),
+  );
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -122,8 +132,14 @@ function navigate(dm: DecoratorManager, direction: 'next' | 'prev' | 'first' | '
 function applyAtCursor(dm: DecoratorManager, mode: 'accept' | 'reject'): void {
   const editor = activeEditor();
   if (!editor) { return; }
+  applyAt(dm, mode, editor.selection.active);
+}
+
+function applyAt(dm: DecoratorManager, mode: 'accept' | 'reject', position: vscode.Position): void {
+  const editor = activeEditor();
+  if (!editor) { return; }
   const changes = dm.getChanges(editor.document);
-  const change = findAtCursor(changes, editor.selection.active);
+  const change = findAtCursor(changes, position);
   if (!change) {
     vscode.window.showInformationMessage('Cursor is not inside a CriticMarkup change.');
     return;

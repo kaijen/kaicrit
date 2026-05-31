@@ -101,6 +101,16 @@
         "category": "CriticMarkup"
       },
       {
+        "command": "kaicrit.acceptChangeAt",
+        "title": "Accept Change (at position)",
+        "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.rejectChangeAt",
+        "title": "Reject Change (at position)",
+        "category": "CriticMarkup"
+      },
+      {
         "command": "kaicrit.compareFiles",
         "title": "Compare Two Files → CriticMarkup",
         "category": "CriticMarkup"
@@ -278,6 +288,14 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "kaicrit.acceptChangeAt",
+          "when": "false"
+        },
+        {
+          "command": "kaicrit.rejectChangeAt",
+          "when": "false"
+        },
+        {
           "command": "kaicrit.selectForCompare",
           "when": "false"
         },
@@ -311,6 +329,11 @@
     "configuration": {
       "title": "kaicrit",
       "properties": {
+        "kaicrit.edit.codeLens": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline \"Accept | Reject\" CodeLens actions above each CriticMarkup change in the editor."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": ["character", "word", "line"],

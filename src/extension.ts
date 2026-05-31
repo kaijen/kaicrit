@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { DecoratorManager } from './edit/decorator';
 import { StatusBarManager } from './edit/statusBar';
+import { CriticCodeLensProvider } from './edit/codeLens';
 import { registerEditCommands } from './edit/commands';
 import { registerCompareCommands } from './compare/commands';
 import { criticMarkupPlugin } from './preview/markdownIt';
@@ -16,6 +17,17 @@ export function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(sb);
 
   registerEditCommands(ctx, dm);
+
+  // Inline "Accept | Reject" CodeLens above each change. Reuses the decorator's
+  // change cache and refreshes when it updates (debounced).
+  const codeLens = new CriticCodeLensProvider(dm);
+  ctx.subscriptions.push(
+    codeLens,
+    vscode.languages.registerCodeLensProvider(
+      [{ scheme: 'file' }, { scheme: 'untitled' }],
+      codeLens,
+    ),
+  );
 
   // Decorate already-open editors on activation
   for (const editor of vscode.window.visibleTextEditors) {
