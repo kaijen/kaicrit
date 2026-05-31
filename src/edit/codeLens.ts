@@ -9,8 +9,10 @@ import { DecoratorManager } from './decorator';
  * Lenses are built from the `DecoratorManager`'s change cache (no extra scan)
  * and refresh whenever that cache updates via `onDidUpdate`. Because the cache
  * is refreshed on a debounce, this acts as a debounced lens-refresh signal.
- * Falls back to a direct parse when the cache has not been populated yet (e.g.
- * a document shown before its first decoration pass).
+ * Falls back to a direct parse only when the cache is genuinely cold (no entry
+ * yet, e.g. a document shown before its first decoration pass) — a warm but
+ * empty cache means the decorator already scanned and found no markers, so a
+ * marker-free file isn't re-scanned on every CodeLens request.
  *
  * Honors the `kaicrit.edit.codeLens` setting: when disabled, no lenses are
  * provided and toggling the setting refreshes immediately.
@@ -47,12 +49,12 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
       .get<boolean>('edit.codeLens', true);
     if (!enabled) { return []; }
 
-    // Reuse the decorator's cached parse; fall back to a direct scan if the
-    // cache is not warm yet for this document.
-    let changes = this.dm.getChanges(doc);
-    if (changes.length === 0) {
-      changes = parseCriticMarkup(doc);
-    }
+    // Reuse the decorator's cached parse; fall back to a direct scan only if the
+    // cache is genuinely cold (no entry yet) for this document. A warm-but-empty
+    // entry means the decorator already scanned and found no markers, so a
+    // marker-free file (e.g. code/JSON containing `{`) doesn't trigger a full
+    // regex scan on every CodeLens request.
+    const changes = this.dm.hasCache(doc) ? this.dm.getChanges(doc) : parseCriticMarkup(doc);
 
     const lenses: vscode.CodeLens[] = [];
     for (const change of changes) {
