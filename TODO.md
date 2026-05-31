@@ -61,7 +61,7 @@ keine neue Infrastruktur nötig.
 
 ---
 
-## 2. Blockierende Git-Autorabfrage asynchron machen
+## ✅ 2. Blockierende Git-Autorabfrage asynchron machen
 
 **Problem:** `resolveAuthor` in [src/edit/commands.ts](src/edit/commands.ts):123
 ruft `execFileSync('git', ['config', 'user.name'], { timeout: 1000 })` **synchron**
