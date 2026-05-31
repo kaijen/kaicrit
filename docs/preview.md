@@ -32,6 +32,43 @@ Span bodies are re-parsed as inline Markdown, so nested formatting such as
 `{++ **bold** text ++}` is preserved. CriticMarkup inside inline code or fenced
 code blocks is left untouched.
 
+## Why this rendering approach (and what it can't do)
+
+Rendering CriticMarkup to HTML is the historically hard half of the format.
+Two problems are well documented in the wider ecosystem:
+
+1. **Invalid HTML.** Accepting/rejecting markers is trivial, but *visually*
+   rendering edits — especially inside lists, or when a marker breaks Markdown
+   syntax — can emit malformed HTML. (See the
+   [PyMdown Critic extension notes](https://facelessuser.github.io/pymdown-extensions/extensions/critic/).)
+2. **Span overlap.** A Markdown span can begin *inside* a CriticMarkup structure
+   and end *outside* it. A "correct" converter would have to handle a huge
+   number of special cases — Fletcher Penney tried several approaches in
+   MultiMarkdown and
+   [left it unsolved](https://fletcher.github.io/MultiMarkdown-6/syntax/critic.html).
+
+kaicrit deliberately trades full coverage for **well-formed output**, by hooking
+markdown-it as an *inline rule* (`md.inline.ruler.before('emphasis', …)`) rather
+than pre-/post-processing the source string the way the Python tooling does:
+
+| Problem | How kaicrit handles it |
+|---|---|
+| Invalid HTML | **Structurally impossible** — the rule pushes balanced token *pairs* (`ins_open`/`ins_close`, `span_open`/`span_close`) into markdown-it's token stream; markdown-it owns the nesting. We never concatenate HTML strings, so there is no malformed output to clean up afterwards. |
+| Markers inside code | The inline rule never runs inside fenced/inline code, so markers there stay verbatim. |
+| Markdown *inside* a marker | Correct — the marker body is re-tokenized as its own inline run (`{++ **bold** ++}` → `<ins><strong>bold</strong></ins>`). |
+| Span overlap (Penney's case) | **Contained, not solved.** The body is tokenized with `posMax` clamped to the closing marker, so a `**` that opens inside a marker and closes outside it finds no partner and degrades to literal `**` — never to broken HTML. |
+
+### Known limitation: markers must stay within one block
+
+The inline rule only ever sees a **single block's** source (`state.src` is one
+paragraph's content), and it matches the closing marker with `indexOf` within
+that chunk. A marker that straddles block boundaries — an opening `{++` in one
+paragraph or list item and its `++}` in another — is therefore **not rendered**
+as an edit in the preview. This is exactly the "lists / markers breaking block
+structure" class of cases that produces invalid HTML elsewhere; kaicrit leaves
+it out of scope rather than trying to render it. (The multi-line *comment* case
+above is the same constraint: a blank line ends the paragraph and the span.)
+
 ## Multi-line comments
 
 Comments may span several lines, for example:

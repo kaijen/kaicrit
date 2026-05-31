@@ -169,6 +169,8 @@ When the two inputs are identical (no differences — also possible with `ignore
 
 Open any Markdown file containing CriticMarkup and launch the built-in preview (`Ctrl+Shift+V` / `Cmd+Shift+V`). CriticMarkup spans render inline — insertions, deletions, highlights, comments, and substitutions — and span bodies are re-parsed as Markdown, so nested formatting such as `{++ **bold** ++}` is preserved. Multi-line comments (`{>>line 1`<br>`line 2<<}`) render in full with their line breaks preserved. CriticMarkup inside inline code or fenced code blocks is left untouched. The preview styling lives in `media/critic.css`.
 
+The renderer is a markdown-it *inline rule* that emits balanced tokens (not raw HTML), so it can't produce the malformed HTML that has historically dogged CriticMarkup-to-HTML rendering, and a Markdown span that overlaps a marker degrades to literal text rather than breaking the document. The trade-off: a marker that straddles block boundaries (an opening `{++` in one paragraph and its `++}` in another) is not rendered as an edit. See [docs/preview.md](docs/preview.md#why-this-rendering-approach-and-what-it-cant-do) for the rationale and the full limitation.
+
 ## Where kaicrit is active
 
 By default kaicrit's editor features — decorations, inline CodeLens, the status-bar counts, the Changes view, and accept/reject — run only in **Markdown** and **plain-text** files. Adjust the list with the `kaicrit.enabledLanguages` setting, which matches a document's [language id](https://code.visualstudio.com/docs/languages/identifiers):
