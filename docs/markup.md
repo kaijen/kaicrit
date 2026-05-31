@@ -28,6 +28,15 @@ Accepting or rejecting a change strips the markup and resolves the content:
 
 Accept All / Reject All apply all resolutions atomically in a single edit.
 
+## Inline-Aktionen (CodeLens)
+
+Über jeder Änderung erscheinen klickbare **Accept | Reject**-Aktionen. Ein Klick
+löst genau diese Änderung auf – dieselbe Logik wie bei den Tastenkürzeln, nur
+ohne sie kennen zu müssen. Die Aktionen aktualisieren sich automatisch beim
+Tippen und nach dem Auflösen.
+
+Abschaltbar über die Einstellung `kaicrit.edit.codeLens` (Standard `true`).
+
 ## Colors
 
 Each change type uses a configurable decoration color. Defaults follow the active theme; override any color via `workbench.colorCustomizations` in `settings.json`:
