@@ -354,7 +354,7 @@ pathologische Eingabe wird abgefangen.
 
 ---
 
-## 11. CodeLens-Fallback parst markerlose Dateien zu oft
+## ✅ 11. CodeLens-Fallback parst markerlose Dateien zu oft
 
 **Problem:** `provideCodeLenses` ([src/edit/codeLens.ts](src/edit/codeLens.ts):52-55)
 fällt bei `changes.length === 0` auf `parseCriticMarkup(doc)` zurück. „Cache kalt"

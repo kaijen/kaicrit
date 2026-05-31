@@ -120,6 +120,13 @@ export class DecoratorManager {
     return this.changeCache.get(doc.uri.toString()) ?? [];
   }
 
+  // Whether this document's parse result is already cached (warm), regardless of
+  // how many changes it holds. Lets readers distinguish "cache cold" from "cache
+  // warm but empty" so they don't re-scan a marker-free document on every query.
+  hasCache(doc: vscode.TextDocument): boolean {
+    return this.changeCache.has(doc.uri.toString());
+  }
+
   // Keep the `kaicrit.hasChanges` context key in sync with the given editor's
   // change count. Called for the active editor on update + editor switches.
   syncContext(editor: vscode.TextEditor | undefined): void {
