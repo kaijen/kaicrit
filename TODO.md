@@ -4,7 +4,7 @@ Diese Liste enthält ausgearbeitete, einzeln umsetzbare Aufgaben. Jede Aufgabe i
 in sich abgeschlossen und kann in einer eigenen Session / einem eigenen Commit
 erledigt werden. Die Reihenfolge ist so gewählt, dass spätere Aufgaben auf den
 Mustern und Hilfsfunktionen früherer aufbauen – von risikoarmen, kleinen
-Erweiterungen hin zu größeren UI-Features.
+Erweiterungen hin zu größeren Features.
 
 **Konventionen für alle Aufgaben**
 
@@ -82,35 +82,34 @@ Infrastruktur. Logische Fortsetzung von Aufgabe 1 (beides „Sichtbarkeit").
 
 ---
 
-## 3. Selektives Accept/Reject nach Typ
+## 3. Mehrzeilige Kommentare im Preview robust rendern
 
-**Ziel:** Befehle wie „Accept all Additions", „Reject all Deletions",
-„Resolve all Comments" – also `acceptAll`/`rejectAll`, aber gefiltert auf einen Typ.
+**Ziel:** Sicherstellen, dass Kommentare `{>>…<<}` mit Zeilenumbrüchen im
+Markdown-Preview sauber und vollständig dargestellt werden.
 
-**Warum hier:** Baut direkt auf der vorhandenen atomaren `WorkspaceEdit`-Logik
-in [src/edit/commands.ts](src/edit/commands.ts) auf; geringe Komplexität, hoher Nutzen.
+**Warum hier:** Kleiner, abgegrenzter Robustheits-Fix im Preview-Bereich. Schafft
+eine verlässliche Basis, bevor in Aufgabe 5 die Kommentar-Semantik erweitert wird.
 
 **Betroffene Dateien**
-- [src/edit/commands.ts](src/edit/commands.ts) – `applyAll()` so refaktorieren,
-  dass es einen optionalen Typ-Filter (`ChangeType`) akzeptiert; neue Befehle registrieren.
-- [package.json](package.json) – neue `contributes.commands`-Einträge (+ optional Keybindings/Menüs).
-- Wiederverwenden: `ChangeType` aus [src/core/types.ts](src/core/types.ts).
+- [src/preview/markdownIt.ts](src/preview/markdownIt.ts) – Tokenizer-Logik für den
+  Comment-Span; Verhalten bei eingebetteten Zeilenumbrüchen prüfen.
+- [media/critic.css](media/critic.css) – ggf. `white-space`/Block-Darstellung der
+  `.critic-comment`-Klasse anpassen.
+- Test (siehe Aufgabe 9): Mehrzeilen-Kommentar als Rendering-Fall aufnehmen.
 
 **Umsetzungsschritte**
-1. `applyAll(editor, mode, filter?)` einführen – `filter` schränkt auf einen Typ ein.
-2. Befehle ergänzen: `kaicrit.acceptAllOfType` / `kaicrit.rejectAllOfType`.
-   - Variante A (empfohlen): ein Befehl je Richtung, der per `showQuickPick`
-     den Typ abfragt (kompakte Command-Palette).
-   - Variante B: feste Befehle je Typ (mehr Einträge, schneller zugänglich).
-3. Bestehende `acceptAll`/`rejectAll` rufen `applyAll` ohne Filter auf (kein Duplikat).
-4. Statusmeldung „N Änderungen vom Typ X aufgelöst".
+1. Reproduzieren: Dokument mit `{>>Zeile1\nZeile2<<}` im Preview prüfen
+   (aktuelles Verhalten dokumentieren).
+2. Falls der Inline-Tokenizer am Zeilenumbruch abbricht: Tokenizer so anpassen,
+   dass der gesamte Span bis `<<}` erfasst wird (analog zur Behandlung anderer Typen).
+3. CSS so wählen, dass mehrzeiliger Kommentartext lesbar bleibt (kein Abschneiden).
+4. Geschachteltes Markdown im Kommentar weiterhin korrekt rendern.
 
 **Akzeptanzkriterien**
-- Genau die Änderungen des gewählten Typs werden in **einem** `WorkspaceEdit` aufgelöst.
-- Andere Typen bleiben unangetastet.
-- Reconstruction-Verhalten bestehender Befehle unverändert.
+- Mehrzeilige Kommentare erscheinen vollständig und korrekt formatiert im Preview.
+- Einzeilige Kommentare und andere Typen bleiben unverändert.
 
-**Doku:** README + `docs/markup.md` (Accept/Reject-Tabelle) + `docs/keybindings.md`.
+**Doku:** `docs/preview.md` (Hinweis zu mehrzeiligen Kommentaren).
 
 ---
 
@@ -119,15 +118,17 @@ in [src/edit/commands.ts](src/edit/commands.ts) auf; geringe Komplexität, hoher
 **Ziel:** Über jeder Änderung erscheinen klickbare „Accept | Reject"-Aktionen
 (CodeLens), sodass Auflösen ohne Tastenkürzel-Kenntnis möglich ist.
 
-**Warum hier:** Nutzt die in Aufgabe 3 vereinheitlichte Auflöse-Logik und den
-Parser. Mittlerer Aufwand, stark verbesserte Auffindbarkeit der Funktionen.
+**Warum hier:** Nutzt die vorhandene Auflöse-Logik und den Parser. Mittlerer
+Aufwand, stark verbesserte Auffindbarkeit der Funktionen; bereitet die
+Inline-Aktionen vor, die später auch die Sidebar (Aufgabe 6) verwendet.
 
 **Betroffene Dateien**
 - Neu: `src/edit/codeLens.ts` – `CriticCodeLensProvider implements vscode.CodeLensProvider`.
 - [src/extension.ts](src/extension.ts) – Provider via `languages.registerCodeLensProvider`
   registrieren (sinnvolles `DocumentSelector`, z. B. `markdown`, `plaintext`, ggf. `*`).
 - Wiederverwenden: `parseCriticMarkup`, vorhandene `kaicrit.acceptChange` /
-  `kaicrit.rejectChange` (per Position als Argument), bzw. die `applyAtCursor`-Logik.
+  `kaicrit.rejectChange` (per Position als Argument), bzw. die `applyAtCursor`-Logik
+  aus [src/edit/commands.ts](src/edit/commands.ts).
 - [package.json](package.json) – Setting `kaicrit.edit.codeLens` (boolean, Default `true`)
   zum Ein-/Ausschalten.
 
@@ -148,15 +149,57 @@ Parser. Mittlerer Aufwand, stark verbesserte Auffindbarkeit der Funktionen.
 
 ---
 
-## 5. Sidebar-Übersicht aller Änderungen (Tree View)
+## 5. Kommentar-Metadaten (Autor & Datum)
+
+**Ziel:** Kommentare optional mit Autor und Datum versehen, z. B.
+`{>>@kai 2026-05-31: Text<<}`, und diese Metadaten in Editor-Hover und Preview
+gesondert anzeigen.
+
+**Warum hier:** Erweitert die Kommentar-Semantik (Parser + Preview + Decorator).
+Sollte nach dem Preview-Fix (Aufgabe 3) und vor der Sidebar (Aufgabe 6) erfolgen,
+damit die Übersicht die Metadaten direkt mit anzeigen kann.
+
+> Hinweis: Dies erweitert den CriticMarkup-Standard um eine Konvention. Die
+> Konvention muss rückwärtskompatibel sein – ein Kommentar **ohne** Metadaten
+> muss weiterhin als reiner Kommentar gelten.
+
+**Betroffene Dateien**
+- [src/core/types.ts](src/core/types.ts) – `CriticChange` um optionale Felder
+  `author?` / `date?` ergänzen.
+- [src/edit/parser.ts](src/edit/parser.ts) – Kommentarinhalt optional in
+  `@author`, `date:` und Resttext zerlegen (z. B. via Zusatz-Regex auf den Inhalt).
+- [src/edit/decorator.ts](src/edit/decorator.ts) – Hover-Message mit Autor/Datum
+  (über `DecorationOptions.hoverMessage`).
+- [src/preview/markdownIt.ts](src/preview/markdownIt.ts) + [media/critic.css](media/critic.css)
+  – Autor/Datum im Comment-Span gesondert auszeichnen.
+- Wiederverwenden: Autor-Default aus `git config user.name` bzw. der Insert-Befehl
+  in [src/edit/commands.ts](src/edit/commands.ts) (`insertComment` füllt Metadaten vor).
+
+**Umsetzungsschritte**
+1. Konvention festlegen und in `docs/markup.md` dokumentieren (Format, Optionalität).
+2. Parser: Metadaten aus dem Kommentarinhalt extrahieren, ohne andere Typen zu berühren.
+3. `insertComment` erweitern: aktuelles Datum + Autor (Git/Setting) optional vorbefüllen.
+4. Hover und Preview-Darstellung umsetzen.
+5. Tests (Aufgabe 9): Kommentare mit/ohne Metadaten abdecken.
+
+**Akzeptanzkriterien**
+- Kommentare ohne Metadaten verhalten sich exakt wie bisher.
+- Mit Metadaten werden Autor/Datum erkannt und in Hover + Preview angezeigt.
+- Accept/Reject (Kommentar entfernen) funktioniert unverändert.
+
+**Doku:** `docs/markup.md`, README (Comment-Beschreibung), `CLAUDE.md` (CriticChange-Felder).
+
+---
+
+## 6. Sidebar-Übersicht aller Änderungen (Tree View)
 
 **Ziel:** Eine eigene View im Explorer/Activity-Bar, die alle Änderungen des
 aktiven Dokuments auflistet – gruppiert nach Typ, klickbar zum Anspringen,
 mit Inline-Aktionen für Accept/Reject.
 
-**Warum hier:** Größtes UI-Feature; profitiert von allen vorigen Aufgaben
-(Parser-Nutzung, vereinheitlichte Auflöse-Logik aus Aufgabe 3, ggf. Zähl-Helfer
-aus Aufgabe 1).
+**Warum hier:** Größtes UI-Feature der „Edit"-Seite; profitiert von Parser-Nutzung,
+den Inline-Aktionen aus Aufgabe 4, einem Zähl-Helfer aus Aufgabe 1 und den
+Metadaten aus Aufgabe 5.
 
 **Betroffene Dateien**
 - Neu: `src/edit/changesView.ts` – `ChangesTreeProvider implements vscode.TreeDataProvider<…>`.
@@ -170,7 +213,7 @@ aus Aufgabe 1).
 
 **Umsetzungsschritte**
 1. Baumstruktur: Top-Level je Typ (mit Count), Kinder = einzelne Änderungen
-   (Label = gekürzter Inhalt, Description = Zeilennummer).
+   (Label = gekürzter Inhalt, Description = Zeilennummer; bei Kommentaren Autor/Datum).
 2. `command` je Blatt → springt zur Änderung (`revealChange` / `revealRange`).
 3. Inline-Item-Buttons (Icons) für Accept/Reject, delegiert an vorhandene Befehle.
 4. `onDidChangeTreeData` bei aktivem Editor-Wechsel und Dokument-Änderung feuern (debounced).
@@ -186,7 +229,7 @@ aus Aufgabe 1).
 
 ---
 
-## 6. Compare-Optionen erweitern
+## 7. Compare-Optionen erweitern
 
 **Ziel:** Den Datei-Vergleich praxistauglicher machen mit (a) „Whitespace ignorieren",
 (b) Vergleich der aktiven Datei gegen ihren Git-HEAD-Stand.
@@ -223,12 +266,57 @@ Edit-Aufgaben; sinnvoll, sobald die Edit-Seite ausgereift ist.
 
 ---
 
-## 7. Tests für Edit & Preview
+## 8. Live-„Track-Changes"-Modus (Annotate)
+
+**Ziel:** Ein umschaltbarer Modus, in dem Bearbeitungen am Dokument automatisch
+als CriticMarkup festgehalten werden (Löschungen → `{--…--}`, Einfügungen →
+`{++…++}`, Ersetzungen → `{~~…~>…~~}`), statt den Text direkt zu überschreiben –
+analog zu „Änderungen nachverfolgen" in Textverarbeitungen.
+
+**Warum hier (spät):** Größter und risikoreichster Umfang; greift tief in das
+Editier-Verhalten ein. Profitiert von allen vorherigen Bausteinen (Parser,
+Sichtbarkeit, Übersicht) und sollte erst nach deren Stabilisierung angegangen werden.
+
+> Hinweis: Vor der Umsetzung ein kurzes Design-Dokument anlegen (Verhalten bei
+> Mehrfach-Cursor, Undo/Redo, Einfügen mitten in bestehende Marker, Performance).
+
+**Betroffene Dateien**
+- Neu: `src/edit/trackChanges.ts` – Listener auf `workspace.onDidChangeTextDocument`,
+  der Roh-Edits in CriticMarkup-Edits umwandelt (mit Re-Entrancy-Schutz, um die
+  eigenen Edits nicht erneut zu verarbeiten).
+- [src/edit/commands.ts](src/edit/commands.ts) – Toggle-Befehl `kaicrit.toggleTrackChanges`.
+- [src/extension.ts](src/extension.ts) – Modus-Zustand verwalten und Listener
+  bedingt aktivieren.
+- [package.json](package.json) – Befehl, Statusbar-/Context-Key für den Modus,
+  Setting `kaicrit.edit.trackChanges` (Default `false`).
+- Wiederverwenden: `MARKERS` aus [src/core/markers.ts](src/core/markers.ts),
+  Parser zum Erkennen bestehender Marker an der Edit-Position.
+
+**Umsetzungsschritte**
+1. Design-Dokument + Entscheidungen festhalten.
+2. Toggle-Befehl + sichtbarer Zustand (Statusbar/Context-Key) umsetzen.
+3. `onDidChangeTextDocument` auswerten: Einfüge-/Lösch-/Ersetzungs-Edits in
+   entsprechende Marker umwandeln; eigene programmgesteuerte Edits per Flag ausschließen.
+4. Edit innerhalb/angrenzend an bestehende Marker sinnvoll zusammenführen.
+5. Verhalten bei Undo/Redo prüfen; auf große Dateien/Performance achten.
+
+**Akzeptanzkriterien**
+- Bei aktivem Modus erzeugen normale Bearbeitungen korrekte CriticMarkup-Marker.
+- Kein Doppelt-Verarbeiten der eigenen Edits; Undo bleibt nutzbar.
+- Modus lässt sich verlässlich ein-/ausschalten; bei `off` normales Editieren.
+
+**Doku:** README (neuer Abschnitt), neue Datei `docs/track-changes.md`,
+`CLAUDE.md`-Architektur + Checkliste.
+
+---
+
+## 9. Tests für Edit & Preview
 
 **Ziel:** Test-Abdeckung für die bisher ungetesteten Bereiche: Parser,
-Navigator, Accept/Reject-Semantik und Preview-Rendering.
+Navigator, Accept/Reject-Semantik und Preview-Rendering – inkl. der in
+Aufgaben 3 und 5 ergänzten Kommentar-Fälle.
 
-**Warum zuletzt:** Sinnvollerweise erst, wenn die neuen Features (Aufgaben 1–6)
+**Warum zuletzt:** Sinnvollerweise erst, wenn die neuen Features (Aufgaben 1–8)
 das Verhalten von Befehlen/Logik finalisiert haben – so testet man den Zielzustand,
 nicht ein Zwischenstadium. Härtet die Codebasis vor einem Release ab.
 
@@ -243,12 +331,12 @@ nicht ein Zwischenstadium. Härtet die Codebasis vor einem Release ab.
 
 **Umsetzungsschritte**
 1. Parser: alle 5 Typen, geschachtelte/aneinandergrenzende Marker, Substitution
-   mit/ohne `~>`, korrekte Offsets.
+   mit/ohne `~>`, Kommentare mit/ohne Metadaten, korrekte Offsets.
 2. Navigator: findAtCursor/Next/Prev/First/Last inkl. Wrap-around-Grenzfälle.
 3. Accept/Reject: Mapping je Typ gemäß Tabelle in `CLAUDE.md` (Deletion, Addition,
    Substitution, Highlight, Comment).
 4. Preview: markdown-it-Plugin gegen `md.render(...)`-Strings prüfen
-   (`<ins>`, `<del>`, `<mark>`, Comment-Span; geschachteltes Markdown).
+   (`<ins>`, `<del>`, `<mark>`, Comment-Span; geschachteltes + mehrzeiliges Markdown).
 5. Wo VSCode-Typen (`Range`, `Position`) nötig sind: schlanke Fakes/Helfer nutzen,
    damit Tests ohne Extension-Host laufen.
 
@@ -262,11 +350,7 @@ nicht ein Zwischenstadium. Härtet die Codebasis vor einem Release ab.
 
 ## Bewusst (vorerst) ausgeklammert
 
-Diese Ideen wurden absichtlich **nicht** in die TODO-Liste aufgenommen:
-
-- **Kommentar-Metadaten (Autor/Datum)** – würde den CriticMarkup-Standard um eine
-  proprietäre Konvention erweitern; erst klären, ob standardkonform machbar.
-- **Voller Live-„Track-Changes"-Modus beim Tippen** – sehr großer Umfang, eigenes
-  Teilprodukt; separates Design nötig.
-- **Mehrzeilige Kommentare im Preview „glätten"** – kleiner Robustheits-Fix,
-  zunächst zu verifizieren, ob das Problem real auftritt.
+- **Selektives Accept/Reject nach Typ** (z. B. „alle Additions annehmen") – die
+  bestehenden `acceptAll`/`rejectAll` decken den häufigsten Fall bereits ab; der
+  zusätzliche Typ-Filter wurde auf Wunsch zurückgestellt und kann später leicht
+  auf Basis der vorhandenen atomaren `WorkspaceEdit`-Logik ergänzt werden.
