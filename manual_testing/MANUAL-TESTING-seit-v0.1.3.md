@@ -16,8 +16,13 @@ verifiziert.
 1. Abhängigkeiten installieren und kompilieren:
    ```bash
    npm install
+   npm test          # automatisierte Suiten – muss grün sein, bevor du manuell testest
    npm run watch     # Watch-Compiler laufen lassen
    ```
+   > `npm test` deckt Parser, Navigation, Accept/Reject-Semantik, Preview,
+   > Compare und Track-Changes-Engine automatisiert ab. Die manuelle
+   > Verifikation unten konzentriert sich daher auf das Laufzeit-/UI-Verhalten
+   > im Extension Host, das die Unit-Tests nicht erfassen.
 2. In VS Code **F5** drücken → es startet ein **Extension Development Host**.
 3. Im Development-Host den Ordner `manual_testing/examples` öffnen
    (oder das ganze Repo). Alle Beispieldateien liegen dort.
@@ -313,6 +318,12 @@ Leerzeichen, z. B. `a, b` → `a,b`, `a + b` → `a+b`, `=` mit/ohne Spaces).
   Editor **noch** in der Preview als Löschung gerendert. ✅
 - **Mehrzeilige Kommentare in der Preview:** siehe §2 – vollständig mit
   Zeilenumbrüchen. ✅
+- **Einfaches Re-Parse nach Accept/Reject:** in `all-markers.md` eine Änderung
+  per CodeLens/Sidebar/`Alt+A`/`Alt+R` auflösen.
+  ✅ Marker verschwinden, und Statusleisten-Zähler, Sidebar und CodeLens
+  aktualisieren sich **sofort und ohne Flackern** (das Dokument wird intern nur
+  noch **einmal** statt doppelt neu geparst – rein interne Optimierung, kein
+  sichtbarer Verhaltensunterschied).
 
 ---
 

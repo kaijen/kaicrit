@@ -7,6 +7,7 @@ import { DecoratorManager } from './decorator';
 import { TrackChangesManager } from './trackChanges';
 import { EnablementManager } from './enablement';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
+import { resolveReplacement } from './resolve';
 
 export function registerEditCommands(
   ctx: vscode.ExtensionContext,
@@ -263,23 +264,5 @@ function addResolution(
   change: CriticChange,
   mode: 'accept' | 'reject',
 ): void {
-  let replacement: string;
-  switch (change.type) {
-    case ChangeType.Deletion:
-      replacement = mode === 'accept' ? '' : (change.text ?? '');
-      break;
-    case ChangeType.Addition:
-      replacement = mode === 'accept' ? (change.text ?? '') : '';
-      break;
-    case ChangeType.Substitution:
-      replacement = mode === 'accept' ? (change.newText ?? '') : (change.oldText ?? '');
-      break;
-    case ChangeType.Highlight:
-      replacement = change.text ?? '';
-      break;
-    case ChangeType.Comment:
-      replacement = '';
-      break;
-  }
-  edit.replace(uri, change.fullRange, replacement);
+  edit.replace(uri, change.fullRange, resolveReplacement(change, mode));
 }

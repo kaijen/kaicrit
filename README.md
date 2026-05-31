@@ -204,6 +204,19 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 
 All keybindings can be rebound via **File › Preferences › Keyboard Shortcuts** (search for `kaicrit`) or by editing `keybindings.json` directly. See the [keybindings reference](docs/keybindings.md#customize) for an example.
 
+## Development
+
+```bash
+npm install        # first time only
+npm run compile    # one-shot TypeScript compile → out/
+npm run watch      # incremental watch (run before F5)
+npm test           # compile + run the unit-test suites
+```
+
+`npm test` runs the Node `--test` suites (parser, navigation, accept/reject
+semantics, Markdown preview, compare, and the Track Changes engine) without an
+Extension Host. Press **F5** in VS Code to launch the Extension Development Host.
+
 ## About
 
 Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).

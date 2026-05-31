@@ -120,3 +120,30 @@ test('comment metadata is split into a critic-comment-meta span when enabled', (
   const { classes } = run('{>>@kai 2026-05-31: text<<}', { commentMetadata: true });
   assert.deepEqual(classes, ['critic-comment', 'critic-comment-meta']);
 });
+
+test('comment metadata is not split when disabled', () => {
+  const { classes } = run('{>>@kai 2026-05-31: text<<}', { commentMetadata: false });
+  assert.deepEqual(classes, ['critic-comment']);
+});
+
+test('multi-line comment is captured as a single span across the newline', () => {
+  const src = '{>>line1\nline2<<}';
+  const { handled, classes, state } = run(src);
+  assert.equal(handled, true);
+  assert.deepEqual(classes, ['critic-comment']);
+  // The whole body (including the newline) is re-tokenized into one text token.
+  const text = state.tokens.find((t) => t.type === 'text');
+  assert.equal(text?.content, 'line1\nline2');
+  assert.equal(state.pos, src.length);
+});
+
+test('substitution with an empty side still emits both spans', () => {
+  assert.deepEqual(run('{~~~>new~~}').classes, ['critic-del', 'critic-ins']);
+  assert.deepEqual(run('{~~old~>~~}').classes, ['critic-del', 'critic-ins']);
+});
+
+test('unterminated marker is left for normal text rules', () => {
+  const { handled, state } = run('{--no close');
+  assert.equal(handled, false);
+  assert.equal(state.pos, 0);
+});
