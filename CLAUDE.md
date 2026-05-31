@@ -44,14 +44,14 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 | File | Role |
 |---|---|
 | [core/types.ts](src/core/types.ts) | `ChangeType` const enum + `CriticChange` interface |
-| [core/markers.ts](src/core/markers.ts) | `MARKERS` delimiter table + `RE_ALL` regex — the single source of truth for marker syntax, consumed by the edit parser and the compare renderer |
+| [core/markers.ts](src/core/markers.ts) | `MARKERS` delimiter table + `RE_ALL` regex — the single source of truth for marker syntax, consumed by the edit parser and the compare renderer. The `findMarkers(text)` helper iterates markers via `text.matchAll(RE_ALL)`, which runs against an internal clone of the regex — so the shared global `RE_ALL` is never mutated and there is no `lastIndex` state shared between callers. Callers iterate with `for…of findMarkers(text)` instead of `RE_ALL.exec` |
 | [core/comment.ts](src/core/comment.ts) | `parseCommentMeta(content)` — pure splitter for the optional `@author YYYY-MM-DD:` comment prefix, shared by the edit parser and the preview tokenizer (`core/comment.test.ts` covers it) |
 
 ### `src/edit/` — editor decorations, navigation, accept/reject
 
 | File | Role |
 |---|---|
-| [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]`; extracts comment `author`/`date` via `parseCommentMeta` when `kaicrit.edit.commentMetadata` is on |
+| [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass scan via `findMarkers`, returns `CriticChange[]`; extracts comment `author`/`date` via `parseCommentMeta` when `kaicrit.edit.commentMetadata` is on |
 | [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, comment author/date hover (`commentHover`), an `onDidUpdate` event fired after each cache refresh, and `syncContext(editor)` which mirrors the active editor's change count into the `kaicrit.hasChanges` context key (gates the `Alt+A`/`Alt+R` keybinding `when` clauses) |
 | [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange`. Also exports the shared `ORDER`/`LABELS`/`SYMBOLS` tables and `countByType` helper, reused by the changes Tree View |
 | [edit/changesView.ts](src/edit/changesView.ts) | `ChangesTreeProvider` (`TreeDataProvider`) — sidebar view (`kaicrit.changes` in the `kaicrit` Activity-Bar container) listing the active document's changes grouped by type; reads the decorator cache, refreshes on `onDidUpdate` + active-editor switch. Leaves carry the change start position and a `kaicrit.revealChangeAt` click command; inline `kaicrit.acceptChangeNode`/`rejectChangeNode` buttons + `view/title` Accept-All/Reject-All |
@@ -83,7 +83,7 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 ## CriticMarkup Types
 
-The edit parser uses the single `RE_ALL` regex from [core/markers.ts](src/core/markers.ts) with six capture groups (one per type, two for substitution). `document.positionAt()` converts string offsets to VSCode positions — no manual line/column arithmetic. The preview ([preview/markdownIt.ts](src/preview/markdownIt.ts)) keeps a separate inline tokenizer because it integrates with markdown-it's own parser, but shares the delimiter literals via `MARKERS`.
+The edit parser uses the single `RE_ALL` regex from [core/markers.ts](src/core/markers.ts) — via the `findMarkers(text)` helper (`text.matchAll`, no shared `lastIndex`) — with six capture groups (one per type, two for substitution). `document.positionAt()` converts string offsets to VSCode positions — no manual line/column arithmetic. The preview ([preview/markdownIt.ts](src/preview/markdownIt.ts)) keeps a separate inline tokenizer because it integrates with markdown-it's own parser, but shares the delimiter literals via `MARKERS`.
 
 Each `CriticChange` carries:
 - `fullRange` — the entire `{--...--}` span, used for all edits
