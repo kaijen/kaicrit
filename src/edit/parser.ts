@@ -1,11 +1,18 @@
 import * as vscode from 'vscode';
 import { ChangeType, CriticChange } from '../core/types';
 import { RE_ALL } from '../core/markers';
+import { parseCommentMeta } from '../core/comment';
 
 export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
   const text = doc.getText();
   const results: CriticChange[] = [];
   let match: RegExpExecArray | null;
+
+  // The author/date convention is opt-out: when disabled, comments are parsed
+  // as plain text and no metadata is extracted.
+  const metaEnabled = vscode.workspace
+    .getConfiguration('kaicrit')
+    .get<boolean>('edit.commentMetadata', true);
 
   RE_ALL.lastIndex = 0;
   while ((match = RE_ALL.exec(text)) !== null) {
@@ -58,12 +65,20 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
     } else if (match[6] !== undefined) {
       const contentStart = doc.positionAt(match.index + 3);
       const contentEnd = doc.positionAt(match.index + match[0].length - 3);
-      results.push({
+      const change: CriticChange = {
         type: ChangeType.Comment,
         fullRange,
         contentRange: new vscode.Range(contentStart, contentEnd),
         text: match[6],
-      });
+      };
+      if (metaEnabled) {
+        const meta = parseCommentMeta(match[6]);
+        if (meta.author !== undefined || meta.date !== undefined) {
+          change.author = meta.author;
+          change.date = meta.date;
+        }
+      }
+      results.push(change);
     }
   }
 

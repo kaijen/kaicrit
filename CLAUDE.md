@@ -45,17 +45,18 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 |---|---|
 | [core/types.ts](src/core/types.ts) | `ChangeType` const enum + `CriticChange` interface |
 | [core/markers.ts](src/core/markers.ts) | `MARKERS` delimiter table + `RE_ALL` regex — the single source of truth for marker syntax, consumed by the edit parser and the compare renderer |
+| [core/comment.ts](src/core/comment.ts) | `parseCommentMeta(content)` — pure splitter for the optional `@author YYYY-MM-DD:` comment prefix, shared by the edit parser and the preview tokenizer (`core/comment.test.ts` covers it) |
 
 ### `src/edit/` — editor decorations, navigation, accept/reject
 
 | File | Role |
 |---|---|
-| [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]` |
-| [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, and an `onDidUpdate` event fired after each cache refresh |
+| [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]`; extracts comment `author`/`date` via `parseCommentMeta` when `kaicrit.edit.commentMetadata` is on |
+| [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, comment author/date hover (`commentHover`), and an `onDidUpdate` event fired after each cache refresh |
 | [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange` |
 | [edit/navigator.ts](src/edit/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
 | [edit/codeLens.ts](src/edit/codeLens.ts) | `CriticCodeLensProvider` — inline `Accept`/`Reject` lenses above each change; reads the decorator cache, refreshes on `onDidUpdate`, honors `kaicrit.edit.codeLens` |
-| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 15 insert/navigate/accept/reject commands (incl. position-targeted `acceptChangeAt`/`rejectChangeAt` used by CodeLens) |
+| [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 15 insert/navigate/accept/reject commands (incl. position-targeted `acceptChangeAt`/`rejectChangeAt` used by CodeLens); `insertComment` pre-fills `@author today:` from `kaicrit.edit.commentAuthor` (falling back to `git config user.name`) when metadata is enabled |
 
 ### `src/compare/` — diff two files into CriticMarkup
 
@@ -71,11 +72,11 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 
 | File | Role |
 |---|---|
-| [preview/markdownIt.ts](src/preview/markdownIt.ts) | `criticMarkupPlugin(md)` — markdown-it inline rule; its own tokenizer (different engine), styled by [media/critic.css](media/critic.css) |
+| [preview/markdownIt.ts](src/preview/markdownIt.ts) | `criticMarkupPlugin(md, { commentMetadata })` — markdown-it inline rule; its own tokenizer (different engine), styled by [media/critic.css](media/critic.css). Splits the comment author/date prefix into a `.critic-comment-meta` span via `parseCommentMeta` when `commentMetadata` is on |
 
 ### Entry point
 
-[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the CodeLens provider (`languages.registerCodeLensProvider` for `file`/`untitled` schemes), registers the compare commands, and **returns** `{ extendMarkdownIt }` so the built-in preview picks up the plugin.
+[extension.ts](src/extension.ts) — `activate()` wires the edit listeners + commands, registers the CodeLens provider (`languages.registerCodeLensProvider` for `file`/`untitled` schemes), registers the compare commands, and **returns** `{ extendMarkdownIt }` (passing the current `kaicrit.edit.commentMetadata` value into `criticMarkupPlugin`) so the built-in preview picks up the plugin.
 
 ## CriticMarkup Types
 
@@ -85,6 +86,7 @@ Each `CriticChange` carries:
 - `fullRange` — the entire `{--...--}` span, used for all edits
 - `contentRange` — content inside markers (non-substitution types)
 - `oldRange` / `newRange` — substitution sub-ranges for separate decoration
+- `author?` / `date?` — comment metadata, set only on comments with the optional `@author YYYY-MM-DD:` prefix (and only when `kaicrit.edit.commentMetadata` is enabled). The convention lives in [core/comment.ts](src/core/comment.ts); a comment without the prefix carries neither field and behaves exactly as a plain comment.
 
 Marker characters (`{--`, `--}`, etc.) get a separate dimming decoration (opacity 0.4) via `markerType` in `DecoratorManager`. The five content decorations additionally set `overviewRulerColor`/`overviewRulerLane` (Right) so changes show on the scrollbar; the dimmed `markerType` deliberately omits ruler markers.
 
