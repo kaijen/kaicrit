@@ -62,6 +62,11 @@ function critic(state: any, silent: boolean): boolean {
     return false;
   }
 
+  // `indexOf` scans across embedded newlines, so a multi-line comment such as
+  // `{>>line1\nline2<<}` (within one paragraph block) is captured as a single
+  // span up to `<<}` — the same way every other type is matched. The captured
+  // body is re-tokenized below, and media/critic.css keeps its line breaks
+  // visible via `white-space: pre-wrap`.
   const closeIdx = src.indexOf(def.close, contentStart);
   if (closeIdx < 0) {
     return false;

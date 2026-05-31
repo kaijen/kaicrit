@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Status bar** — a status bar entry summarizes the active editor's open
+  changes by type (`⊟ ⊞ ⇄ ☰ 💬`), updating live and hidden when there are no
+  changes; clicking it jumps to the first change.
+- **Overview ruler markers** — changes are mirrored as colored marks on the
+  scrollbar, reusing the existing per-type `kaicrit.*` colors.
+
+### Fixed
+- Multi-line comments (`{>>line 1\nline 2<<}`) now render in full in the
+  Markdown preview, with their line breaks preserved.
+
 ## [0.2.0] - 2026-05-30
 
 ### Added
