@@ -162,29 +162,32 @@ function isoToday(): string {
 function insertSubstitution(): void {
   const editor = activeEditor();
   if (!editor) { return; }
+  // A substitution must replace *existing* text. With nothing selected there is
+  // no "old" side, which would degenerate into a plain addition ({~~~>new~~} ≡
+  // {++new++}). So we decline and point the user at the right gesture instead of
+  // inserting an empty pair — unlike addition/highlight/comment, which are valid
+  // to author from scratch. (Multi-cursor: any empty cursors are skipped.)
+  const targets = editor.selections.filter(sel => !sel.isEmpty);
+  if (targets.length === 0) {
+    vscode.window.setStatusBarMessage(
+      'kaicrit: select the text to replace before inserting a substitution.', 3000);
+    return;
+  }
   const { open, sep, close } = MARKERS[ChangeType.Substitution];
-  const noSelection = editor.selections.length === 1 && editor.selection.isEmpty;
   editor.edit(eb => {
-    for (const sel of editor.selections) {
-      // With no selection, leave the "old" side empty ({~~~>~~}) rather than
-      // inserting a literal "old" placeholder the user would have to delete.
-      const selected = sel.isEmpty ? '' : editor.document.getText(sel);
-      eb.replace(sel, `${open}${selected}${sep}${close}`);
+    for (const sel of targets) {
+      eb.replace(sel, `${open}${editor.document.getText(sel)}${sep}${close}`);
     }
   }).then(() => {
-    // After the replace, the cursor sits at the end of the inserted text.
-    // Computing the caret from that offset (rather than searching the text for
-    // `~>`) stays correct for multi-line selections and replaced text that
-    // itself contains a `~>`:
-    //   • With a selection, park it on the "new" side (before `~~}`) so the user
-    //     types the replacement: end − close.length.
-    //   • With no selection, park it on the empty "old" side (before `~>`) so the
-    //     user types the original first: end − close.length − sep.length.
+    // Park the cursor on the empty "new" side (before `~~}`) so the user can type
+    // the replacement. After the replace, the cursor sits at the end of the
+    // inserted text; the desired point is exactly `close.length` units before it.
+    // Computing from that offset (rather than searching the text for `~>`) stays
+    // correct for multi-line selections and replaced text that contains a `~>`.
     if (editor.selections.length === 1) {
       const doc = editor.document;
       const end = doc.offsetAt(editor.selection.active);
-      const back = noSelection ? close.length + sep.length : close.length;
-      const pos = doc.positionAt(end - back);
+      const pos = doc.positionAt(end - close.length);
       editor.selection = new vscode.Selection(pos, pos);
     }
   });

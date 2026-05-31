@@ -622,6 +622,13 @@ löschen. Kleine UX-Reibung.
 
 **Doku:** `docs/markup.md` (falls sich das beschriebene Einfügeverhalten ändert).
 
+> **Umgesetzte Variante (final):** Eine Substitution ersetzt semantisch immer
+> etwas Existierendes; eine leere alte Seite wäre nur eine Addition
+> (`{~~~>new~~}` ≡ `{++new++}`). Daher wird `insertSubstitution` **ohne Auswahl
+> bewusst abgelehnt** (kurzer Statusbar-Hinweis), statt ein leeres Gerüst
+> einzufügen. Damit ist das Platzhalter-Problem ebenfalls gelöst, und das
+> Verhalten ist konsistent mit der Semantik des Markers.
+
 ---
 
 ## 19. ESLint (oder vergleichbarer Lint-Schritt) einrichten
