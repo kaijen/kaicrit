@@ -388,7 +388,7 @@ Fall ohne `{` bereits).
 
 ---
 
-## 12. Preview-`commentMetadata` reagiert nicht auf Settingwechsel
+## ✅ 12. Preview-`commentMetadata` reagiert nicht auf Settingwechsel
 
 **Problem:** `extendMarkdownIt` ([src/extension.ts](src/extension.ts):110-114) liest
 `kaicrit.edit.commentMetadata` beim Aufbau der markdown-it-Instanz und friert den

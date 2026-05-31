@@ -55,7 +55,21 @@ the preview renders the author/date as a distinct `.critic-comment-meta` label
 ahead of the comment body; the body itself is still re-parsed as inline Markdown.
 A plain comment renders unchanged. Set `kaicrit.edit.commentMetadata` to `false`
 to render the whole comment body verbatim (the prefix is then shown as ordinary
-text). Toggling the setting takes effect when the preview is reopened/reloaded.
+text).
+
+### Known limitation: setting changes need a reload
+
+The preview reads `kaicrit.edit.commentMetadata` **once**, when VS Code first
+builds the `markdown-it` instance (via the extension's `extendMarkdownIt` hook),
+and then caches that instance. There is no stable VS Code API to discard and
+rebuild the preview's `markdown-it` instance on demand, so **toggling
+`kaicrit.edit.commentMetadata` only affects the preview after a window reload**
+(**Developer: Reload Window**) — reopening the preview pane alone is not enough
+once the instance is cached.
+
+This is a preview-only quirk: the **editor** decorations re-read the setting on
+every parse, so there a change takes effect on the next edit (or any action that
+re-triggers a parse) without a reload.
 
 ## Styling
 
