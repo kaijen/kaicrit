@@ -26,6 +26,8 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 
 - **Syntax highlighting** — each change type gets a distinct color; markers are visually de-emphasized
 - **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
+- **Overview ruler markers** — changes are mirrored as colored marks on the scrollbar, so you can see where they sit without scrolling
+- **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`); click the entry to jump to the first change
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
@@ -102,7 +104,7 @@ The output upholds a strict reconstruction invariant: rejecting every marker rep
 
 ## Markdown preview
 
-Open any Markdown file containing CriticMarkup and launch the built-in preview (`Ctrl+Shift+V` / `Cmd+Shift+V`). CriticMarkup spans render inline — insertions, deletions, highlights, comments, and substitutions — and span bodies are re-parsed as Markdown, so nested formatting such as `{++ **bold** ++}` is preserved. CriticMarkup inside inline code or fenced code blocks is left untouched. The preview styling lives in `media/critic.css`.
+Open any Markdown file containing CriticMarkup and launch the built-in preview (`Ctrl+Shift+V` / `Cmd+Shift+V`). CriticMarkup spans render inline — insertions, deletions, highlights, comments, and substitutions — and span bodies are re-parsed as Markdown, so nested formatting such as `{++ **bold** ++}` is preserved. Multi-line comments (`{>>line 1`<br>`line 2<<}`) render in full with their line breaks preserved. CriticMarkup inside inline code or fenced code blocks is left untouched. The preview styling lives in `media/critic.css`.
 
 ## Customization
 

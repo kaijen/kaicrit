@@ -51,7 +51,8 @@ The extension bundles three CriticMarkup features — **edit**, **compare**, and
 | File | Role |
 |---|---|
 | [edit/parser.ts](src/edit/parser.ts) | `parseCriticMarkup(doc)` — single-pass `RE_ALL` scan, returns `CriticChange[]` |
-| [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor |
+| [edit/decorator.ts](src/edit/decorator.ts) | `DecoratorManager` — decoration types (using `kaicrit.*` ThemeColor IDs from `contributes.colors`), debounced apply/clear per editor, overview-ruler markers, and an `onDidUpdate` event fired after each cache refresh |
+| [edit/statusBar.ts](src/edit/statusBar.ts) | `StatusBarManager` — per-type change counts for the active editor (`⊟ ⊞ ⇄ ☰ 💬`), read from the decorator cache via `onDidUpdate`; hidden when there are no changes, click runs `kaicrit.firstChange` |
 | [edit/navigator.ts](src/edit/navigator.ts) | Pure functions over `CriticChange[]`: findAtCursor, findNext, findPrev, findFirst, findLast |
 | [edit/commands.ts](src/edit/commands.ts) | `registerEditCommands()` — 13 insert/navigate/accept/reject commands |
 
@@ -84,7 +85,9 @@ Each `CriticChange` carries:
 - `contentRange` — content inside markers (non-substitution types)
 - `oldRange` / `newRange` — substitution sub-ranges for separate decoration
 
-Marker characters (`{--`, `--}`, etc.) get a separate dimming decoration (opacity 0.4) via `markerType` in `DecoratorManager`.
+Marker characters (`{--`, `--}`, etc.) get a separate dimming decoration (opacity 0.4) via `markerType` in `DecoratorManager`. The five content decorations additionally set `overviewRulerColor`/`overviewRulerLane` (Right) so changes show on the scrollbar; the dimmed `markerType` deliberately omits ruler markers.
+
+Multi-line comments (`{>>line1\nline2<<}`) render fully in the preview: the inline tokenizer matches across newlines via `indexOf`, and `.critic-comment` in [media/critic.css](media/critic.css) sets `white-space: pre-wrap` so the line breaks stay visible.
 
 ## Accept/Reject Semantics
 

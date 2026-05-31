@@ -4,7 +4,7 @@
 
 kaicrit brings a complete [CriticMarkup](https://github.com/CriticMarkup/CriticMarkup-toolkit) workflow to VS Code:
 
-- **Edit** — insert change markers, navigate between them, and accept or reject changes without leaving the editor.
+- **Edit** — insert change markers, navigate between them, and accept or reject changes without leaving the editor. Changes are mirrored on the overview ruler and summarized by type in the status bar.
 - **[Compare](compare.md)** — diff two files into a single CriticMarkup document.
 - **[Preview](preview.md)** — render CriticMarkup in VS Code's built-in Markdown preview.
 

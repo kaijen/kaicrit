@@ -18,31 +18,51 @@ export class DecoratorManager {
   private timers = new Map<string, ReturnType<typeof setTimeout>>();
   private changeCache = new Map<string, CriticChange[]>();
 
+  // Fires after `update()` refreshes the cache + decorations for an editor, so
+  // observers (e.g. the status bar) can react without re-parsing the document.
+  private readonly _onDidUpdate = new vscode.EventEmitter<vscode.TextEditor>();
+  readonly onDidUpdate = this._onDidUpdate.event;
+
   constructor() {
+    // Each content decoration also paints a marker in the overview ruler so the
+    // location of changes is visible on the scrollbar without scrolling. The
+    // dimmed marker-character decoration deliberately stays out of the ruler.
     this.deletionType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'line-through',
       color: themeColor('kaicrit.deletionForeground'),
+      overviewRulerColor: themeColor('kaicrit.deletionForeground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
     this.additionType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'underline',
       color: themeColor('kaicrit.additionForeground'),
+      overviewRulerColor: themeColor('kaicrit.additionForeground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
     this.substitutionOldType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'line-through',
       color: themeColor('kaicrit.substitutionOldForeground'),
+      overviewRulerColor: themeColor('kaicrit.substitutionOldForeground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
     this.substitutionNewType = vscode.window.createTextEditorDecorationType({
       textDecoration: 'underline',
       color: themeColor('kaicrit.substitutionNewForeground'),
+      overviewRulerColor: themeColor('kaicrit.substitutionNewForeground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
     this.highlightType = vscode.window.createTextEditorDecorationType({
       backgroundColor: themeColor('kaicrit.highlightBackground'),
       color: themeColor('kaicrit.highlightForeground'),
+      overviewRulerColor: themeColor('kaicrit.highlightBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
     });
     this.commentType = vscode.window.createTextEditorDecorationType({
       backgroundColor: themeColor('kaicrit.commentBackground'),
       fontStyle: 'italic',
       color: themeColor('kaicrit.commentForeground'),
+      overviewRulerColor: themeColor('kaicrit.commentBackground'),
+      overviewRulerLane: vscode.OverviewRulerLane.Right,
       before: { contentText: '⟨ ', color: new vscode.ThemeColor('editorLineNumber.foreground') },
       after:  { contentText: ' ⟩', color: new vscode.ThemeColor('editorLineNumber.foreground') },
     });
@@ -67,6 +87,7 @@ export class DecoratorManager {
     const changes = parseCriticMarkup(editor.document);
     this.changeCache.set(editor.document.uri.toString(), changes);
     this.applyDecorations(editor, changes);
+    this._onDidUpdate.fire(editor);
   }
 
   clear(doc: vscode.TextDocument): void {
@@ -133,6 +154,7 @@ export class DecoratorManager {
     this.highlightType.dispose();
     this.commentType.dispose();
     this.markerType.dispose();
+    this._onDidUpdate.dispose();
     for (const t of this.timers.values()) { clearTimeout(t); }
   }
 }

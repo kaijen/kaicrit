@@ -2,6 +2,8 @@
 
 kaicrit supports all five CriticMarkup types. Each type is rendered with a distinct color; marker characters are visually de-emphasized.
 
+In the editor, every change is also mirrored as a colored mark on the **overview ruler** (the scrollbar lane on the right), giving an at-a-glance map of where changes sit in the document. The ruler marks reuse the same `kaicrit.*` colors as the inline decorations (see [Colors](#colors)); the dimmed marker characters themselves are not shown on the ruler.
+
 ## Syntax
 
 | Type | Syntax | Purpose |
@@ -47,3 +49,21 @@ Each change type uses a configurable decoration color. Defaults follow the activ
 | `kaicrit.highlightForeground` | `#333333` | Highlight text |
 | `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
 | `kaicrit.commentForeground` | `#555555` | Comment text |
+
+## Status bar
+
+When the active editor contains CriticMarkup, a status bar entry summarizes the open changes by type:
+
+```
+⊟3 ⊞5 ⇄2 ☰1 💬4
+```
+
+| Glyph | Type |
+|---|---|
+| `⊟` | Deletions |
+| `⊞` | Additions |
+| `⇄` | Substitutions |
+| `☰` | Highlights |
+| `💬` | Comments |
+
+The counts update live as you type, insert, or accept/reject changes. The entry is hidden when the active editor has no changes, and clicking it jumps to the first change (`kaicrit.firstChange`).

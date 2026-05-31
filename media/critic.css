@@ -21,6 +21,9 @@
   background-color: rgba(120, 160, 255, 0.20);
   border-bottom: 1px dotted rgba(120, 160, 255, 0.9);
   font-style: italic;
+  /* Preserve line breaks inside multi-line comments ({>>line1\nline2<<}) so the
+     full annotation stays readable instead of collapsing onto one line. */
+  white-space: pre-wrap;
 }
 
 .critic-comment::before {

@@ -32,6 +32,21 @@ Span bodies are re-parsed as inline Markdown, so nested formatting such as
 `{++ **bold** text ++}` is preserved. CriticMarkup inside inline code or fenced
 code blocks is left untouched.
 
+## Multi-line comments
+
+Comments may span several lines, for example:
+
+```markdown
+Some text {>>First line of the note.
+Second line, still part of the same comment.<<} more text.
+```
+
+The inline tokenizer matches the whole span up to the closing `<<}` even when it
+contains newlines, and the comment styling sets `white-space: pre-wrap`, so the
+line breaks stay visible in the preview instead of collapsing onto one line.
+Keep a multi-line comment within a single paragraph — a fully blank line ends the
+Markdown paragraph and therefore the comment span.
+
 ## Styling
 
 Preview colors are defined in `media/critic.css` and are intentionally
