@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Track Changes: editing a marker's delimiter now rejects that change** (#38).
+  Deleting or replacing any part of a marker's opener/closer — e.g. backspacing
+  the leading `{` of `{++a++}` — resolves the whole marker with Reject semantics
+  (addition → removed, deletion → text kept, substitution → original, etc.)
+  instead of leaving broken or nested markup like `{--{--}++a++}`. Edits *inside*
+  a marker's content are still absorbed (#34); a selection spanning content and a
+  delimiter rejects the entire marker.
+
 ## [0.6.1] - 2026-06-01
 
 ### Fixed

@@ -104,6 +104,70 @@ test('backspace next to a deletion merges into one marker', () => {
   assert.equal(rejectAll(finalText(pre, raw, r.edits)), 'abc');
 });
 
+// Issue #38 — removing a delimiter character of an existing marker rejects the
+// whole marker (reusing the accept/reject semantics), instead of wrapping the
+// edited delimiter as a new (nested) change.
+
+test('deleting the opener of an addition rejects it — issue #38', () => {
+  // The motivating example: {++a++}, backspace the leading {.
+  const pre = '{++a++}';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 1, newText: '' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), ''); // addition rejected → gone
+  assert.deepEqual(r.selections, [0]);
+});
+
+test('deleting an opener char of a deletion rejects it (text kept) — issue #38', () => {
+  const pre = '{--alt--}';
+  const raw: RawEdit[] = [{ offset: 1, oldLength: 1, newText: '' }]; // a '-' of {--
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), 'alt'); // deletion rejected → text stays
+  assert.deepEqual(r.selections, [3]); // caret after the restored text
+});
+
+test('deleting a closer char of a substitution rejects it (old side) — issue #38', () => {
+  const pre = '{~~old~>new~~}';
+  const raw: RawEdit[] = [{ offset: 11, oldLength: 1, newText: '' }]; // a '~' of ~~}
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), 'old'); // reverts to the old side
+  assert.deepEqual(r.selections, [3]);
+});
+
+test('deleting a closer char of a highlight rejects it (text kept) — issue #38', () => {
+  const pre = '{==hi==}';
+  const raw: RawEdit[] = [{ offset: 7, oldLength: 1, newText: '' }]; // the }
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), 'hi');
+  assert.deepEqual(r.selections, [2]);
+});
+
+test('deleting an opener char of a comment rejects it (gone) — issue #38', () => {
+  const pre = '{>>note<<}';
+  const raw: RawEdit[] = [{ offset: 1, oldLength: 1, newText: '' }]; // a '>' of {>>
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '');
+  assert.deepEqual(r.selections, [0]);
+});
+
+test('a selection spanning content and the closer rejects the whole marker — issue #38', () => {
+  // Selecting `c++}` (content + part of the closer) and deleting rejects the
+  // entire addition, not just the selected slice.
+  const pre = '{++abc++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 4, newText: '' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '');
+  assert.deepEqual(r.selections, [0]);
+});
+
+test('a content-only edit is still absorbed, not rejected — issue #38 boundary', () => {
+  // Editing strictly inside the content keeps the #34 behaviour (no reject).
+  const pre = '{++abc++}';
+  const raw: RawEdit[] = [{ offset: 4, oldLength: 1, newText: '' }]; // delete the b
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(r.edits.length, 0);
+  assert.equal(applyRaw(pre, raw), '{++ac++}');
+});
+
 test('multi-cursor insertion wraps each edit independently', () => {
   const pre = 'ab';
   const raw: RawEdit[] = [
