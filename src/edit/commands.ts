@@ -91,7 +91,10 @@ function activeEditor(): vscode.TextEditor | undefined {
   return vscode.window.activeTextEditor;
 }
 
-function wrapSelection(open: string, close: string): void {
+// `cursorInside`: park the caret just before `close` even when a selection was
+// wrapped (used for comments, where you keep typing the note inside the marker).
+// Without it, wrapping a selection leaves the caret after the closing delimiter.
+function wrapSelection(open: string, close: string, cursorInside = false): void {
   const editor = activeEditor();
   if (!editor) { return; }
   const noSelection = editor.selections.length === 1 && editor.selection.isEmpty;
@@ -107,7 +110,7 @@ function wrapSelection(open: string, close: string): void {
     if (editor.selections.length === 1) {
       const doc = editor.document;
       const base = doc.offsetAt(editor.selection.active);
-      const offset = noSelection ? base - close.length : base;
+      const offset = (noSelection || cursorInside) ? base - close.length : base;
       const pos = doc.positionAt(offset);
       editor.selection = new vscode.Selection(pos, pos);
     }
@@ -125,7 +128,7 @@ async function insertComment(): Promise<void> {
     const date = isoToday();
     open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
   }
-  wrapSelection(open, '<<}');
+  wrapSelection(open, '<<}', true);
 }
 
 const execFileAsync = promisify(execFile);

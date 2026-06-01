@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Inserting a comment now parks the cursor inside the marker** (#35), before
+  `<<}`, ready to type the note — even when a selection was wrapped. It no
+  longer lands after the closing delimiter.
 - **Track Changes no longer nests CriticMarkup inside CriticMarkup** (#34).
   Continuing to type after a substitution — e.g. selecting `stick`, typing
   `Just` — produced corrupt nested markers like

@@ -122,7 +122,7 @@ Comments may optionally start with an author and/or an ISO date, separated from 
 
 This is a backwards-compatible convention on top of CriticMarkup — a comment **without** this prefix (`{>>plain note<<}`, or even `{>>Note: see above<<}`) is treated exactly as before. When metadata is present, the author/date is shown distinctly in the editor hover and in the Markdown preview, and accept/reject still removes the whole comment.
 
-Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata is one keystroke away. The author comes from `kaicrit.edit.commentAuthor`; when that is empty, kaicrit falls back to the repository's `git config user.name`.
+Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata is one keystroke away, and parks the cursor **inside** the marker (before `<<}`) ready to type the note — even when a selection was wrapped. The author comes from `kaicrit.edit.commentAuthor`; when that is empty, kaicrit falls back to the repository's `git config user.name`.
 
 | Setting | Values | Default | Effect |
 |---|---|---|---|
