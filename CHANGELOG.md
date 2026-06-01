@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Inserting a markup with multiple cursors now parks each caret inside its
+  marker** (#37), matching single-cursor behaviour. Previously every caret
+  landed after the closing delimiter instead of inside — before `<<}` for a
+  comment, before `~~}` for a substitution, or inside the empty pair for an
+  addition/deletion/highlight.
+
 ## [0.6.0] - 2026-06-01
 
 ### Fixed

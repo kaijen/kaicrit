@@ -94,10 +94,14 @@ function activeEditor(): vscode.TextEditor | undefined {
 // `cursorInside`: park the caret just before `close` even when a selection was
 // wrapped (used for comments, where you keep typing the note inside the marker).
 // Without it, wrapping a selection leaves the caret after the closing delimiter.
+// Handles multi-cursor: each caret is repositioned independently, driven by the
+// per-selection `wasEmpty` snapshot taken before the edit (an empty cursor always
+// parks inside the new pair). VS Code preserves the count and order of
+// `editor.selections` across an edit, so post-edit `selections[i]` is the i-th input.
 function wrapSelection(open: string, close: string, cursorInside = false): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  const noSelection = editor.selections.length === 1 && editor.selection.isEmpty;
+  const wasEmpty = editor.selections.map(sel => sel.isEmpty);
   editor.edit(eb => {
     for (const sel of editor.selections) {
       if (sel.isEmpty) {
@@ -107,13 +111,13 @@ function wrapSelection(open: string, close: string, cursorInside = false): void 
       }
     }
   }).then(() => {
-    if (editor.selections.length === 1) {
-      const doc = editor.document;
-      const base = doc.offsetAt(editor.selection.active);
-      const offset = (noSelection || cursorInside) ? base - close.length : base;
+    const doc = editor.document;
+    editor.selections = editor.selections.map((sel, i) => {
+      const base = doc.offsetAt(sel.active);
+      const offset = (wasEmpty[i] || cursorInside) ? base - close.length : base;
       const pos = doc.positionAt(offset);
-      editor.selection = new vscode.Selection(pos, pos);
-    }
+      return new vscode.Selection(pos, pos);
+    });
   });
 }
 
@@ -180,23 +184,26 @@ function insertSubstitution(): void {
       'kaicrit: select the text to replace before inserting a substitution.', 3000);
     return;
   }
+  const edited = editor.selections.map(sel => !sel.isEmpty);
   const { open, sep, close } = MARKERS[ChangeType.Substitution];
   editor.edit(eb => {
     for (const sel of targets) {
       eb.replace(sel, `${open}${editor.document.getText(sel)}${sep}${close}`);
     }
   }).then(() => {
-    // Park the cursor on the empty "new" side (before `~~}`) so the user can type
+    // Park each cursor on the empty "new" side (before `~~}`) so the user can type
     // the replacement. After the replace, the cursor sits at the end of the
     // inserted text; the desired point is exactly `close.length` units before it.
     // Computing from that offset (rather than searching the text for `~>`) stays
     // correct for multi-line selections and replaced text that contains a `~>`.
-    if (editor.selections.length === 1) {
-      const doc = editor.document;
-      const end = doc.offsetAt(editor.selection.active);
+    // Only the wrapped (non-empty) selections move; any empty cursor is left as-is.
+    const doc = editor.document;
+    editor.selections = editor.selections.map((sel, i) => {
+      if (!edited[i]) { return sel; }
+      const end = doc.offsetAt(sel.active);
       const pos = doc.positionAt(end - close.length);
-      editor.selection = new vscode.Selection(pos, pos);
-    }
+      return new vscode.Selection(pos, pos);
+    });
   });
 }
 
