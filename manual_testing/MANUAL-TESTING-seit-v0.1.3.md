@@ -41,6 +41,7 @@ verifiziert.
 | `examples/whitespace-a.txt` + `examples/whitespace-b.txt` | Compare mit `ignoreWhitespace` |
 | `examples/track-changes-playground.md` | Track‑Changes‑Modus |
 | `examples/activation-sample.js` | Per‑Sprache‑Aktivierung & Per‑Datei‑Umschaltung |
+| `examples/markup-conflicts.md` | Konfliktfälle Markdown vs. CriticMarkup (Preview bleibt wohlgeformt) |
 
 ---
 
@@ -327,6 +328,67 @@ Leerzeichen, z. B. `a, b` → `a,b`, `a + b` → `a+b`, `=` mit/ohne Spaces).
 
 ---
 
+## 13. Konflikt: das eigentliche Markup gewinnt
+
+**Beispiel:** `markup-conflicts.md`
+
+**Hintergrund:** CriticMarkup liegt als Schicht über Markdown. Die beiden
+historisch schweren Render-Probleme – ungültiges HTML und der Span-Overlap (ein
+Markdown-Span öffnet **in** einer Marke und schließt **außerhalb**) – löst
+kaicrit bewusst **nicht**, sondern hält sie **wohlgeformt**: Die Preview ist eine
+markdown-it-*Inline-Regel*, die balancierte Token erzeugt (kein HTML-String),
+also kann gar kein kaputtes HTML entstehen; ein überlappender Span degradiert zu
+Klartext. Der Preis: Die Inline-Regel sieht nur **einen Block**, block-übergreifende
+Marken werden in der Preview **nicht** gerendert. Details in
+[docs/preview.md](../docs/preview.md#why-this-rendering-approach-and-what-it-cant-do).
+
+> **Editor ≠ Preview (gewollt):** Der Editor-Parser (`RE_ALL`, `s`-Flag, läuft
+> über das ganze Dokument) ist **block-agnostisch** und dekoriert auch
+> block-übergreifende Marken. Die Preview ist **block-scoped**. Diese Asymmetrie
+> ist Teil des Tests.
+
+`markup-conflicts.md` öffnen **und** die Preview daneben (`Ctrl+K V`).
+
+### Übergreifende Erwartung (gilt für ALLE Abschnitte)
+✅ Die Preview zeigt **nie** kaputtes HTML: keine abgeschnittenen Tags, keine
+Formatierung, die in den restlichen Absatz „ausblutet". Das Dokument bleibt immer
+wohlgeformt. **Das ist der eigentliche Prüfpunkt** – nicht, ob jede Marke
+gerendert wird.
+
+### 13a. Span-Overlap (§A)
+1. `Ein {++**fett++} und hier geht der Text weiter**.`
+   ✅ **Preview:** Die Einfügung wird gerendert, aber das `**` steht als
+   **literaler** Text da – die Fett-Formatierung blutet **nicht** in den Rest des
+   Absatzes aus.
+   ✅ **Editor:** `{++**fett++}` wird normal als Addition dekoriert.
+
+### 13b. Block-übergreifende Marke (§B)
+1. Einfügung `{++` in einem Absatz, `++}` erst nach einer Leerzeile.
+   ✅ **Editor:** als **eine** Addition über die Leerzeile hinweg dekoriert
+   (Statusleiste +1), Accept/Reject funktioniert.
+   ✅ **Preview:** **nicht** als Edit gerendert; `{++` / `++}` bleiben Klartext,
+   beide Absätze rendern als normales Markdown.
+
+### 13c. Block-übergreifender Kommentar (§C)
+1. `{>>` … Leerzeile … `<<}`.
+   ✅ **Editor:** als **ein** Kommentar dekoriert.
+   ✅ **Preview:** **kein** durchgehender Kommentar (die Leerzeile beendet den
+   Absatz); Marker bleiben Klartext. (Mehrzeilig **ohne** Leerzeile funktioniert
+   in beiden – Gegenprobe in `all-markers.md`.)
+
+### 13d. Unbalancierte / nicht geschlossene Marke (§D)
+1. `{++` ohne `++}`.
+   ✅ **Weder** Editor **noch** Preview rendern einen Edit; `{++` bleibt
+   Klartext, das Dokument bleibt wohlgeformt.
+
+### 13e. Marke bricht Listen-Block-Syntax (§E)
+1. `{--` in Listenpunkt 1, `--}` in Listenpunkt 2.
+   ✅ **Preview:** Liste rendert normal; Marker erscheinen als Text **in** den
+   Punkten, die `<li>`-Struktur bleibt intakt.
+   ✅ **Editor:** darf die Löschung über die Zeilen dekorieren.
+
+---
+
 ## Abschluss-Checkliste
 
 - [ ] §1 Compare (alle 5 Einstiegswege + Invariante + Einstellungen)
@@ -341,3 +403,4 @@ Leerzeichen, z. B. `a, b` → `a,b`, `a + b` → `a+b`, `=` mit/ohne Spaces).
 - [ ] §10 Compare ignoreWhitespace (inkl. Invariante)
 - [ ] §11 Per-Sprache-Aktivierung & Per-Datei-Umschaltung
 - [ ] §12 Fixes
+- [ ] §13 Konflikt Markdown vs. CriticMarkup (Preview wohlgeformt, Editor/Preview-Asymmetrie)
