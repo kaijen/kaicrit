@@ -50,12 +50,13 @@ the addition's content and the marker simply grows, instead of producing
 | Replace a selection | `{~~old~>new~~}` |
 | Edit *inside* an existing marker's content | Absorbed into that marker — no nested markup |
 | Delete/replace a marker's *delimiter* (e.g. a `{`, `+` or `}`) | The whole marker is **rejected** (resolved) |
+| Paste text that is *already* CriticMarkup | Kept as-is, not re-wrapped (no `{++{++a++}++}`) |
 | Multiple cursors / a multi-edit event | Each edit is wrapped independently (no cross-cursor merge) |
 | Undo / Redo | Not re-processed — see below |
 
 ## Editing an existing marker
 
-Two rules keep you from accidentally producing markup-inside-markup while
+Three rules keep you from accidentally producing markup-inside-markup while
 recording:
 
 - **Edits inside a marker's content are absorbed.** Typing or deleting between
@@ -69,6 +70,17 @@ recording:
   `{--{--}++a++}`. A selection that spans both content and a delimiter rejects
   the entire marker, not just the selected slice. A pure insertion never removes
   a delimiter, so it does not trigger a reject.
+- **Pasting text that is already CriticMarkup is kept as-is.** If the inserted
+  text *is itself* one or more complete markers — pasting `{++a++}`, or
+  `{--x--}{++y++}` — kaicrit leaves it verbatim instead of wrapping it into
+  `{++{++a++}++}`. When the paste mixes plain text with embedded markers (e.g.
+  `foo {++a++} bar`), only the plain runs are tracked as additions and the
+  embedded markers stay literal (`{++foo ++}{++a++}{++ bar++}`). Pasting markup
+  *over a selection* additionally tracks the replaced text as a leading deletion
+  (`foo` → `{++a++}` records `{--foo--}{++a++}`). Partial/unterminated input
+  such as `{++a` is not valid markup, so it falls through to the normal addition
+  wrap. (Pasting markup *inside* an existing marker is still governed by the
+  first rule above — it is absorbed into that marker's content.)
 
 What "reject" yields depends on the marker type (it mirrors the
 [accept/reject table](markup.md)):

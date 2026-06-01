@@ -166,6 +166,40 @@ function classify(
     }
   }
 
+  // Issue #40 — inserted/pasted text that already contains complete CriticMarkup
+  // must not be re-wrapped (that would nest, e.g. paste {++a++} → {++{++a++}++}).
+  // We keep every embedded marker literal and wrap only the surrounding plain
+  // runs as additions; a replaced plain selection (oldLength > 0) is tracked as a
+  // leading deletion so the gesture still reads as "old removed, new inserted".
+  // This sits after the #34 absorption and #38 delimiter-reject checks: pasting
+  // markup *inside* a marker is still absorbed, and overwriting a marker's
+  // delimiter still rejects it. Unterminated/partial input (e.g. `{++a`) matches
+  // no marker here and falls through to the normal wrap below.
+  const inserted = newText.length > 0 ? [...findMarkers(newText)] : [];
+  if (inserted.length > 0) {
+    let body = '';
+    let pos = 0;
+    for (const m of inserted) {
+      if (m.index > pos) { body += addMarker(newText.slice(pos, m.index)); }
+      body += m[0]; // keep the already-complete marker verbatim
+      pos = m.index + m[0].length;
+    }
+    if (pos < newText.length) { body += addMarker(newText.slice(pos)); }
+
+    const replacement = (oldLength > 0 ? delMarker(oldText) : '') + body;
+    if (replacement === newText) {
+      // Pure insertion of nothing-but-markers: the raw text is already final.
+      return { kind: 'skip', postStart, rawNewLen: newText.length };
+    }
+    return {
+      kind: 'wrap',
+      start: postStart,
+      end: postStart + newText.length,
+      replacement,
+      cursorWithin: replacement.length, // caret after the whole pasted block
+    };
+  }
+
   const isInsert = oldLength === 0 && newText.length > 0;
   const isDelete = oldLength > 0 && newText.length === 0;
 
