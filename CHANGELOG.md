@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-01
+
 ### Fixed
 - **Inserting a comment now parks the cursor inside the marker** (#35), before
   `<<}`, ready to type the note — even when a selection was wrapped. It no

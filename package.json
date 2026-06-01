@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -449,12 +449,19 @@
           "items": {
             "type": "string"
           },
-          "default": ["markdown", "plaintext"],
+          "default": [
+            "markdown",
+            "plaintext"
+          ],
           "markdownDescription": "Language ids for which kaicrit's editor features (decorations, inline Accept/Reject actions, status bar, Changes view, accept/reject) are active. Matched against a document's language id; use `\"*\"` to enable every language. Override per file with the `$(eye) CriticMarkup` toggle in the status bar (session-only)."
         },
         "kaicrit.edit.changeActions": {
           "type": "string",
-          "enum": ["codeLens", "hover", "off"],
+          "enum": [
+            "codeLens",
+            "hover",
+            "off"
+          ],
           "enumDescriptions": [
             "Show an inline Accept / Reject CodeLens row above each change (type symbol + content preview, then ✓ / ✕ icons).",
             "Show Accept / Reject only in the hover tooltip over a change.",
@@ -486,7 +493,11 @@
         },
         "kaicrit.compare.granularity": {
           "type": "string",
-          "enum": ["character", "word", "line"],
+          "enum": [
+            "character",
+            "word",
+            "line"
+          ],
           "enumDescriptions": [
             "Diff character by character (most precise, noisiest output).",
             "Diff word by word while preserving whitespace (recommended for prose).",
@@ -507,7 +518,11 @@
         },
         "kaicrit.compare.outputLanguage": {
           "type": "string",
-          "enum": ["auto", "plaintext", "markdown"],
+          "enum": [
+            "auto",
+            "plaintext",
+            "markdown"
+          ],
           "enumDescriptions": [
             "Use the language of the second (modified) file.",
             "Always open the result as plain text.",
