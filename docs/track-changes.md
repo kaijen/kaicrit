@@ -48,8 +48,41 @@ the addition's content and the marker simply grows, instead of producing
 | Delete text you just added (inside an addition) | The added text is simply removed — it never "was" |
 | Delete next to an existing deletion (single edit) | The deletions merge into one `{--…--}` |
 | Replace a selection | `{~~old~>new~~}` |
+| Edit *inside* an existing marker's content | Absorbed into that marker — no nested markup |
+| Delete/replace a marker's *delimiter* (e.g. a `{`, `+` or `}`) | The whole marker is **rejected** (resolved) |
 | Multiple cursors / a multi-edit event | Each edit is wrapped independently (no cross-cursor merge) |
 | Undo / Redo | Not re-processed — see below |
+
+## Editing an existing marker
+
+Two rules keep you from accidentally producing markup-inside-markup while
+recording:
+
+- **Edits inside a marker's content are absorbed.** Typing or deleting between
+  the delimiters just grows or shrinks that marker (an addition's body, a
+  substitution's new side, etc.) instead of wrapping a new change inside it.
+- **Removing a marker's delimiter rejects the whole marker.** If a deletion (or
+  a replacement) takes out any part of an opener or closer — for example you
+  backspace the leading `{` of `{++a++}` — kaicrit treats the gesture as
+  *rejecting* that change and resolves the marker with the same semantics as the
+  Reject action, rather than leaving broken or nested markup like
+  `{--{--}++a++}`. A selection that spans both content and a delimiter rejects
+  the entire marker, not just the selected slice. A pure insertion never removes
+  a delimiter, so it does not trigger a reject.
+
+What "reject" yields depends on the marker type (it mirrors the
+[accept/reject table](markup.md)):
+
+| Marker | Removing a delimiter resolves to | Effect |
+|---|---|---|
+| `{++a++}` addition | `` (empty) | the proposed insertion disappears |
+| `{--T--}` deletion | `T` | the deleted text is kept |
+| `{~~O~>N~~}` substitution | `O` | reverts to the original |
+| `{==T==}` highlight | `T` | highlight removed, text kept |
+| `{>>T<<}` comment | `` (empty) | the comment is removed |
+
+To **accept** a change, use the accept action/command — there is no
+delete-to-accept gesture.
 
 ## Known limitations
 

@@ -17,6 +17,7 @@
 
 import { ChangeType } from '../core/types';
 import { MARKERS, findMarkers } from '../core/markers';
+import { resolveReplacement, Resolvable } from './resolve';
 
 export interface RawEdit {
   offset: number;     // start of the replaced span in the pre-edit text
@@ -85,6 +86,29 @@ function substMarker(oldText: string, newText: string): string {
   return m.open + oldText + m.sep + newText + m.close;
 }
 
+// Half-open interval overlap test: do [aStart, aEnd) and [bStart, bEnd) share
+// at least one position?
+function intersects(aStart: number, aEnd: number, bStart: number, bEnd: number): boolean {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+// Project a scanned marker span onto the slice of CriticChange that
+// resolveReplacement needs. Substitutions store their two sides as one
+// `O~>N` string in `content`; split it back on the shared `~>` separator (RE_ALL
+// guarantees the arrow is present for substitutions).
+function toResolvable(s: MarkerSpan): Resolvable {
+  if (s.type === ChangeType.Substitution) {
+    const sep = MARKERS[ChangeType.Substitution].sep;
+    const i = s.content.indexOf(sep);
+    return {
+      type: s.type,
+      oldText: i === -1 ? s.content : s.content.slice(0, i),
+      newText: i === -1 ? '' : s.content.slice(i + sep.length),
+    };
+  }
+  return { type: s.type, text: s.content };
+}
+
 // What a single raw edit resolves to once classified against the surrounding
 // markers. `skip` means the raw text already lives inside an addition (or is the
 // removal of just-added text), so no marker wrap is emitted.
@@ -116,6 +140,31 @@ function classify(
     .filter(s => offset >= s.contentStart && delEnd <= s.contentEnd)
     .sort((a, b) => (a.contentEnd - a.contentStart) - (b.contentEnd - b.contentStart))[0];
   if (enclosing) { return { kind: 'skip', postStart, rawNewLen: newText.length }; }
+
+  // Issue #38 — removing (deleting or replacing) any *delimiter* character of an
+  // existing marker is interpreted as REJECTING that whole marker, reusing the
+  // shared accept/reject semantics (resolveReplacement). This is the boundary
+  // counterpart to the #34 absorption above: an edit *inside* a marker's content
+  // grows/keeps it (skip), an edit that removes part of a marker's opener/closer
+  // resolves it. A pure insertion (oldLength === 0) removes no delimiter char, so
+  // it never triggers a reject. We only act when the edited span stays within a
+  // single marker; an edit spilling past the marker bounds (e.g. a selection that
+  // also eats following prose) falls through to the normal wrap handling. The
+  // emitted edit replaces the marker's *post-raw-edit* span — its live length is
+  // the original length adjusted by this raw edit (− oldLength + newText.length) —
+  // and `delta` shifts the marker from pre- to post-raw-edit coordinates.
+  if (oldLength > 0) {
+    const hit = spans.find(s =>
+      offset >= s.start && delEnd <= s.end &&
+      (intersects(offset, delEnd, s.start, s.contentStart) ||
+        intersects(offset, delEnd, s.contentEnd, s.end)));
+    if (hit) {
+      const replacement = resolveReplacement(toResolvable(hit), 'reject');
+      const start = hit.start + delta;
+      const end = start + (hit.end - hit.start) - oldLength + newText.length;
+      return { kind: 'wrap', start, end, replacement, cursorWithin: replacement.length };
+    }
+  }
 
   const isInsert = oldLength === 0 && newText.length > 0;
   const isDelete = oldLength > 0 && newText.length === 0;
