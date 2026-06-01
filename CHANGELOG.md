@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Inserting a comment now parks the cursor inside the marker** (#35), before
   `<<}`, ready to type the note — even when a selection was wrapped. It no
   longer lands after the closing delimiter.
+- **The Changes sidebar now uses the same per-type symbols as the status bar**
+  (#36): each group is labelled `⊟ Deletions (3)`, `⊞ Additions (2)`, etc.,
+  replacing the previous mismatched codicons.
 - **Track Changes no longer nests CriticMarkup inside CriticMarkup** (#34).
   Continuing to type after a substitution — e.g. selecting `stick`, typing
   `Just` — produced corrupt nested markers like

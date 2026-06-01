@@ -11,9 +11,9 @@ The tree has two levels:
 
 - **Type groups** — one node per change type that occurs in the document
   (Deletions, Additions, Substitutions, Highlights, Comments), each labelled
-  with its count, e.g. `Deletions (3)`. Groups appear in the same fixed order
-  as the [status bar](index.md) summary, and only for types that are actually
-  present.
+  with the same per-type symbol as the [status bar](index.md) and its count,
+  e.g. `⊟ Deletions (3)`. Groups appear in the same fixed order as the status
+  bar summary, and only for types that are actually present.
 - **Changes** — under each group, one leaf per change. The label is a short,
   whitespace-collapsed preview of the content (for a substitution,
   `old → new`); the description shows the line number, and for comments with

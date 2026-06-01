@@ -2,26 +2,18 @@ import * as vscode from 'vscode';
 import { ChangeType, CriticChange } from '../core/types';
 import { parseCommentMeta } from '../core/comment';
 import { DecoratorManager } from './decorator';
-import { LABELS, ORDER } from './statusBar';
-
-// Codicon per change type, shown on the group node so the sidebar reads at a
-// glance. The leaf nodes stay icon-free to keep the list compact.
-const ICONS: Record<ChangeType, string> = {
-  [ChangeType.Deletion]:     'diff-removed',
-  [ChangeType.Addition]:     'diff-added',
-  [ChangeType.Substitution]: 'diff-modified',
-  [ChangeType.Highlight]:    'paintcan',
-  [ChangeType.Comment]:      'comment',
-};
+import { LABELS, ORDER, SYMBOLS } from './statusBar';
 
 type Node = TypeNode | ChangeNode;
 
 /** Top-level group node: one per change type present in the document. */
 class TypeNode extends vscode.TreeItem {
+  // The type glyph (⊟ ⊞ ⇄ ☰ 💬) is shown in the label rather than as a codicon
+  // icon, so the sidebar uses the same per-type symbols as the status bar. The
+  // leaf nodes stay symbol-free to keep the list compact.
   constructor(readonly type: ChangeType, readonly changes: CriticChange[]) {
-    super(`${LABELS[type]} (${changes.length})`, vscode.TreeItemCollapsibleState.Expanded);
+    super(`${SYMBOLS[type]} ${LABELS[type]} (${changes.length})`, vscode.TreeItemCollapsibleState.Expanded);
     this.contextValue = 'kaicrit.changeType';
-    this.iconPath = new vscode.ThemeIcon(ICONS[type]);
   }
 }
 
