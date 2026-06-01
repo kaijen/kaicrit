@@ -236,6 +236,10 @@ Extension Host. Press **F5** in VS Code to launch the Extension Development Host
 
 Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).
 
+## License
+
+Released under the [MIT License](LICENSE).
+
 ## Installation
 
 Download the latest `kaicrit-*.vsix` from the [Releases page](https://github.com/kaijen/kaicrit/releases), then install it:
