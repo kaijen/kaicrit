@@ -133,7 +133,7 @@ Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata 
 
 Turn on **Track Changes** to record your edits as CriticMarkup instead of writing them verbatim — like "track changes" in a word processor. While it is on, deleting wraps text in `{--…--}`, typing wraps it in `{++…++}`, and replacing a selection produces `{~~old~>new~~}`. Review and resolve the result with the usual accept/reject actions.
 
-The mode is **per document**: toggle it with **Toggle Track Changes** (`Alt+K Alt+T`) or the editor-title button. A status-bar item (`$(edit) Track Changes`) shows while the active editor is recording. New documents start from the `kaicrit.edit.trackChanges` setting.
+The mode is **per document**: toggle it with **Toggle Track Changes** (`Alt+K Alt+T`), the editor-title button, or the **`$(edit) Track Changes: On/Off`** status-bar item, which stays visible in every text editor and shows the current state — click it to switch recording on or off. New documents start from the `kaicrit.edit.trackChanges` setting.
 
 Because VS Code applies edits before extensions are notified, each tracked keystroke produces two document edits (your edit plus the marker wrap), so **Undo is two-step**. See [docs/track-changes.md](docs/track-changes.md) for the full behaviour matrix and limitations.
 

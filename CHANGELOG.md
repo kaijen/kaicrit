@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leading info lens shows the change's type symbol plus a short content preview
   (`☰ "impossible f…"`, click to jump to it) followed by ✓ / ✕ icons, so two
   changes on the same line no longer produce ambiguous side-by-side action pairs.
+- **The Track Changes status-bar item is now an always-visible two-way toggle.**
+  It stays visible in every text editor and shows the current state
+  (`$(edit) Track Changes: On/Off`); a click switches recording on **or** off.
+  Previously it only appeared while recording and could only turn the mode off.
 
 ## [0.5.0] - 2026-06-01
 

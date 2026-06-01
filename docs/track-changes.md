@@ -11,9 +11,10 @@ changes with the usual accept/reject actions.
 
 Track Changes is toggled **per document** with the
 `kaicrit.toggleTrackChanges` command (default keybinding `Alt+K Alt+T`). A
-status-bar item (`$(edit) Track Changes`) appears while the active editor is
-recording; click it to turn recording off again. New documents start with the
-value of the `kaicrit.edit.trackChanges` setting (default `false`).
+status-bar item (`$(edit) Track Changes: On/Off`) stays visible in every text
+editor and shows the current state; click it to switch recording on or off for
+the active document. New documents start with the value of the
+`kaicrit.edit.trackChanges` setting (default `false`).
 
 Because the state is per document, you can record changes in one file while
 editing another normally.

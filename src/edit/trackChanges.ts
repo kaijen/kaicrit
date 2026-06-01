@@ -24,8 +24,6 @@ export class TrackChangesManager {
     this.statusItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right, 90,
     );
-    this.statusItem.text = '$(edit) Track Changes';
-    this.statusItem.tooltip = 'Track Changes is recording this document — click to turn off';
     this.statusItem.command = 'kaicrit.toggleTrackChanges';
   }
 
@@ -63,11 +61,26 @@ export class TrackChangesManager {
   }
 
   // Reflect the active editor's recording state in the status bar + context key
-  // (the latter drives keybinding/menu `when` clauses).
+  // (the latter drives keybinding/menu `when` clauses). The status item is a
+  // two-way toggle: it stays visible in every regular text editor (file/untitled)
+  // and shows the on/off state, so the recorder can be switched on from the bar
+  // too — not just turned off while active (mirrors the `$(eye)` enablement
+  // toggle). It is hidden only where there is no document to record (no editor,
+  // or a non-file/untitled scheme like an output/diff pane).
   syncActiveEditor(editor: vscode.TextEditor | undefined): void {
     const on = !!editor && this.enabled.has(editor.document.uri.toString());
-    if (on) { this.statusItem.show(); } else { this.statusItem.hide(); }
     void vscode.commands.executeCommand('setContext', CONTEXT_KEY, on);
+
+    const scheme = editor?.document.uri.scheme;
+    if (!editor || (scheme !== 'file' && scheme !== 'untitled')) {
+      this.statusItem.hide();
+      return;
+    }
+    this.statusItem.text = on ? '$(edit) Track Changes: On' : '$(edit) Track Changes: Off';
+    this.statusItem.tooltip = on
+      ? 'Track Changes is recording this document — click to turn off'
+      : 'Track Changes is off for this document — click to turn on';
+    this.statusItem.show();
   }
 
   // Drop per-document state when a document closes.
