@@ -168,6 +168,69 @@ test('a content-only edit is still absorbed, not rejected — issue #38 boundary
   assert.equal(applyRaw(pre, raw), '{++ac++}');
 });
 
+// Issue #40 — pasting/inserting text that is already complete CriticMarkup must
+// not be re-wrapped (it would nest). Embedded markers stay literal; surrounding
+// plain runs are tracked as additions; a replaced plain selection becomes a
+// leading deletion.
+
+test('pasting a single complete marker is kept as-is (not nested) — issue #40', () => {
+  const pre = 'Hello  world';
+  const raw: RawEdit[] = [{ offset: 6, oldLength: 0, newText: '{++a++}' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(r.edits.length, 0); // skip: raw text already final
+  assert.equal(applyRaw(pre, raw), 'Hello {++a++} world');
+  assert.deepEqual(r.selections, [13]); // caret after the pasted marker
+});
+
+test('pasting several concatenated markers is kept as-is — issue #40', () => {
+  const pre = '';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 0, newText: '{--x--}{++y++}' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(r.edits.length, 0);
+  assert.equal(applyRaw(pre, raw), '{--x--}{++y++}');
+  assert.deepEqual(r.selections, [14]);
+});
+
+test('pasting markup surrounded by plain text wraps only the plain runs — issue #40', () => {
+  const pre = '';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 0, newText: 'foo {++a++} bar' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++foo ++}{++a++}{++ bar++}');
+  assert.deepEqual(r.selections, [27]); // after the whole pasted block
+  assert.equal(rejectAll(finalText(pre, raw, r.edits)), ''); // nothing was real text
+});
+
+test('pasting a trailing-plain mix wraps only the tail — issue #40', () => {
+  const pre = '';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 0, newText: '{++a++} tail' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++a++}{++ tail++}');
+});
+
+test('pasting markup over a selection tracks the old text as a deletion — issue #40', () => {
+  const pre = 'Hello foo world';
+  const raw: RawEdit[] = [{ offset: 6, oldLength: 3, newText: '{++a++}' }]; // replace "foo"
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), 'Hello {--foo--}{++a++} world');
+  assert.deepEqual(r.selections, [22]); // after the pasted block
+  assert.equal(rejectAll(finalText(pre, raw, r.edits)), pre); // reject restores "foo"
+});
+
+test('pasting plain text is still wrapped as a single addition — issue #40', () => {
+  const pre = '';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 0, newText: 'plain text' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++plain text++}');
+  assert.deepEqual(r.selections, [13]); // before ++}, unchanged plain-insert behaviour
+});
+
+test('pasting unterminated markup falls through to a normal addition wrap — issue #40', () => {
+  const pre = '';
+  const raw: RawEdit[] = [{ offset: 0, oldLength: 0, newText: '{++a' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++{++a++}'); // no marker matched → wrapped
+});
+
 test('multi-cursor insertion wraps each edit independently', () => {
   const pre = 'ab';
   const raw: RawEdit[] = [
