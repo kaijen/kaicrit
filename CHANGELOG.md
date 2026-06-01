@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-06-01
+
 ### Fixed
 - **Inserting a markup with multiple cursors now parks each caret inside its
   marker** (#37), matching single-cursor behaviour. Previously every caret
@@ -229,7 +231,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/kaijen/kaicrit/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kaijen/kaicrit/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/kaijen/kaicrit/compare/v0.2.0...v0.5.0
 [0.2.0]: https://github.com/kaijen/kaicrit/compare/v0.1.3...v0.2.0
