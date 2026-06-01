@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Track Changes no longer nests CriticMarkup inside CriticMarkup** (#34).
+  Continuing to type after a substitution — e.g. selecting `stick`, typing
+  `Just` — produced corrupt nested markers like
+  `{~~stick~>J{++u{++s{++t++}++}++}~~}`. Edits that land inside an existing
+  marker's content are now absorbed into that marker (the substitution's new
+  side or an addition just grows), so the result is a clean
+  `{~~stick~>Just~~}`.
+
 ### Changed
 - **Inline Accept / Reject actions are now on hover by default.** The boolean
   `kaicrit.edit.codeLens` is replaced by the enum `kaicrit.edit.changeActions`

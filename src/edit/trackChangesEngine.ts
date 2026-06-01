@@ -104,23 +104,23 @@ function classify(
   const postStart = offset + delta;
 
   const spans = scanMarkers(preText, delEnd);
-  // The smallest addition whose *content* fully contains the edited region.
-  const enclosingAdd = spans.find(
-    s => s.type === ChangeType.Addition &&
-      offset >= s.contentStart && delEnd <= s.contentEnd,
-  );
+
+  // Issue #34 — never create a marker inside another marker. If the edited
+  // region lies inside an existing marker's *content*, the edit is absorbed and
+  // no wrap is emitted: typing or deleting inside an addition (or a
+  // substitution's new side) just grows that side, and editing the interior of a
+  // highlight/comment/deletion stays literal. Either way no nested markup can
+  // form. We match the innermost enclosing marker so adjacent markers can't
+  // shadow a tighter one. A delete contributes `rawNewLen` 0 (newText is empty).
+  const enclosing = spans
+    .filter(s => offset >= s.contentStart && delEnd <= s.contentEnd)
+    .sort((a, b) => (a.contentEnd - a.contentStart) - (b.contentEnd - b.contentStart))[0];
+  if (enclosing) { return { kind: 'skip', postStart, rawNewLen: newText.length }; }
 
   const isInsert = oldLength === 0 && newText.length > 0;
   const isDelete = oldLength > 0 && newText.length === 0;
 
   if (isInsert) {
-    // Typing inside (or at either content edge of) an existing addition just
-    // grows it — the inserted text is already annotated.
-    const inside = spans.find(
-      s => s.type === ChangeType.Addition &&
-        offset >= s.contentStart && offset <= s.contentEnd,
-    );
-    if (inside) { return { kind: 'skip', postStart, rawNewLen: newText.length }; }
     const replacement = addMarker(newText);
     return {
       kind: 'wrap',
@@ -132,10 +132,6 @@ function classify(
   }
 
   if (isDelete) {
-    // Removing text you just added: let it vanish (rejecting an addition would
-    // have removed it anyway). No deletion marker.
-    if (enclosingAdd) { return { kind: 'skip', postStart, rawNewLen: 0 }; }
-
     // Single-edit adjacency merge with a neighbouring deletion.
     if (single) {
       const right = spans.find(s => s.type === ChangeType.Deletion && s.start === delEnd);
@@ -171,9 +167,8 @@ function classify(
     };
   }
 
-  // Replacement (both sides non-empty). If it happened inside an addition, the
-  // net effect is still "added text", so leave it as-is.
-  if (enclosingAdd) { return { kind: 'skip', postStart, rawNewLen: newText.length }; }
+  // Replacement (both sides non-empty) of plain text → a substitution marker.
+  // (Replacements inside an existing marker were already absorbed above.)
   const replacement = substMarker(oldText, newText);
   return {
     kind: 'wrap',

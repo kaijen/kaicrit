@@ -68,6 +68,25 @@ test('typing inside an existing addition grows it (no new marker)', () => {
   assert.deepEqual(r.selections, [6]);
 });
 
+test('typing inside a substitution new side grows it (no nested marker) — issue #34', () => {
+  // Caret parked before ~~}, inside the new side of a just-made substitution.
+  const pre = 'to {~~stick~>J~~} to';
+  const raw: RawEdit[] = [{ offset: 14, oldLength: 0, newText: 'u' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(r.edits.length, 0); // absorbed, not wrapped in a new {++…++}
+  assert.equal(applyRaw(pre, raw), 'to {~~stick~>Ju~~} to');
+  assert.deepEqual(r.selections, [15]); // after the typed char, before ~~}
+});
+
+test('no nested markup forms when typing into any marker interior — issue #34', () => {
+  // Highlight / comment / deletion interiors all stay literal (no inner marker).
+  for (const pre of ['a{==hi==}b', 'a{>>note<<}b', 'a{--del--}b']) {
+    const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'X' }];
+    const r = computeTrackChanges(pre, raw);
+    assert.equal(r.edits.length, 0, `expected no wrap inside ${pre}`);
+  }
+});
+
 test('deleting just-added text (inside an addition) leaves no deletion marker', () => {
   const pre = 'a{++bX++}c';
   const raw: RawEdit[] = [{ offset: 5, oldLength: 1, newText: '' }]; // remove the X
