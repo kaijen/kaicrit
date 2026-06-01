@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DecoratorManager } from './edit/decorator';
 import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
+import { CriticHoverProvider } from './edit/hover';
 import { ChangesTreeProvider } from './edit/changesView';
 import { TrackChangesManager } from './edit/trackChanges';
 import { EnablementManager } from './edit/enablement';
@@ -40,6 +41,17 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.languages.registerCodeLensProvider(
       [{ scheme: 'file' }, { scheme: 'untitled' }],
       codeLens,
+    ),
+  );
+
+  // On-hover "Accept · Reject" actions — the alternative to the always-on
+  // CodeLens, active when kaicrit.edit.changeActions is "hover" (the default).
+  // Shares the same change cache and enablement gate.
+  const hover = new CriticHoverProvider(dm, doc => em.isEnabled(doc));
+  ctx.subscriptions.push(
+    vscode.languages.registerHoverProvider(
+      [{ scheme: 'file' }, { scheme: 'untitled' }],
+      hover,
     ),
   );
 

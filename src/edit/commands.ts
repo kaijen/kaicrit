@@ -54,14 +54,18 @@ export function registerEditCommands(
     if (editor) { em.toggle(editor.document); }
   });
 
-  // Position-targeted variants used by the CodeLens actions. They delegate to
-  // the same resolve logic, but act on the change at the supplied position
-  // instead of the cursor.
+  // Position-targeted variants used by the CodeLens actions and the hover
+  // command links. They delegate to the same resolve logic, but act on the
+  // change at the supplied position instead of the cursor. A CodeLens passes a
+  // live `vscode.Position`; a hover `command:` link deserializes its argument as
+  // a plain `{line, character}` object, so normalize before use.
+  const toPos = (p: vscode.Position | { line: number; character: number }): vscode.Position =>
+    p instanceof vscode.Position ? p : new vscode.Position(p.line, p.character);
   ctx.subscriptions.push(
     vscode.commands.registerCommand('kaicrit.acceptChangeAt',
-      (pos: vscode.Position) => applyAt(dm, 'accept', pos)),
+      (pos: vscode.Position) => applyAt(dm, 'accept', toPos(pos))),
     vscode.commands.registerCommand('kaicrit.rejectChangeAt',
-      (pos: vscode.Position) => applyAt(dm, 'reject', pos)),
+      (pos: vscode.Position) => applyAt(dm, 'reject', toPos(pos))),
   );
 
   // Tree-View actions: reveal a change on click, and inline accept/reject on a

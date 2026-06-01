@@ -31,7 +31,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document grouped by type; click an entry to jump to it, resolve it inline, or accept/reject all from the view title
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
-- **Inline CodeLens actions** — clickable **Accept | Reject** appear above every change, so edits can be resolved with the mouse without learning the shortcuts (toggle with `kaicrit.edit.codeLens`)
+- **Inline actions** — clickable **Accept · Reject** so edits can be resolved with the mouse without learning the shortcuts; shown **on hover** by default, or as an always-on **CodeLens** row, or off (`kaicrit.edit.changeActions`)
 - **Track Changes mode** — record your edits live as CriticMarkup instead of changing the text directly, like "track changes" in a word processor; toggled per document (`Alt+K Alt+T`)
 - **Comment metadata** — comments may carry an optional author and date (`{>>@kai 2026-05-31: text<<}`), shown in editor hovers and the preview; the author is configurable and the whole convention can be turned off
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
@@ -88,13 +88,17 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
 
-## Inline actions (CodeLens)
+## Inline actions
 
-Above every CriticMarkup change, kaicrit shows clickable **Accept | Reject** actions. Clicking one resolves exactly that change using the same logic as the keyboard shortcuts; the lenses update automatically as you edit or resolve changes.
+kaicrit offers clickable **Accept · Reject** actions for each change, resolving exactly that change with the same logic as the keyboard shortcuts. How they appear is controlled by `kaicrit.edit.changeActions`:
 
 | Setting | Values | Default | Effect |
 |---|---|---|---|
-| `kaicrit.edit.codeLens` | `true`, `false` | `true` | Show the inline Accept / Reject CodeLens actions |
+| `kaicrit.edit.changeActions` | `hover`, `codeLens`, `off` | `hover` | Where the Accept / Reject actions appear |
+
+- **`hover`** (default) — the actions appear only in the **hover tooltip** over a change, keeping the text clean. The tooltip anchors to the change, so it is always clear which change you are resolving.
+- **`codeLens`** — an always-on **CodeLens** row above each change. Each change shows its type symbol plus a short content preview (`☰ "impossible f…"`, click to jump to it) followed by ✓ / ✕ icons, so two changes on the same line stay distinguishable.
+- **`off`** — no inline actions; use the keyboard shortcuts, status bar, or Changes sidebar.
 
 ## Changes sidebar (overview)
 
@@ -173,7 +177,7 @@ The renderer is a markdown-it *inline rule* that emits balanced tokens (not raw 
 
 ## Where kaicrit is active
 
-By default kaicrit's editor features — decorations, inline CodeLens, the status-bar counts, the Changes view, and accept/reject — run only in **Markdown** and **plain-text** files. Adjust the list with the `kaicrit.enabledLanguages` setting, which matches a document's [language id](https://code.visualstudio.com/docs/languages/identifiers):
+By default kaicrit's editor features — decorations, the inline Accept · Reject actions, the status-bar counts, the Changes view, and accept/reject — run only in **Markdown** and **plain-text** files. Adjust the list with the `kaicrit.enabledLanguages` setting, which matches a document's [language id](https://code.visualstudio.com/docs/languages/identifiers):
 
 ```json
 "kaicrit.enabledLanguages": ["markdown", "plaintext", "latex"]

@@ -1,21 +1,27 @@
 import * as vscode from 'vscode';
 import { parseCriticMarkup } from './parser';
 import { DecoratorManager } from './decorator';
+import { SYMBOLS, LABELS } from './statusBar';
+import { shortText } from './actions';
 
 /**
- * Renders clickable "Accept | Reject" actions above every CriticMarkup change,
- * so changes can be resolved without knowing the keyboard shortcuts.
+ * Renders an "Accept | Reject" action group above every CriticMarkup change.
+ * Each change emits three lenses anchored at its start: a leading info lens
+ * (`<type-symbol> "<preview>"`, click → jump to the change) followed by the
+ * `$(check)` / `$(x)` icon actions. Because VS Code packs all lenses of a line
+ * into one row, the per-change symbol + content preview is what tells two
+ * changes on the same line apart.
  *
  * Lenses are built from the `DecoratorManager`'s change cache (no extra scan)
  * and refresh whenever that cache updates via `onDidUpdate`. Because the cache
  * is refreshed on a debounce, this acts as a debounced lens-refresh signal.
  * Falls back to a direct parse only when the cache is genuinely cold (no entry
- * yet, e.g. a document shown before its first decoration pass) — a warm but
- * empty cache means the decorator already scanned and found no markers, so a
- * marker-free file isn't re-scanned on every CodeLens request.
+ * yet) — a warm but empty cache means the decorator already scanned and found no
+ * markers, so a marker-free file isn't re-scanned on every CodeLens request.
  *
- * Honors the `kaicrit.edit.codeLens` setting: when disabled, no lenses are
- * provided and toggling the setting refreshes immediately.
+ * Honors `kaicrit.edit.changeActions`: lenses are provided only in `"codeLens"`
+ * mode (`"hover"`/`"off"` provide none); toggling the setting refreshes
+ * immediately.
  */
 export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.Disposable {
   private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>();
@@ -34,7 +40,7 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
     // Toggling the setting must add/remove lenses immediately.
     this.disposables.push(
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration('kaicrit.edit.codeLens')) {
+        if (e.affectsConfiguration('kaicrit.edit.changeActions')) {
           this._onDidChangeCodeLenses.fire();
         }
       }),
@@ -44,10 +50,10 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
   provideCodeLenses(doc: vscode.TextDocument): vscode.CodeLens[] {
     if (!this.isEnabled(doc)) { return []; }
 
-    const enabled = vscode.workspace
+    const mode = vscode.workspace
       .getConfiguration('kaicrit')
-      .get<boolean>('edit.codeLens', true);
-    if (!enabled) { return []; }
+      .get<string>('edit.changeActions', 'hover');
+    if (mode !== 'codeLens') { return []; }
 
     // Reuse the decorator's cached parse; fall back to a direct scan only if the
     // cache is genuinely cold (no entry yet) for this document. A warm-but-empty
@@ -58,18 +64,27 @@ export class CriticCodeLensProvider implements vscode.CodeLensProvider, vscode.D
 
     const lenses: vscode.CodeLens[] = [];
     for (const change of changes) {
-      // Anchor the lens at the start of the change; pass that position to the
+      // Anchor every lens at the start of the change; pass that position to the
       // resolve commands so they act on exactly this change.
-      const anchor = new vscode.Range(change.fullRange.start, change.fullRange.start);
       const pos = change.fullRange.start;
+      const anchor = new vscode.Range(pos, pos);
+      const preview = shortText(change.text ?? change.newText ?? change.oldText ?? '');
+      // Leading info lens: type symbol + content preview, identifies the group
+      // and jumps to the change on click.
       lenses.push(new vscode.CodeLens(anchor, {
-        title: '$(check) Accept',
+        title: preview ? `${SYMBOLS[change.type]} "${preview}"` : SYMBOLS[change.type],
+        tooltip: LABELS[change.type],
+        command: 'kaicrit.revealChangeAt',
+        arguments: [pos],
+      }));
+      lenses.push(new vscode.CodeLens(anchor, {
+        title: '$(check)',
         tooltip: 'Accept this change',
         command: 'kaicrit.acceptChangeAt',
         arguments: [pos],
       }));
       lenses.push(new vscode.CodeLens(anchor, {
-        title: '$(x) Reject',
+        title: '$(x)',
         tooltip: 'Reject this change',
         command: 'kaicrit.rejectChangeAt',
         arguments: [pos],

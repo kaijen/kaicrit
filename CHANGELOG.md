@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Inline Accept / Reject actions are now on hover by default.** The boolean
+  `kaicrit.edit.codeLens` is replaced by the enum `kaicrit.edit.changeActions`
+  (`hover` | `codeLens` | `off`, default `hover`). In `hover` mode the actions
+  appear only in the tooltip over a change, keeping the text clean; `codeLens`
+  restores the always-on row; `off` hides them entirely.
+- The `codeLens` row is now compact and clearly associated with its change: a
+  leading info lens shows the change's type symbol plus a short content preview
+  (`☰ "impossible f…"`, click to jump to it) followed by ✓ / ✕ icons, so two
+  changes on the same line no longer produce ambiguous side-by-side action pairs.
+
 ## [0.5.0] - 2026-06-01
 
 ### Added

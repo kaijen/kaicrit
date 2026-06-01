@@ -450,12 +450,18 @@
             "type": "string"
           },
           "default": ["markdown", "plaintext"],
-          "markdownDescription": "Language ids for which kaicrit's editor features (decorations, inline CodeLens, status bar, Changes view, accept/reject) are active. Matched against a document's language id; use `\"*\"` to enable every language. Override per file with the `$(eye) CriticMarkup` toggle in the status bar (session-only)."
+          "markdownDescription": "Language ids for which kaicrit's editor features (decorations, inline Accept/Reject actions, status bar, Changes view, accept/reject) are active. Matched against a document's language id; use `\"*\"` to enable every language. Override per file with the `$(eye) CriticMarkup` toggle in the status bar (session-only)."
         },
-        "kaicrit.edit.codeLens": {
-          "type": "boolean",
-          "default": true,
-          "description": "Show inline \"Accept | Reject\" CodeLens actions above each CriticMarkup change in the editor."
+        "kaicrit.edit.changeActions": {
+          "type": "string",
+          "enum": ["codeLens", "hover", "off"],
+          "enumDescriptions": [
+            "Show an inline Accept / Reject CodeLens row above each change (type symbol + content preview, then ✓ / ✕ icons).",
+            "Show Accept / Reject only in the hover tooltip over a change.",
+            "Show no inline accept/reject actions."
+          ],
+          "default": "hover",
+          "description": "How the inline Accept / Reject actions for CriticMarkup changes are shown in the editor."
         },
         "kaicrit.edit.commentMetadata": {
           "type": "boolean",

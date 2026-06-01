@@ -33,6 +33,6 @@ no CriticMarkup, the view shows a short empty-state hint.
 | Accept All / Reject All | Buttons in the view title | Resolves every change in the document in one atomic edit |
 
 Inline and title actions reuse the same accept/reject logic as the
-[editor commands and CodeLens](markup.md), so the
+[editor commands and inline actions](markup.md), so the
 [resolution semantics](markup.md) are identical no matter where you trigger
 them from.

@@ -42,14 +42,22 @@ Accept All / Reject All apply all resolutions atomically in a single edit.
 > empty "old" side would just be a plain addition (`{~~~>new~~}` ≡ `{++new++}`).
 > Use **Insert Addition** to add text from scratch.
 
-## Inline-Aktionen (CodeLens)
+## Inline-Aktionen
 
-Über jeder Änderung erscheinen klickbare **Accept | Reject**-Aktionen. Ein Klick
+Für jede Änderung bietet kaicrit klickbare **Accept · Reject**-Aktionen. Ein Klick
 löst genau diese Änderung auf – dieselbe Logik wie bei den Tastenkürzeln, nur
-ohne sie kennen zu müssen. Die Aktionen aktualisieren sich automatisch beim
-Tippen und nach dem Auflösen.
+ohne sie kennen zu müssen. Wo die Aktionen erscheinen, steuert die Einstellung
+`kaicrit.edit.changeActions`:
 
-Abschaltbar über die Einstellung `kaicrit.edit.codeLens` (Standard `true`).
+- **`hover`** (Standard) – die Aktionen erscheinen nur im **Hover-Tooltip** über
+  einer Änderung. Der Tooltip ist an die Änderung gebunden, also ist immer klar,
+  welche Änderung aufgelöst wird, und der Text bleibt frei von Dauer-Einblendungen.
+- **`codeLens`** – eine dauerhafte **CodeLens**-Zeile über jeder Änderung: Typ-Symbol
+  + gekürzte Inhaltsvorschau (`☰ "impossible f…"`, Klick springt zur Änderung),
+  gefolgt von ✓ / ✕ als Icons. So bleiben auch zwei Änderungen in einer Zeile
+  unterscheidbar.
+- **`off`** – keine Inline-Aktionen; stattdessen Tastenkürzel, Statusleiste oder
+  die Changes-Sidebar nutzen.
 
 ## Kommentar-Metadaten (Autor & Datum)
 

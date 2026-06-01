@@ -1,7 +1,7 @@
 # Where kaicrit is active
 
-kaicrit's editor features — decorations, the dimmed markers, inline
-**Accept | Reject** [CodeLens](markup.md), the [status-bar counts](index.md),
+kaicrit's editor features — decorations, the dimmed markers, the inline
+**Accept · Reject** [actions](markup.md), the [status-bar counts](index.md),
 the [Changes sidebar](overview.md), and the accept/reject keybindings — don't
 run in every file. They run for the **file types you choose**, with a per-file
 status-bar toggle for one-off exceptions.
@@ -62,7 +62,7 @@ kaicrit treats it as plain text:
 
 - no decorations, dimmed markers, or overview-ruler marks,
 - no status-bar counts and an empty Changes view,
-- no inline CodeLens,
+- no inline Accept · Reject actions (hover or CodeLens),
 - the `Alt+A` / `Alt+R` accept/reject keybindings stay dormant (their
   `kaicrit.hasChanges` guard is false), and navigation/accept commands report
   that there are no changes.
