@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-01
+
 ### Changed
 - **Track Changes: editing a marker's delimiter now rejects that change** (#38).
   Deleting or replacing any part of a marker's opener/closer — e.g. backspacing
@@ -15,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of leaving broken or nested markup like `{--{--}++a++}`. Edits *inside*
   a marker's content are still absorbed (#34); a selection spanning content and a
   delimiter rejects the entire marker.
+- **Track Changes: pasting text that is already CriticMarkup is kept verbatim**
+  (#40). Inserting complete marker(s) no longer re-wraps them into nested markup
+  (`{++a++}` stays `{++a++}`, not `{++{++a++}++}`). A paste that mixes plain text
+  with markers wraps only the plain runs as additions
+  (`foo {++a++} bar` → `{++foo ++}{++a++}{++ bar++}`), and pasting markup over a
+  selection tracks the replaced text as a leading `{--…--}` deletion.
+  Unterminated input (e.g. `{++a`) still falls through to a normal addition wrap.
 
 ## [0.6.1] - 2026-06-01
 
