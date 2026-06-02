@@ -35,10 +35,10 @@ export function registerEditCommands(
 
   // ── Accept / Reject ──────────────────────────────────────────────────────────
 
-  reg('kaicrit.acceptChange', () => applyAtCursor(dm, 'accept'));
-  reg('kaicrit.rejectChange', () => applyAtCursor(dm, 'reject'));
-  reg('kaicrit.acceptAll',    () => applyAll(dm, 'accept'));
-  reg('kaicrit.rejectAll',    () => applyAll(dm, 'reject'));
+  reg('kaicrit.acceptChange', () => applyAtCursor(dm, tcm, 'accept'));
+  reg('kaicrit.rejectChange', () => applyAtCursor(dm, tcm, 'reject'));
+  reg('kaicrit.acceptAll',    () => applyAll(dm, tcm, 'accept'));
+  reg('kaicrit.rejectAll',    () => applyAll(dm, tcm, 'reject'));
 
   // ── Track Changes (Annotate) ─────────────────────────────────────────────────
 
@@ -63,9 +63,9 @@ export function registerEditCommands(
     p instanceof vscode.Position ? p : new vscode.Position(p.line, p.character);
   ctx.subscriptions.push(
     vscode.commands.registerCommand('kaicrit.acceptChangeAt',
-      (pos: vscode.Position) => applyAt(dm, 'accept', toPos(pos))),
+      (pos: vscode.Position) => applyAt(dm, tcm, 'accept', toPos(pos))),
     vscode.commands.registerCommand('kaicrit.rejectChangeAt',
-      (pos: vscode.Position) => applyAt(dm, 'reject', toPos(pos))),
+      (pos: vscode.Position) => applyAt(dm, tcm, 'reject', toPos(pos))),
   );
 
   // Tree-View actions: reveal a change on click, and inline accept/reject on a
@@ -76,11 +76,11 @@ export function registerEditCommands(
       (pos: vscode.Position) => revealAt(dm, pos)),
     vscode.commands.registerCommand('kaicrit.acceptChangeNode',
       (node?: { position?: vscode.Position }) => {
-        if (node?.position) { applyAt(dm, 'accept', node.position); }
+        if (node?.position) { applyAt(dm, tcm, 'accept', node.position); }
       }),
     vscode.commands.registerCommand('kaicrit.rejectChangeNode',
       (node?: { position?: vscode.Position }) => {
-        if (node?.position) { applyAt(dm, 'reject', node.position); }
+        if (node?.position) { applyAt(dm, tcm, 'reject', node.position); }
       }),
   );
 }
@@ -244,13 +244,18 @@ function revealAt(dm: DecoratorManager, position: vscode.Position): void {
   if (change) { revealChange(editor, change); }
 }
 
-function applyAtCursor(dm: DecoratorManager, mode: 'accept' | 'reject'): void {
+function applyAtCursor(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept' | 'reject'): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  applyAt(dm, mode, editor.selection.active);
+  applyAt(dm, tcm, mode, editor.selection.active);
 }
 
-function applyAt(dm: DecoratorManager, mode: 'accept' | 'reject', position: vscode.Position): void {
+function applyAt(
+  dm: DecoratorManager,
+  tcm: TrackChangesManager,
+  mode: 'accept' | 'reject',
+  position: vscode.Position,
+): void {
   const editor = activeEditor();
   if (!editor) { return; }
   const changes = dm.getChanges(editor.document);
@@ -263,10 +268,12 @@ function applyAt(dm: DecoratorManager, mode: 'accept' | 'reject', position: vsco
   }
   const edit = new vscode.WorkspaceEdit();
   addResolution(edit, editor.document.uri, change, mode);
-  vscode.workspace.applyEdit(edit).then(() => dm.update(editor));
+  // Route through the recorder so a resolution applied while Track Changes is on
+  // isn't re-interpreted as a user edit (which would undo the accept/reject).
+  tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
 }
 
-function applyAll(dm: DecoratorManager, mode: 'accept' | 'reject'): void {
+function applyAll(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept' | 'reject'): void {
   const editor = activeEditor();
   if (!editor) { return; }
   const changes = dm.getChanges(editor.document);
@@ -278,7 +285,7 @@ function applyAll(dm: DecoratorManager, mode: 'accept' | 'reject'): void {
   for (const change of changes) {
     addResolution(edit, editor.document.uri, change, mode);
   }
-  vscode.workspace.applyEdit(edit).then(() => dm.update(editor));
+  tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
 }
 
 function addResolution(

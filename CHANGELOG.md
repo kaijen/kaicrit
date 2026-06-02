@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Accept/Reject while Track Changes is on no longer undoes itself** (#42).
+  Resolving a change (via the hover actions, CodeLens, the sidebar, or the
+  `Alt+A`/`Alt+R` keybindings) applies a `WorkspaceEdit` that removes the marker's
+  delimiters. With Track Changes recording, that edit was re-interpreted as the
+  #38 "delimiter removed → reject this marker" gesture, so the resolution was
+  silently reverted — e.g. accepting a deletion re-inserted the text and the
+  change stayed visible. Resolutions now run through the recorder's per-document
+  re-entrancy guard, so they are never re-processed.
+
 ## [0.7.2] - 2026-06-02
 
 ### Added

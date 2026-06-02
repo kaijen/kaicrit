@@ -174,6 +174,62 @@ test('normal mode: own compensating edit is not re-processed (guard held)', asyn
   mgr.dispose();
 });
 
+// Accept/reject resolutions (issue #42): applyResolution must hold the per-doc
+// guard so the change event its own applyEdit fires is NOT re-processed by the
+// recorder — otherwise removing the marker's delimiters reads as an issue-#38
+// reject and undoes the resolution (e.g. accepting {--foo--} re-inserts "foo").
+test('applyResolution suppresses recorder re-processing (issue #42)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///r.md', '{--foo--}');
+  mgr.toggle(doc as unknown as vscode.TextDocument); // enable, shadow='{--foo--}'
+
+  // The resolution's own applyEdit stays pending so the guard is still held when
+  // the (simulated) accept change event arrives.
+  setApplyEditImpl(() => new Promise<boolean>(() => {}));
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(doc.uri as unknown as vscode.Uri, new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 9)), '');
+  void mgr.applyResolution(doc as unknown as vscode.TextDocument, edit);
+
+  // Now the accept edit's change event fires. With the guard held it must be
+  // dropped: no compensating edit may be applied.
+  let compensating = 0;
+  setApplyEditImpl(() => { compensating++; return Promise.resolve(true); });
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 0, rangeLength: 9, text: '' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  await flush();
+
+  assert.equal(compensating, 0, 'recorder re-processed the accept edit — resolution would be undone');
+  mgr.dispose();
+});
+
+test('applyResolution releases the guard after its applyEdit settles (issue #42)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///r.md', '{--foo--}');
+  mgr.toggle(doc as unknown as vscode.TextDocument);
+
+  setApplyEditImpl(() => Promise.resolve(true));
+  const edit = new vscode.WorkspaceEdit();
+  edit.replace(doc.uri as unknown as vscode.Uri, new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 9)), '');
+  const applied = await mgr.applyResolution(doc as unknown as vscode.TextDocument, edit);
+  assert.equal(applied, true);
+
+  // Guard released: a subsequent real user edit is recorded again. Insert at the
+  // end (offset 9, outside the marker) so the engine emits a wrap.
+  let calls = 0;
+  setApplyEditImpl(() => { calls++; return Promise.resolve(true); });
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 9, rangeLength: 0, text: 'X' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  await flush();
+  assert.equal(calls, 1, 'guard wedged after a resolution — later edits were dropped');
+  mgr.dispose();
+});
+
 test('normal mode: guard is released after applyEdit rejects', async () => {
   const mgr = new TrackChangesManager();
   const doc = makeDoc('file:///n.md', '{++ab{++X++}c++}');
