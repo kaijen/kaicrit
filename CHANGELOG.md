@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Wrapping a selection in a highlight/comment while Track Changes is on no
+  longer prepends a spurious deletion** (#44). Using an insert command (e.g.
+  *Highlight*, *Comment*) on selected text reached the recorder as a replace whose
+  new side already contained a marker, so it tracked the original text as a leading
+  `{--…--}` deletion (`foo` → `{--foo--}{==foo==}`). The insert/wrap commands now
+  apply their edit through the recorder's per-document re-entrancy guard, so the
+  authored markup lands verbatim (`{==foo==}`) — matching the accept/reject fix
+  from #42. Affects all insert commands (deletion, addition, highlight, comment,
+  substitution).
+
 ## [0.7.4] - 2026-06-02
 
 ### Fixed

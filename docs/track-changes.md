@@ -38,6 +38,12 @@ created addition (just before `++}`). The next character therefore lands in
 the addition's content and the marker simply grows, instead of producing
 `{++a++}{++b++}`.
 
+The **insert commands** (*Highlight*, *Comment*, *Addition*, …) are an exception:
+they author markup explicitly, so their edit is applied through the same
+re-entrancy guard and the recorder leaves it verbatim. Wrapping a selection in a
+highlight or comment yields `{==foo==}` / `{>>foo<<}` directly — without a
+spurious leading `{--foo--}` deletion that the replace would otherwise look like.
+
 ## Behaviour matrix
 
 | You do… | Result |
@@ -52,6 +58,7 @@ the addition's content and the marker simply grows, instead of producing
 | Paste markup *inside* a marker's content | Inner markers flattened to accept-form, then absorbed (no nesting) |
 | Delete/replace a marker's *delimiter* (e.g. a `{`, `+` or `}`) | The whole marker is **rejected** (resolved) |
 | Paste markup into *plain* text | Kept as-is, not re-wrapped (no `{++{++a++}++}`) |
+| Use an insert command (e.g. *Highlight*, *Comment*) on a selection | The selection is wrapped verbatim (`{==foo==}`) — no recorded edit, no leading `{--foo--}` deletion |
 | Multiple cursors / a multi-edit event | Each edit is wrapped independently (no cross-cursor merge) |
 | Undo / Redo | Not re-processed — see below |
 

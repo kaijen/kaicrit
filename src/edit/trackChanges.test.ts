@@ -230,6 +230,62 @@ test('applyResolution releases the guard after its applyEdit settles (issue #42)
   mgr.dispose();
 });
 
+// Authoring edits (issue #44): the insert/wrap commands route their edit through
+// applyAuthoringEdit, which must hold the per-doc guard so the recorder leaves the
+// authored markup verbatim — otherwise wrapping a selection ("foo" → "{==foo==}")
+// is seen as a replace whose new side contains a marker and the engine prepends a
+// spurious "{--foo--}" deletion.
+test('applyAuthoringEdit suppresses recorder re-processing (issue #44)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///r.md', 'foo');
+  mgr.toggle(doc as unknown as vscode.TextDocument); // enable, shadow='foo'
+
+  // The authoring edit's own applyEdit stays pending so the guard is still held
+  // when the (simulated) wrap change event arrives.
+  setApplyEditImpl(() => new Promise<boolean>(() => {}));
+  void mgr.applyAuthoringEdit(doc as unknown as vscode.TextDocument, () => vscode.workspace.applyEdit(new vscode.WorkspaceEdit()));
+
+  // The wrap edit's change event fires: "foo" replaced by "{==foo==}". With the
+  // guard held it must be dropped — no compensating (deletion-prepending) edit.
+  let compensating = 0;
+  setApplyEditImpl(() => { compensating++; return Promise.resolve(true); });
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 0, rangeLength: 3, text: '{==foo==}' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  await flush();
+
+  assert.equal(compensating, 0, 'recorder re-processed the authoring edit — a spurious deletion would be added');
+  mgr.dispose();
+});
+
+test('applyAuthoringEdit releases the guard after its applyEdit settles (issue #44)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///r.md', 'foo');
+  mgr.toggle(doc as unknown as vscode.TextDocument);
+
+  setApplyEditImpl(() => Promise.resolve(true));
+  const applied = await mgr.applyAuthoringEdit(
+    doc as unknown as vscode.TextDocument,
+    () => vscode.workspace.applyEdit(new vscode.WorkspaceEdit()),
+  );
+  assert.equal(applied, true);
+
+  // Guard released: a subsequent real user edit is recorded again. Insert 'X' at
+  // the end of 'foo' (offset 3) so the engine emits a wrap.
+  let calls = 0;
+  setApplyEditImpl(() => { calls++; return Promise.resolve(true); });
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 3, rangeLength: 0, text: 'X' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  await flush();
+  assert.equal(calls, 1, 'guard wedged after an authoring edit — later edits were dropped');
+  mgr.dispose();
+});
+
 test('normal mode: guard is released after applyEdit rejects', async () => {
   const mgr = new TrackChangesManager();
   const doc = makeDoc('file:///n.md', '{++ab{++X++}c++}');
