@@ -109,6 +109,33 @@ export class TrackChangesManager {
     );
   }
 
+  // Apply an edit that *authors* CriticMarkup explicitly — the insert/wrap
+  // commands (`kaicrit.insert*`). The user is deliberately writing markup, so it
+  // must land verbatim regardless of whether Track Changes is on, and the
+  // recorder must NOT re-process the resulting change event. Without this guard a
+  // wrap such as "foo" → "{==foo==}" reaches `handleChange` as a replace whose new
+  // side already contains a marker; the engine then tracks the replaced text as a
+  // leading "{--foo--}" deletion (issue #44). Reuses the same per-document
+  // `applyingOwnEdit` guard as `applyResolution`, then refreshes the shadow so the
+  // next real user edit diffs against the authored text. `apply` runs the actual
+  // edit (an `editor.edit` callback) and resolves with its success flag; the guard
+  // is released in both the success and the rejection branch.
+  applyAuthoringEdit(doc: vscode.TextDocument, apply: () => Thenable<boolean>): Thenable<boolean> {
+    const key = doc.uri.toString();
+    this.applyingOwnEdit.add(key);
+    return apply().then(
+      (applied) => {
+        this.applyingOwnEdit.delete(key);
+        if (applied && this.enabled.has(key)) { this.shadow.set(key, doc.getText()); }
+        return applied;
+      },
+      () => {
+        this.applyingOwnEdit.delete(key);
+        return false;
+      },
+    );
+  }
+
   // Drop per-document state when a document closes.
   forget(doc: vscode.TextDocument): void {
     const key = doc.uri.toString();

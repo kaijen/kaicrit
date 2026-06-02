@@ -20,11 +20,11 @@ export function registerEditCommands(
 
   // ── Insert commands ──────────────────────────────────────────────────────────
 
-  reg('kaicrit.insertDeletion', () => wrapSelection('{--', '--}'));
-  reg('kaicrit.insertAddition', () => wrapSelection('{++', '++}'));
-  reg('kaicrit.insertHighlight', () => wrapSelection('{==', '==}'));
-  reg('kaicrit.insertComment',   insertComment);
-  reg('kaicrit.insertSubstitution', insertSubstitution);
+  reg('kaicrit.insertDeletion', () => wrapSelection(tcm, '{--', '--}'));
+  reg('kaicrit.insertAddition', () => wrapSelection(tcm, '{++', '++}'));
+  reg('kaicrit.insertHighlight', () => wrapSelection(tcm, '{==', '==}'));
+  reg('kaicrit.insertComment',   () => insertComment(tcm));
+  reg('kaicrit.insertSubstitution', () => insertSubstitution(tcm));
 
   // ── Navigation commands ──────────────────────────────────────────────────────
 
@@ -98,11 +98,14 @@ function activeEditor(): vscode.TextEditor | undefined {
 // per-selection `wasEmpty` snapshot taken before the edit (an empty cursor always
 // parks inside the new pair). VS Code preserves the count and order of
 // `editor.selections` across an edit, so post-edit `selections[i]` is the i-th input.
-function wrapSelection(open: string, close: string, cursorInside = false): void {
+function wrapSelection(tcm: TrackChangesManager, open: string, close: string, cursorInside = false): void {
   const editor = activeEditor();
   if (!editor) { return; }
   const wasEmpty = editor.selections.map(sel => sel.isEmpty);
-  editor.edit(eb => {
+  // Route through the Track Changes guard: this is explicit markup authoring, so
+  // the recorder must leave it verbatim instead of re-tracking the wrap as an
+  // edit (which would prepend a spurious deletion — issue #44).
+  void tcm.applyAuthoringEdit(editor.document, () => editor.edit(eb => {
     for (const sel of editor.selections) {
       if (sel.isEmpty) {
         eb.insert(sel.active, open + close);
@@ -110,7 +113,7 @@ function wrapSelection(open: string, close: string, cursorInside = false): void 
         eb.replace(sel, open + editor.document.getText(sel) + close);
       }
     }
-  }).then(() => {
+  })).then(() => {
     const doc = editor.document;
     editor.selections = editor.selections.map((sel, i) => {
       const base = doc.offsetAt(sel.active);
@@ -124,7 +127,7 @@ function wrapSelection(open: string, close: string, cursorInside = false): void 
 // Insert a comment, optionally pre-filled with author + today's date so the
 // metadata convention ({>>@author YYYY-MM-DD: text<<}) is one keystroke away.
 // When `kaicrit.edit.commentMetadata` is off, falls back to a plain comment.
-async function insertComment(): Promise<void> {
+async function insertComment(tcm: TrackChangesManager): Promise<void> {
   const cfg = vscode.workspace.getConfiguration('kaicrit');
   let open = '{>>';
   if (cfg.get<boolean>('edit.commentMetadata', true)) {
@@ -132,7 +135,7 @@ async function insertComment(): Promise<void> {
     const date = isoToday();
     open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
   }
-  wrapSelection(open, '<<}', true);
+  wrapSelection(tcm, open, '<<}', true);
 }
 
 const execFileAsync = promisify(execFile);
@@ -170,7 +173,7 @@ function isoToday(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function insertSubstitution(): void {
+function insertSubstitution(tcm: TrackChangesManager): void {
   const editor = activeEditor();
   if (!editor) { return; }
   // A substitution must replace *existing* text. With nothing selected there is
@@ -186,11 +189,12 @@ function insertSubstitution(): void {
   }
   const edited = editor.selections.map(sel => !sel.isEmpty);
   const { open, sep, close } = MARKERS[ChangeType.Substitution];
-  editor.edit(eb => {
+  // Authoring edit — guard it so the recorder doesn't re-track the wrap (issue #44).
+  void tcm.applyAuthoringEdit(editor.document, () => editor.edit(eb => {
     for (const sel of targets) {
       eb.replace(sel, `${open}${editor.document.getText(sel)}${sep}${close}`);
     }
-  }).then(() => {
+  })).then(() => {
     // Park each cursor on the empty "new" side (before `~~}`) so the user can type
     // the replacement. After the replace, the cursor sits at the end of the
     // inserted text; the desired point is exactly `close.length` units before it.
