@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Double-Pane view (Original | New)** (#46). A new command,
+  *CriticMarkup: Open Double-Pane View (Original | New)* (`Alt+K Alt+P`, editor
+  title-bar `$(split-horizontal)` icon, editor right-click), splits the active
+  CriticMarkup document into two side-by-side editors: **Original** (the reject
+  result — deletions and substitution-old kept) on the left and **New** (the
+  accept result — additions and substitution-new kept) on the right. Highlights
+  and comments show on both sides, plain text is copied to both, and the marker
+  delimiters appear on neither — the content keeps the markup colours without the
+  syntax. Snapshot on command (no live mode), like Compare. The six content
+  decoration types are now produced by a shared `createContentDecorationTypes()`
+  factory so the editor and the panes use identical styles from separate instance
+  sets.
+
 ## [0.7.5] - 2026-06-02
 
 ### Fixed

@@ -171,6 +171,12 @@
         "command": "kaicrit.compareSelected",
         "title": "Compare Selected Files → CriticMarkup",
         "category": "CriticMarkup"
+      },
+      {
+        "command": "kaicrit.openDoublePane",
+        "title": "Open Double-Pane View (Original | New)",
+        "category": "CriticMarkup",
+        "icon": "$(split-horizontal)"
       }
     ],
     "colors": [
@@ -325,6 +331,11 @@
         "command": "kaicrit.toggleTrackChanges",
         "key": "alt+k alt+t",
         "when": "editorTextFocus"
+      },
+      {
+        "command": "kaicrit.openDoublePane",
+        "key": "alt+k alt+p",
+        "when": "editorTextFocus"
       }
     ],
     "menus": {
@@ -367,6 +378,11 @@
           "command": "kaicrit.compareWithGitHead",
           "when": "resourceScheme == file",
           "group": "3_compare@1"
+        },
+        {
+          "command": "kaicrit.openDoublePane",
+          "when": "editorIsOpen",
+          "group": "3_compare@2"
         }
       ],
       "editor/title": [
@@ -374,6 +390,11 @@
           "command": "kaicrit.toggleTrackChanges",
           "when": "editorIsOpen",
           "group": "navigation@9"
+        },
+        {
+          "command": "kaicrit.openDoublePane",
+          "when": "editorIsOpen",
+          "group": "navigation@8"
         }
       ],
       "explorer/context": [
@@ -554,7 +575,7 @@
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/edit/*.test.js out/preview/*.test.js"
+    "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/doublepane/*.test.js out/edit/*.test.js out/preview/*.test.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
