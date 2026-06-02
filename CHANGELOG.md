@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-06-02
+
+### Fixed
+- **Track Changes: pasting CriticMarkup *inside* an existing marker no longer
+  nests.** The #34 absorb path kept inserted text verbatim, so pasting `{++any++}`
+  into an addition produced `{++an{++any++}y++}` — the inside-a-marker counterpart
+  the #40 plain-text fix did not cover. Absorbed markers are now flattened to
+  their accept-form first (addition/highlight keep their text, deletion/comment
+  contribute nothing, substitution keeps its new side), so the enclosing marker
+  just grows by the resulting plain text (`{++ananyy++}`) instead of nesting.
+  Plain typing inside a marker is unaffected.
+
 ## [0.7.0] - 2026-06-01
 
 ### Changed

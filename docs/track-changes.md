@@ -49,8 +49,9 @@ the addition's content and the marker simply grows, instead of producing
 | Delete next to an existing deletion (single edit) | The deletions merge into one `{--…--}` |
 | Replace a selection | `{~~old~>new~~}` |
 | Edit *inside* an existing marker's content | Absorbed into that marker — no nested markup |
+| Paste markup *inside* a marker's content | Inner markers flattened to accept-form, then absorbed (no nesting) |
 | Delete/replace a marker's *delimiter* (e.g. a `{`, `+` or `}`) | The whole marker is **rejected** (resolved) |
-| Paste text that is *already* CriticMarkup | Kept as-is, not re-wrapped (no `{++{++a++}++}`) |
+| Paste markup into *plain* text | Kept as-is, not re-wrapped (no `{++{++a++}++}`) |
 | Multiple cursors / a multi-edit event | Each edit is wrapped independently (no cross-cursor merge) |
 | Undo / Redo | Not re-processed — see below |
 
@@ -61,7 +62,12 @@ recording:
 
 - **Edits inside a marker's content are absorbed.** Typing or deleting between
   the delimiters just grows or shrinks that marker (an addition's body, a
-  substitution's new side, etc.) instead of wrapping a new change inside it.
+  substitution's new side, etc.) instead of wrapping a new change inside it. If
+  the inserted text *itself* contains complete markers (e.g. you paste `{++any++}`
+  into an addition), they are flattened to their accept-form before being absorbed
+  — the addition keeps `any`, a pasted deletion or comment contributes nothing, a
+  pasted substitution keeps its new side — so the enclosing marker simply grows by
+  the resulting plain text instead of nesting (`{++an{++any++}y++}`).
 - **Removing a marker's delimiter rejects the whole marker.** If a deletion (or
   a replacement) takes out any part of an opener or closer — for example you
   backspace the leading `{` of `{++a++}` — kaicrit treats the gesture as
@@ -79,8 +85,9 @@ recording:
   *over a selection* additionally tracks the replaced text as a leading deletion
   (`foo` → `{++a++}` records `{--foo--}{++a++}`). Partial/unterminated input
   such as `{++a` is not valid markup, so it falls through to the normal addition
-  wrap. (Pasting markup *inside* an existing marker is still governed by the
-  first rule above — it is absorbed into that marker's content.)
+  wrap. (Pasting markup *inside* an existing marker is governed by the first rule
+  above — its inner markers are flattened to their accept-form and absorbed, never
+  kept literal, so no nesting forms.)
 
 What "reject" yields depends on the marker type (it mirrors the
 [accept/reject table](markup.md)):

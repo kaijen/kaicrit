@@ -231,6 +231,67 @@ test('pasting unterminated markup falls through to a normal addition wrap — is
   assert.equal(finalText(pre, raw, r.edits), '{++{++a++}'); // no marker matched → wrapped
 });
 
+// Inside-a-marker paste — pasting complete markup *into* an existing marker's
+// content can't be kept verbatim (that nests, e.g. {++an{++any++}y++}). The
+// absorbed markers are flattened to their accept-form so the enclosing change
+// just grows by the resulting plain text. This is the inside-a-marker
+// counterpart to the #40 plain-text handling above.
+
+test('pasting an addition inside an addition flattens it (no nesting)', () => {
+  // The exact reported bug: {++any++} pasted between "an" and "y" of {++any++}.
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{++any++}' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++ananyy++}'); // not {++an{++any++}y++}
+  assert.deepEqual(r.selections, [8]); // caret after the flattened text
+  assert.equal(rejectAll(finalText(pre, raw, r.edits)), '');
+});
+
+test('pasting a deletion inside an addition drops it (accept-form)', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{--gone--}' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++any++}'); // deletion accept-form → ''
+});
+
+test('pasting a substitution inside an addition keeps the new side', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{~~o~>n~~}' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++anny++}'); // keeps just "n"
+});
+
+test('pasting a markup/plain mix inside an addition flattens the markup only', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'foo {++a++} bar' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++anfoo a bary++}');
+  assert.equal(rejectAll(finalText(pre, raw, r.edits)), '');
+});
+
+test('pasting an addition into a comment/highlight/deletion interior flattens it', () => {
+  const cases: [string, number, string][] = [
+    ['a{==hi==}b', 5, 'a{==hxi==}b'],
+    ['a{>>note<<}b', 6, 'a{>>noxte<<}b'],
+    ['a{--del--}b', 5, 'a{--dxel--}b'],
+  ];
+  for (const [pre, off, expected] of cases) {
+    const raw: RawEdit[] = [{ offset: off, oldLength: 0, newText: '{++x++}' }];
+    const r = computeTrackChanges(pre, raw);
+    const out = finalText(pre, raw, r.edits);
+    assert.equal(out, expected);
+    assert.ok(!out.includes('{++'), `no nested addition in ${pre}`);
+  }
+});
+
+test('pasting plain text inside a marker interior is still absorbed (no marker)', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'zzz' }];
+  const r = computeTrackChanges(pre, raw);
+  assert.equal(r.edits.length, 0); // no marker in the paste → plain #34 skip
+  assert.equal(applyRaw(pre, raw), '{++anzzzy++}');
+});
+
 test('multi-cursor insertion wraps each edit independently', () => {
   const pre = 'ab';
   const raw: RawEdit[] = [

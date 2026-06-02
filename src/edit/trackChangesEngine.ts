@@ -48,6 +48,16 @@ interface MarkerSpan {
 const OPEN_LEN = 3;   // every marker opener is 3 chars ({--, {++, {~~, {==, {>>)
 const CLOSE_LEN = 3;  // every marker closer is 3 chars (--}, ++}, ~~}, ==}, <<})
 
+// Map a RE_ALL match to its ChangeType. Shared by scanMarkers (markers already in
+// the document) and matchToResolvable (markers found inside freshly inserted text).
+function markerType(m: RegExpMatchArray): ChangeType {
+  if (m[1] !== undefined) { return ChangeType.Deletion; }
+  if (m[2] !== undefined) { return ChangeType.Addition; }
+  if (m[3] !== undefined) { return ChangeType.Substitution; }
+  if (m[5] !== undefined) { return ChangeType.Highlight; }
+  return ChangeType.Comment;
+}
+
 // Scan the markers that could touch [region.start, region.end]. We stop as soon
 // as a marker starts past region.end (markers further right cannot enclose or be
 // adjacent to the region), bounding the work to the text up to the edit.
@@ -57,14 +67,8 @@ function scanMarkers(preText: string, regionEnd: number): MarkerSpan[] {
     const start = m.index;
     if (start > regionEnd) { break; }
     const end = start + m[0].length;
-    let type: ChangeType;
-    if (m[1] !== undefined) { type = ChangeType.Deletion; }
-    else if (m[2] !== undefined) { type = ChangeType.Addition; }
-    else if (m[3] !== undefined) { type = ChangeType.Substitution; }
-    else if (m[5] !== undefined) { type = ChangeType.Highlight; }
-    else { type = ChangeType.Comment; }
     spans.push({
-      type,
+      type: markerType(m),
       start,
       end,
       contentStart: start + OPEN_LEN,
@@ -96,7 +100,7 @@ function intersects(aStart: number, aEnd: number, bStart: number, bEnd: number):
 // resolveReplacement needs. Substitutions store their two sides as one
 // `O~>N` string in `content`; split it back on the shared `~>` separator (RE_ALL
 // guarantees the arrow is present for substitutions).
-function toResolvable(s: MarkerSpan): Resolvable {
+function toResolvable(s: { type: ChangeType; content: string }): Resolvable {
   if (s.type === ChangeType.Substitution) {
     const sep = MARKERS[ChangeType.Substitution].sep;
     const i = s.content.indexOf(sep);
@@ -107,6 +111,16 @@ function toResolvable(s: MarkerSpan): Resolvable {
     };
   }
   return { type: s.type, text: s.content };
+}
+
+// Same projection, but for a marker found *inside* freshly inserted text (a
+// RE_ALL match rather than a scanned MarkerSpan). The content is the match minus
+// its 3-char opener/closer; toResolvable handles the substitution split.
+function matchToResolvable(m: RegExpMatchArray): Resolvable {
+  return toResolvable({
+    type: markerType(m),
+    content: m[0].slice(OPEN_LEN, -CLOSE_LEN),
+  });
 }
 
 // What a single raw edit resolves to once classified against the surrounding
@@ -139,7 +153,36 @@ function classify(
   const enclosing = spans
     .filter(s => offset >= s.contentStart && delEnd <= s.contentEnd)
     .sort((a, b) => (a.contentEnd - a.contentStart) - (b.contentEnd - b.contentStart))[0];
-  if (enclosing) { return { kind: 'skip', postStart, rawNewLen: newText.length }; }
+  if (enclosing) {
+    // If the absorbed text itself contains complete markers, keeping it verbatim
+    // would nest (paste {++any++} inside {++an|y++} → {++an{++any++}y++}). Flatten
+    // each inner marker to its accept-form so the enclosing change just grows by
+    // the resulting plain text — this is the inside-a-marker counterpart to the
+    // #40 plain-text paste handling below. Only one level deep: already-nested
+    // paste material (`{++a{++b++}++}`) and unterminated delimiters (`{++`) match
+    // no whole marker and stay literal. Plain typing (no marker) keeps the skip.
+    const inner = newText.length > 0 ? [...findMarkers(newText)] : [];
+    if (inner.length > 0) {
+      let flat = '';
+      let pos = 0;
+      for (const m of inner) {
+        flat += newText.slice(pos, m.index);
+        flat += resolveReplacement(matchToResolvable(m), 'accept');
+        pos = m.index + m[0].length;
+      }
+      flat += newText.slice(pos);
+      if (flat !== newText) {
+        return {
+          kind: 'wrap',
+          start: postStart,
+          end: postStart + newText.length,
+          replacement: flat,
+          cursorWithin: flat.length, // caret after the flattened text
+        };
+      }
+    }
+    return { kind: 'skip', postStart, rawNewLen: newText.length };
+  }
 
   // Issue #38 — removing (deleting or replacing) any *delimiter* character of an
   // existing marker is interpreted as REJECTING that whole marker, reusing the
