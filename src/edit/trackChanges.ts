@@ -78,9 +78,35 @@ export class TrackChangesManager {
     }
     this.statusItem.text = on ? '$(edit) Track Changes: On' : '$(edit) Track Changes: Off';
     this.statusItem.tooltip = on
-      ? 'Track Changes is recording this document — click to turn off'
-      : 'Track Changes is off for this document — click to turn on';
+      ? 'Recording edits as CriticMarkup in this document — click to turn off'
+      : 'Records edits as CriticMarkup when on — click to turn on';
     this.statusItem.show();
+  }
+
+  // Apply a WorkspaceEdit that kaicrit itself originates when resolving a change
+  // (accept/reject, single or all). The recorder must NOT re-process the resulting
+  // change event: removing a marker's delimiters looks exactly like the issue-#38
+  // "reject this marker" gesture, so the recorder would undo the resolution
+  // (accepting {--foo--} would re-insert "foo", accepting a substitution would
+  // revert to the old side, …). Reuses the same per-document `applyingOwnEdit`
+  // guard as the recorder's own compensating edits so `handleChange` skips the
+  // event, then refreshes the shadow snapshot to the post-resolution text so the
+  // next real user edit diffs against it. Resolves `false` (never rejects) on a
+  // failed `applyEdit` so the caller can still refresh decorations.
+  applyResolution(doc: vscode.TextDocument, edit: vscode.WorkspaceEdit): Thenable<boolean> {
+    const key = doc.uri.toString();
+    this.applyingOwnEdit.add(key);
+    return vscode.workspace.applyEdit(edit).then(
+      (applied) => {
+        this.applyingOwnEdit.delete(key);
+        if (applied && this.enabled.has(key)) { this.shadow.set(key, doc.getText()); }
+        return applied;
+      },
+      () => {
+        this.applyingOwnEdit.delete(key);
+        return false;
+      },
+    );
   }
 
   // Drop per-document state when a document closes.
