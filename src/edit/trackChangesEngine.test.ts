@@ -3,7 +3,7 @@
 
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { computeTrackChanges, RawEdit, CompEdit } from './trackChangesEngine';
+import { computeTrackChanges, computeNormalModeFlatten, RawEdit, CompEdit } from './trackChangesEngine';
 
 /** Apply non-overlapping {start,end,replacement} edits (descending, no drift). */
 function splice(text: string, edits: { start: number; end: number; replacement: string }[]): string {
@@ -312,4 +312,89 @@ test('unsorted multi-edit input is handled in order', () => {
   ];
   const r = computeTrackChanges(pre, raw);
   assert.equal(finalText(pre, raw, r.edits), '{++X++}ab{++Y++}');
+});
+
+// computeNormalModeFlatten — Track Changes OFF. The ONLY thing it does is flatten
+// markup pasted *into* an existing marker's content (the #34 case) so no nested
+// markup forms. Everything else returns no edits: plain text stays plain, and
+// standalone pasted markup (#40) is left literal — the extension never authors
+// markup in normal mode, it only prevents invalid nesting.
+
+test('normal mode: pasting an addition inside an addition flattens it (the reported bug)', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{++any++}' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++ananyy++}'); // not {++an{++any++}y++}
+  assert.deepEqual(r.selections, [8]); // caret after the flattened text
+});
+
+test('normal mode: markup/plain mix inside a marker flattens the markup only', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'foo {++a++} bar' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++anfoo a bary++}');
+});
+
+test('normal mode: deletion/substitution/comment inside a marker use accept-form', () => {
+  const cases: [string, string][] = [
+    ['{--gone--}', '{++any++}'], // deletion accept-form → ''
+    ['{~~o~>n~~}', '{++anny++}'], // substitution → new side
+    ['{>>c<<}', '{++any++}'],     // comment accept-form → ''
+  ];
+  for (const [paste, expected] of cases) {
+    const pre = '{++any++}';
+    const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: paste }];
+    const r = computeNormalModeFlatten(pre, raw);
+    assert.equal(finalText(pre, raw, r.edits), expected, `paste ${paste}`);
+  }
+});
+
+test('normal mode: paste-over-selection inside a marker flattens (filler-safe)', () => {
+  // Replace "n" inside {++any++} with a pasted marker. Engine never reads the
+  // deleted byte, so this mirrors the manager's filler reconstruction.
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 4, oldLength: 1, newText: '{++X++}' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(finalText(pre, raw, r.edits), '{++aXy++}');
+});
+
+test('normal mode passthrough: plain text into plain text emits nothing', () => {
+  const pre = 'Hello world';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'X' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(r.edits.length, 0); // NOT wrapped as an addition
+  assert.equal(r.selections.length, 0);
+});
+
+test('normal mode passthrough: plain typing inside a marker emits nothing', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: 'zzz' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(r.edits.length, 0);
+});
+
+test('normal mode passthrough: standalone markup pasted into plain text stays literal', () => {
+  const pre = 'Hello world';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{++a++}' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(r.edits.length, 0); // #40 wrapping does NOT apply in normal mode
+});
+
+test('normal mode passthrough: unterminated markup inside a marker stays literal', () => {
+  const pre = '{++any++}';
+  const raw: RawEdit[] = [{ offset: 5, oldLength: 0, newText: '{++a' }];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(r.edits.length, 0); // no whole marker → nothing to flatten
+});
+
+test('normal mode multi-change: only the in-marker markup paste produces an edit', () => {
+  // Two inserts: one plain into plain text, one markup into a marker's content.
+  const pre = 'ab{++cd++}';
+  const raw: RawEdit[] = [
+    { offset: 1, oldLength: 0, newText: 'X' },          // plain → passthrough
+    { offset: 7, oldLength: 0, newText: '{++Z++}' },    // markup inside {++cd++}
+  ];
+  const r = computeNormalModeFlatten(pre, raw);
+  assert.equal(r.edits.length, 1);
+  assert.equal(finalText(pre, raw, r.edits), 'aXb{++cdZ++}');
 });

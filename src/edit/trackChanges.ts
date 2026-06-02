@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { computeTrackChanges, RawEdit } from './trackChangesEngine';
+import { computeTrackChanges, computeNormalModeFlatten, RawEdit } from './trackChangesEngine';
 
 const CONTEXT_KEY = 'kaicrit.trackChanges';
 
@@ -94,7 +94,7 @@ export class TrackChangesManager {
 
   handleChange(event: vscode.TextDocumentChangeEvent): void {
     const key = event.document.uri.toString();
-    if (!this.enabled.has(key)) { return; }
+    if (!this.enabled.has(key)) { this.handleNormalMode(event, key); return; }
 
     // Never re-process our own compensating edit (checked per document).
     if (this.applyingOwnEdit.has(key)) { return; }
@@ -156,6 +156,91 @@ export class TrackChangesManager {
       () => {
         // applyEdit rejected (e.g. read-only doc, conflicting edit): release the
         // guard without the success follow-up so recording stays alive.
+        this.applyingOwnEdit.delete(key);
+      },
+    );
+  }
+
+  // Track Changes is OFF for this document. We normally do nothing (pure
+  // passthrough), with ONE exception: prevent nested CriticMarkup from being
+  // created when markup is pasted *into* the content of an existing marker. The
+  // engine's computeNormalModeFlatten flattens only that case and returns no edits
+  // for everything else, so plain text pasted in normal mode stays plain text.
+  private handleNormalMode(event: vscode.TextDocumentChangeEvent, key: string): void {
+    // Never re-process our own compensating edit (re-fires as a normal-mode change
+    // since tracking is off — the same per-document guard the tracked path uses).
+    if (this.applyingOwnEdit.has(key)) { return; }
+
+    if (
+      event.reason === vscode.TextDocumentChangeReason.Undo ||
+      event.reason === vscode.TextDocumentChangeReason.Redo
+    ) {
+      return;
+    }
+    if (event.contentChanges.length === 0) { return; }
+
+    const on = vscode.workspace
+      .getConfiguration('kaicrit')
+      .get<boolean>('edit.preventNestingOnPaste', true);
+    if (!on) { return; }
+
+    // Reconstruct the pre-edit text. The change event reports the post-edit
+    // document plus each change's PRE-edit rangeOffset/rangeLength and inserted
+    // text — but NOT the deleted text. computeNormalModeFlatten only inspects the
+    // intact prefix and marker lengths up to each edit, never the deleted bytes,
+    // so a same-length, delimiter-free filler is exact for our purpose.
+    const postText = event.document.getText();
+    const changes = event.contentChanges.map(c => ({
+      offset: c.rangeOffset,
+      oldLength: c.rangeLength,
+      newText: c.text,
+    }));
+    const ascending = [...changes].sort((a, b) => a.offset - b.offset);
+    let prefixDelta = 0;
+    const withPost = ascending.map(c => {
+      const postStart = c.offset + prefixDelta;
+      prefixDelta += c.newText.length - c.oldLength;
+      return { ...c, postStart };
+    });
+    let preText = postText;
+    for (const c of [...withPost].sort((a, b) => b.postStart - a.postStart)) {
+      preText =
+        preText.slice(0, c.postStart) +
+        ' '.repeat(c.oldLength) +
+        preText.slice(c.postStart + c.newText.length);
+    }
+
+    const raw: RawEdit[] = changes.map(c => ({
+      offset: c.offset,
+      oldLength: c.oldLength,
+      newText: c.newText,
+    }));
+    const result = computeNormalModeFlatten(preText, raw);
+    if (result.edits.length === 0) { return; } // pure passthrough
+
+    const we = new vscode.WorkspaceEdit();
+    for (const e of result.edits) {
+      const range = new vscode.Range(
+        event.document.positionAt(e.start),
+        event.document.positionAt(e.end),
+      );
+      we.replace(event.document.uri, range, e.replacement);
+    }
+
+    this.applyingOwnEdit.add(key);
+    void vscode.workspace.applyEdit(we).then(
+      (applied) => {
+        this.applyingOwnEdit.delete(key);
+        if (!applied) { return; }
+        const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
+        if (editor && result.selections.length > 0) {
+          editor.selections = result.selections.map(off => {
+            const p = event.document.positionAt(off);
+            return new vscode.Selection(p, p);
+          });
+        }
+      },
+      () => {
         this.applyingOwnEdit.delete(key);
       },
     );

@@ -103,6 +103,30 @@ What "reject" yields depends on the marker type (it mirrors the
 To **accept** a change, use the accept action/command — there is no
 delete-to-accept gesture.
 
+## Normal mode (Track Changes off)
+
+With Track Changes **off**, editing is otherwise pure passthrough — kaicrit only
+decorates the buffer, it never rewrites it, and markers are created only
+explicitly (via the insert commands or by typing them). One narrow exception
+guards against accidentally producing nested, spec-invalid markup:
+
+- **Pasting CriticMarkup into the content of an existing marker flattens the
+  pasted markers.** If you paste `{++x++}` between the `b` and `c` of `{++abc++}`,
+  the inner addition is flattened to its accept-form and absorbed, yielding
+  `{++abxc++}` instead of the nested `{++ab{++x++}c++}`. This reuses the same
+  accept-form flatten as the first rule above (deletion/comment → nothing,
+  substitution → its new side).
+
+Everything else stays verbatim: plain text pasted in normal mode stays plain (it
+is **not** wrapped as an addition), and standalone markup pasted into *plain* text
+is left literal (`{++a++}` stays `{++a++}`). The guard fires only for the
+paste-into-a-marker case, so nesting created another way — a stray typed `{`, the
+insert commands, or pasting *already*-nested literal text — is not caught.
+
+Disable the guard with the `kaicrit.edit.preventNestingOnPaste` setting (default
+`true`) when you want to paste literal CriticMarkup verbatim, e.g. while
+documenting the syntax.
+
 ## Known limitations
 
 - **Two-step undo.** Each tracked keystroke produces two document edits (your

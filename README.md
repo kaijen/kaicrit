@@ -139,9 +139,12 @@ Editing an existing marker behaves predictably: edits *inside* a marker's conten
 
 Because VS Code applies edits before extensions are notified, each tracked keystroke produces two document edits (your edit plus the marker wrap), so **Undo is two-step**. See [docs/track-changes.md](docs/track-changes.md) for the full behaviour matrix and limitations.
 
+Even with Track Changes **off**, one narrow nesting guard still applies: pasting CriticMarkup *into the content of an existing marker* flattens the pasted markers to plain text (e.g. `{++x++}` pasted inside `{++ab|c++}` yields `{++abxc++}`) so no nested, spec-invalid markup is created. Plain text and standalone pasted markup are left exactly as typed — normal mode never creates markup on its own. Turn this off with `kaicrit.edit.preventNestingOnPaste` when you want to paste literal CriticMarkup verbatim (e.g. while documenting the syntax).
+
 | Setting | Values | Default | Effect |
 |---|---|---|---|
 | `kaicrit.edit.trackChanges` | `true`, `false` | `false` | Start newly opened documents with Track Changes recording on. |
+| `kaicrit.edit.preventNestingOnPaste` | `true`, `false` | `true` | Even with Track Changes off, flatten CriticMarkup pasted *into* an existing marker so no nested markup forms. |
 
 ## Compare two files → CriticMarkup
 

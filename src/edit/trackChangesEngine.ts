@@ -123,6 +123,28 @@ function matchToResolvable(m: RegExpMatchArray): Resolvable {
   });
 }
 
+// Flatten any complete CriticMarkup markers inside `text` to their accept-form
+// (plain text), leaving the surrounding plain runs untouched. Used when text is
+// absorbed *into* an existing marker's content: keeping the inner markers verbatim
+// would nest (paste {++any++} inside {++an|y++} → {++an{++any++}y++}). Returns the
+// flattened string, or `null` when there is nothing to flatten — `text` contains
+// no whole marker, or flattening leaves it unchanged. Only one level deep:
+// already-nested material (`{++a{++b++}++}`) and unterminated delimiters (`{++`)
+// match no whole marker and stay literal.
+function flattenInnerMarkers(text: string): string | null {
+  const inner = text.length > 0 ? [...findMarkers(text)] : [];
+  if (inner.length === 0) { return null; }
+  let flat = '';
+  let pos = 0;
+  for (const m of inner) {
+    flat += text.slice(pos, m.index);
+    flat += resolveReplacement(matchToResolvable(m), 'accept');
+    pos = m.index + m[0].length;
+  }
+  flat += text.slice(pos);
+  return flat !== text ? flat : null;
+}
+
 // What a single raw edit resolves to once classified against the surrounding
 // markers. `skip` means the raw text already lives inside an addition (or is the
 // removal of just-added text), so no marker wrap is emitted.
@@ -158,28 +180,16 @@ function classify(
     // would nest (paste {++any++} inside {++an|y++} → {++an{++any++}y++}). Flatten
     // each inner marker to its accept-form so the enclosing change just grows by
     // the resulting plain text — this is the inside-a-marker counterpart to the
-    // #40 plain-text paste handling below. Only one level deep: already-nested
-    // paste material (`{++a{++b++}++}`) and unterminated delimiters (`{++`) match
-    // no whole marker and stay literal. Plain typing (no marker) keeps the skip.
-    const inner = newText.length > 0 ? [...findMarkers(newText)] : [];
-    if (inner.length > 0) {
-      let flat = '';
-      let pos = 0;
-      for (const m of inner) {
-        flat += newText.slice(pos, m.index);
-        flat += resolveReplacement(matchToResolvable(m), 'accept');
-        pos = m.index + m[0].length;
-      }
-      flat += newText.slice(pos);
-      if (flat !== newText) {
-        return {
-          kind: 'wrap',
-          start: postStart,
-          end: postStart + newText.length,
-          replacement: flat,
-          cursorWithin: flat.length, // caret after the flattened text
-        };
-      }
+    // #40 plain-text paste handling below. Plain typing (no marker) keeps the skip.
+    const flat = flattenInnerMarkers(newText);
+    if (flat !== null) {
+      return {
+        kind: 'wrap',
+        start: postStart,
+        end: postStart + newText.length,
+        replacement: flat,
+        cursorWithin: flat.length, // caret after the flattened text
+      };
     }
     return { kind: 'skip', postStart, rawNewLen: newText.length };
   }
@@ -331,6 +341,50 @@ export function computeTrackChanges(preText: string, rawEdits: RawEdit[]): Track
     edits.push({ start: p.start, end: p.end, replacement: p.replacement });
     selections.push(finalStart + p.cursorWithin);
     cdelta += p.replacement.length - (p.end - p.start);
+  }
+
+  return { edits, selections };
+}
+
+// Normal-mode (Track Changes OFF) counterpart that does ONE thing: when an
+// insertion lands inside the *content* of an existing marker and the inserted
+// text itself contains complete markers, flatten those inner markers to their
+// accept-form so no nested (spec-invalid) markup is created. This reuses only the
+// issue-#34 flatten — it never wraps plain text as an addition, never rejects a
+// delimiter (#38), and never wraps standalone pasted markup (#40). Every other
+// case returns no edits, so the caller leaves the edit untouched (pure
+// passthrough): plain text pasted in normal mode stays plain text.
+//
+// `preText` need only be byte-accurate up to each edit's region — the deleted
+// span's content is never inspected (scanMarkers reads the intact prefix and the
+// marker lengths), which lets the caller reconstruct it from the post-edit
+// document without the original deleted text. See trackChanges.handleNormalMode.
+export function computeNormalModeFlatten(preText: string, rawEdits: RawEdit[]): TrackResult {
+  const sorted = [...rawEdits].sort((a, b) => a.offset - b.offset);
+
+  const edits: CompEdit[] = [];
+  const selections: number[] = [];
+  let delta = 0;   // pre→post-raw coordinate shift
+  let cdelta = 0;  // length change introduced by the flatten edits we emit
+  for (const e of sorted) {
+    const delEnd = e.offset + e.oldLength;
+    const postStart = e.offset + delta;
+    delta += e.newText.length - e.oldLength;
+
+    const spans = scanMarkers(preText, delEnd);
+    const enclosing = spans
+      .filter(s => e.offset >= s.contentStart && delEnd <= s.contentEnd)
+      .sort((a, b) => (a.contentEnd - a.contentStart) - (b.contentEnd - b.contentStart))[0];
+    if (!enclosing) { continue; }
+
+    const flat = flattenInnerMarkers(e.newText);
+    if (flat === null) { continue; }
+
+    const start = postStart;
+    const end = postStart + e.newText.length;
+    edits.push({ start, end, replacement: flat });
+    selections.push(start + cdelta + flat.length); // caret after the flattened text
+    cdelta += flat.length - (end - start);
   }
 
   return { edits, selections };

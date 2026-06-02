@@ -486,6 +486,11 @@
           "default": false,
           "description": "Start newly opened documents with Track Changes recording on: edits are captured as CriticMarkup (deletions → {--…--}, insertions → {++…++}, replacements → {~~…~>…~~}) instead of changing the text directly. Toggle per document with the \"Toggle Track Changes\" command (Alt+K Alt+T)."
         },
+        "kaicrit.edit.preventNestingOnPaste": {
+          "type": "boolean",
+          "default": true,
+          "description": "Even with Track Changes off, when CriticMarkup is pasted into the content of an existing marker, flatten the pasted markers to plain text so no nested (spec-invalid) markup is created (e.g. pasting {++x++} inside {++ab|c++} yields {++abxc++}). Plain text and standalone pasted markup are left untouched. Turn off to paste literal CriticMarkup verbatim (e.g. when documenting the syntax)."
+        },
         "kaicrit.edit.decorationDebounce": {
           "type": "integer",
           "default": 150,
