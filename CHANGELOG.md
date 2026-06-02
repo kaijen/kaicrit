@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-06-02
+
 ### Fixed
 - **Accept/Reject while Track Changes is on no longer undoes itself** (#42).
   Resolving a change (via the hover actions, CodeLens, the sidebar, or the
@@ -283,7 +285,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/kaijen/kaicrit/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/kaijen/kaicrit/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/kaijen/kaicrit/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/kaijen/kaicrit/compare/v0.6.2...v0.7.0
