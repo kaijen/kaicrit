@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4] - 2026-06-02
+
 ### Fixed
 - **Hover Accept/Reject popup now closes after resolving a change** (#42).
   Clicking the hover's `Accept`/`Reject` action resolved the change but left the
