@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ChangeType, CriticChange } from '../core/types';
 import { parseCriticMarkup } from './parser';
+import { createContentDecorationTypes } from './decorationTypes';
 
 // Context key reflecting whether the active editor's document has ≥ 1 change.
 // Drives the `when` clauses of the accept/reject keybindings so they don't fire
@@ -14,10 +15,6 @@ const HAS_CHANGES_KEY = 'kaicrit.hasChanges';
 // one parse while staying visually immediate. Configurable via
 // `kaicrit.edit.decorationDebounce`.
 const DEFAULT_DEBOUNCE_MS = 150;
-
-function themeColor(id: string): vscode.ThemeColor {
-  return new vscode.ThemeColor(id);
-}
 
 export class DecoratorManager {
   private readonly deletionType: vscode.TextEditorDecorationType;
@@ -41,49 +38,18 @@ export class DecoratorManager {
   // empty change list and clears decorations, so every downstream reader goes
   // inert. Defaults to always-on so the manager works standalone (e.g. in tests).
   constructor(private readonly isEnabled: (doc: vscode.TextDocument) => boolean = () => true) {
-    // Each content decoration also paints a marker in the overview ruler so the
-    // location of changes is visible on the scrollbar without scrolling. The
-    // dimmed marker-character decoration deliberately stays out of the ruler.
-    this.deletionType = vscode.window.createTextEditorDecorationType({
-      textDecoration: 'line-through',
-      color: themeColor('kaicrit.deletionForeground'),
-      overviewRulerColor: themeColor('kaicrit.deletionForeground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    });
-    this.additionType = vscode.window.createTextEditorDecorationType({
-      textDecoration: 'underline',
-      color: themeColor('kaicrit.additionForeground'),
-      overviewRulerColor: themeColor('kaicrit.additionForeground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    });
-    this.substitutionOldType = vscode.window.createTextEditorDecorationType({
-      textDecoration: 'line-through',
-      color: themeColor('kaicrit.substitutionOldForeground'),
-      overviewRulerColor: themeColor('kaicrit.substitutionOldForeground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    });
-    this.substitutionNewType = vscode.window.createTextEditorDecorationType({
-      textDecoration: 'underline',
-      color: themeColor('kaicrit.substitutionNewForeground'),
-      overviewRulerColor: themeColor('kaicrit.substitutionNewForeground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    });
-    this.highlightType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: themeColor('kaicrit.highlightBackground'),
-      color: themeColor('kaicrit.highlightForeground'),
-      overviewRulerColor: themeColor('kaicrit.highlightBackground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-    });
-    this.commentType = vscode.window.createTextEditorDecorationType({
-      backgroundColor: themeColor('kaicrit.commentBackground'),
-      fontStyle: 'italic',
-      color: themeColor('kaicrit.commentForeground'),
-      overviewRulerColor: themeColor('kaicrit.commentBackground'),
-      overviewRulerLane: vscode.OverviewRulerLane.Right,
-      before: { contentText: '⟨ ', color: new vscode.ThemeColor('editorLineNumber.foreground') },
-      after:  { contentText: ' ⟩', color: new vscode.ThemeColor('editorLineNumber.foreground') },
-    });
-    // Dim the marker characters themselves
+    // The six content decoration types come from the shared factory (one fresh
+    // instance set per call) — the same styles + `kaicrit.*` ThemeColor IDs the
+    // Double-Pane view reuses. Each content decoration also paints a marker in
+    // the overview ruler so the location of changes is visible on the scrollbar.
+    const t = createContentDecorationTypes();
+    this.deletionType = t.deletion;
+    this.additionType = t.addition;
+    this.substitutionOldType = t.substitutionOld;
+    this.substitutionNewType = t.substitutionNew;
+    this.highlightType = t.highlight;
+    this.commentType = t.comment;
+    // Dim the marker characters themselves — local to the editor, no ruler marker.
     this.markerType = vscode.window.createTextEditorDecorationType({
       opacity: '0.4',
     });

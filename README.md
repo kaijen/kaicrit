@@ -4,6 +4,7 @@ A complete CriticMarkup workflow in one extension:
 
 - **Edit** — insert, navigate, and accept or reject tracked changes directly in the editor.
 - **Compare** — diff two files into a single CriticMarkup document.
+- **Double-Pane** — view a CriticMarkup document as Original | New side by side, coloured but without the marker syntax.
 - **Preview** — render CriticMarkup in VS Code's built-in Markdown preview.
 
 ## What is CriticMarkup?
@@ -35,6 +36,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Track Changes mode** — record your edits live as CriticMarkup instead of changing the text directly, like "track changes" in a word processor; toggled per document (`Alt+K Alt+T`)
 - **Comment metadata** — comments may carry an optional author and date (`{>>@kai 2026-05-31: text<<}`), shown in editor hovers and the preview; the author is configurable and the whole convention can be turned off
 - **Compare** — turn the differences between two files into a CriticMarkup document you can review change by change
+- **Double-Pane view** — split the active CriticMarkup document into two side-by-side editors, **Original** (the reject result) and **New** (the accept result); the change content stays in the markup colours but the marker delimiters are gone (`Alt+K Alt+P`)
 - **Markdown preview** — CriticMarkup renders inline in VS Code's built-in preview, no webview or build step
 - **Per-language activation & per-file toggle** — editor features run only for the file types you choose (`kaicrit.enabledLanguages`, default Markdown + plain text), and a status-bar toggle turns kaicrit on or off for the current file on the fly
 
@@ -73,6 +75,12 @@ Next/Previous wrap around at document boundaries with a brief notification.
 | Reject All Changes | `Alt+K Backspace` |
 
 `Alt+A` / `Alt+R` are only active while the current document actually contains CriticMarkup changes, so they don't shadow those keys in ordinary files. When the cursor isn't inside a change, the command is a quiet no-op (a brief status-bar notice, no modal dialog).
+
+### View
+
+| Action | Keybinding |
+|---|---|
+| Open Double-Pane View (Original \| New) | `Alt+K Alt+P` |
 
 All commands are also available via the Command Palette (`Ctrl+Shift+P`) under the **CriticMarkup** category.
 
@@ -173,6 +181,25 @@ When the two inputs are identical (no differences — also possible with `ignore
 | `kaicrit.compare.ignoreWhitespace` | `false` | Ignore whitespace-only differences (similar to `git diff -w`); rejecting every marker still reproduces file 1. |
 | `kaicrit.compare.outputLanguage` | `auto` | Language mode for the result: `auto` (match file 2), `plaintext`, or `markdown`. |
 | `kaicrit.compare.maxDiffTokens` | `4000000` | Safety guard against pathological diffs: max token product (file 1 × file 2 tokens) before a compare falls back to `line` granularity or aborts with a warning. `0` disables it. |
+
+## Double-Pane view (Original | New)
+
+Read a CriticMarkup document as two parallel texts instead of one marked-up file. Run **CriticMarkup: Open Double-Pane View (Original | New)** from the Command Palette, the editor title bar (`$(split-horizontal)`), the editor right-click menu, or `Alt+K Alt+P`. kaicrit opens two side-by-side editors built from a snapshot of the active document (like Compare — no live mode):
+
+- **Left — "Original"**: the state *before* the changes (the reject result). Deletions and the old side of substitutions stay visible in their markup colours; additions are gone.
+- **Right — "New"**: the state *after* the changes (the accept result). Additions and the new side of substitutions stay visible in their markup colours; deletions are gone.
+
+**Highlights** and **comments** appear on **both** sides; plain text between markers is copied verbatim to both. The marker delimiters themselves (`{--`, `++}`, `~>`, …) appear on **neither** side — you get coloured content with the same look as the editor decorations, just without the syntax.
+
+| Type | Left (Original) | Right (New) |
+|---|---|---|
+| Deletion `{--T--}` | `T` (red, struck through) | — |
+| Addition `{++T++}` | — | `T` (green, underlined) |
+| Substitution `{~~O~>N~~}` | `O` (red) | `N` (green) |
+| Highlight `{==T==}` | `T` (highlighted) | `T` (highlighted) |
+| Comment `{>>T<<}` | `T` (comment style) | `T` (comment style) |
+
+Known limits (v1, deliberate): there is **no line alignment** between the panes — deletions only push the left side, additions only the right, so the two texts run independently (each is a readable document on its own). The two panes open as editable untitled documents with generic tab titles, consistent with the Compare feature. See [docs/doublepane.md](docs/doublepane.md) for details.
 
 ## Markdown preview
 

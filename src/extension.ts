@@ -8,6 +8,7 @@ import { TrackChangesManager } from './edit/trackChanges';
 import { EnablementManager } from './edit/enablement';
 import { registerEditCommands } from './edit/commands';
 import { registerCompareCommands } from './compare/commands';
+import { registerDoublePaneCommands } from './doublepane/commands';
 import { criticMarkupPlugin } from './preview/markdownIt';
 
 export function activate(ctx: vscode.ExtensionContext) {
@@ -115,6 +116,9 @@ export function activate(ctx: vscode.ExtensionContext) {
 
   // ── Compare feature: diff two files into a CriticMarkup document ─────────────
   registerCompareCommands(ctx);
+
+  // ── Double-Pane feature: Original | New side by side, coloured, marker-free ──
+  registerDoublePaneCommands(ctx);
 
   // ── Preview feature: render CriticMarkup in the built-in Markdown preview ────
   // The preview calls extendMarkdownIt with its live markdown-it instance.
