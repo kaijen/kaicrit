@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Hover Accept/Reject popup now closes after resolving a change** (#42).
+  Clicking the hover's `Accept`/`Reject` action resolved the change but left the
+  hover widget open over the now-removed marker — VS Code deliberately keeps a
+  hover up when a `command:` link is clicked. The resolution now explicitly
+  dismisses the hover (`editor.action.hideHover`). The previous 0.7.3 fix only
+  addressed the separate Track-Changes-undoes-itself case, not this UI symptom.
+
 ## [0.7.3] - 2026-06-02
 
 ### Fixed

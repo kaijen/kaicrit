@@ -270,7 +270,20 @@ function applyAt(
   addResolution(edit, editor.document.uri, change, mode);
   // Route through the recorder so a resolution applied while Track Changes is on
   // isn't re-interpreted as a user edit (which would undo the accept/reject).
-  tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
+  tcm.applyResolution(editor.document, edit).then(() => {
+    dm.update(editor);
+    dismissHover();
+  });
+}
+
+// After resolving a change from the hover actions, the hover widget stays open
+// over the now-removed marker (issue #42) — VS Code deliberately keeps a hover up
+// when you click a command: link (so multiple links stay clickable). Dismiss it
+// explicitly. This is a no-op when no hover is visible (the CodeLens, sidebar and
+// keyboard paths all flow through applyAt too) and on VS Code builds that predate
+// the command (the rejection is swallowed). Added in VS Code 1.96 (microsoft/vscode#222316).
+function dismissHover(): void {
+  vscode.commands.executeCommand('editor.action.hideHover').then(undefined, () => {});
 }
 
 function applyAll(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept' | 'reject'): void {
