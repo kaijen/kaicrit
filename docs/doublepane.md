@@ -32,6 +32,11 @@ kaicrit takes a **snapshot** of the active document (like the
 [Compare](compare.md) feature — there is no live mode) and opens the two panes
 side by side: Original in the left editor column, New beside it.
 
+The `Alt+K Alt+P` shortcut is just the default and is fully configurable: rebind
+`kaicrit.openDoublePane` to any key via **File › Preferences › Keyboard
+Shortcuts** (search for `kaicrit`) or in `keybindings.json` — see
+[Keybindings › Customize](keybindings.md#customize).
+
 ## Mapping per markup type
 
 | Type | Left (Original) | Right (New) |
