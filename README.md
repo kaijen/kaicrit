@@ -264,6 +264,9 @@ npm test           # compile + run the unit-test suites
 semantics, Markdown preview, compare, and the Track Changes engine) without an
 Extension Host. Press **F5** in VS Code to launch the Extension Development Host.
 
+For a deep dive into the architecture, a file-by-file walkthrough, the build
+pipeline, and the publishing/deployment options, see [DEVELOPER.md](DEVELOPER.md).
+
 ## About
 
 Made by [0x2e6b6169](https://blog.0x2e6b6169.de). Source on [GitHub](https://github.com/kaijen/kaicrit).
