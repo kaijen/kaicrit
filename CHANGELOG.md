@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-03
+
 ### Added
 - **Double-Pane view (Original | New)** (#46). A new command,
   *CriticMarkup: Open Double-Pane View (Original | New)* (`Alt+K Alt+P`, editor
