@@ -64,6 +64,16 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.window.createTreeView('kaicrit.changes', { treeDataProvider: changesView }),
   );
 
+  // View-title group/flat toggle: the buttons only write the grouping setting —
+  // the provider's onDidChangeConfiguration listener rebuilds the list and flips
+  // the `kaicrit.changesGrouped` context key that swaps the two buttons.
+  const setGrouping = (m: 'type' | 'chronological') =>
+    vscode.workspace.getConfiguration('kaicrit').update('changes.grouping', m, vscode.ConfigurationTarget.Global);
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand('kaicrit.changesSortChronological', () => setGrouping('chronological')),
+    vscode.commands.registerCommand('kaicrit.changesGroupByType', () => setGrouping('type')),
+  );
+
   // Decorate already-open editors on activation
   for (const editor of vscode.window.visibleTextEditors) {
     dm.update(editor);

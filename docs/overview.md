@@ -2,12 +2,15 @@
 
 kaicrit contributes a dedicated **CriticMarkup** view container to the Activity
 Bar. Its **Changes** view lists every CriticMarkup change in the *active*
-document, grouped by type so you can review a file at a glance without
-scrolling through it.
+document so you can review a file at a glance without scrolling through it.
 
 ## Layout
 
-The tree has two levels:
+Two layouts, switched by the group/flat button in the view title and persisted
+in the `kaicrit.changes.grouping` setting (`type` — the default — or
+`chronological`):
+
+**Grouped by type** (`type`) — a two-level tree:
 
 - **Type groups** — one node per change type that occurs in the document
   (Deletions, Additions, Substitutions, Highlights, Comments), each labelled
@@ -18,6 +21,11 @@ The tree has two levels:
   whitespace-collapsed preview of the content (for a substitution,
   `old → new`); the description shows the line number, and for comments with
   [metadata](markup.md#comment-metadata-author--date) the author and date.
+
+**Chronological** (`chronological`) — a flat list, no group headers: every
+change in document order, each leaf prefixed with its per-type symbol
+(`⊟ ⊞ ⇄ ☰ 💬`) so the type stays visible. Labels and descriptions are otherwise
+identical to the grouped leaves.
 
 The view tracks the active editor and refreshes live as you type, insert, or
 resolve changes — it reads the same parsed-change cache that powers the editor
@@ -31,6 +39,7 @@ no CriticMarkup, the view shows a short empty-state hint.
 | Jump to a change | Click a leaf | Reveals the change in the editor and selects its marker |
 | Accept / Reject one | Inline buttons on a leaf (hover) | Resolves exactly that change |
 | Accept All / Reject All | Buttons in the view title | Resolves every change in the document in one atomic edit |
+| Group ⇄ Chronological | Toggle button in the view title | Switches between the grouped and flat layouts (writes `kaicrit.changes.grouping`) |
 
 Inline and title actions reuse the same accept/reject logic as the
 [editor commands and inline actions](markup.md), so the

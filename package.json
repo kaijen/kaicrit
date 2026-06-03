@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -129,6 +129,18 @@
         "title": "Reject Change",
         "category": "CriticMarkup",
         "icon": "$(x)"
+      },
+      {
+        "command": "kaicrit.changesSortChronological",
+        "title": "Sort Chronologically",
+        "category": "CriticMarkup",
+        "icon": "$(list-flat)"
+      },
+      {
+        "command": "kaicrit.changesGroupByType",
+        "title": "Group by Type",
+        "category": "CriticMarkup",
+        "icon": "$(list-tree)"
       },
       {
         "command": "kaicrit.toggleTrackChanges",
@@ -416,6 +428,16 @@
       ],
       "view/title": [
         {
+          "command": "kaicrit.changesSortChronological",
+          "when": "view == kaicrit.changes && kaicrit.changesGrouped",
+          "group": "navigation@0"
+        },
+        {
+          "command": "kaicrit.changesGroupByType",
+          "when": "view == kaicrit.changes && !kaicrit.changesGrouped",
+          "group": "navigation@0"
+        },
+        {
           "command": "kaicrit.acceptAll",
           "when": "view == kaicrit.changes",
           "group": "navigation@1"
@@ -460,7 +482,7 @@
     "viewsWelcome": [
       {
         "view": "kaicrit.changes",
-        "contents": "No CriticMarkup changes in the active editor.\nOpen a document with CriticMarkup, or insert a change to see it listed here grouped by type."
+        "contents": "No CriticMarkup changes in the active editor.\nOpen a document with CriticMarkup, or insert a change to see it listed here."
       }
     ],
     "configuration": {
@@ -476,6 +498,19 @@
             "plaintext"
           ],
           "markdownDescription": "Language ids for which kaicrit's editor features (decorations, inline Accept/Reject actions, status bar, Changes view, accept/reject) are active. Matched against a document's language id; use `\"*\"` to enable every language. Override per file with the `$(eye) CriticMarkup` toggle in the status bar (session-only)."
+        },
+        "kaicrit.changes.grouping": {
+          "type": "string",
+          "enum": [
+            "type",
+            "chronological"
+          ],
+          "enumDescriptions": [
+            "Group changes by type (Deletions, Additions, …); each group sorted by position.",
+            "List all changes flat in document order, each prefixed with its type symbol."
+          ],
+          "default": "type",
+          "description": "How the CriticMarkup Changes sidebar lists changes: grouped by type or flat in document order. Toggle directly with the group/flat button in the Changes view title."
         },
         "kaicrit.edit.changeActions": {
           "type": "string",

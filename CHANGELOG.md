@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-03
+
+### Added
+- **Chronological layout for the Changes sidebar.** The Changes view can now list
+  every change flat in document order instead of grouped by type. A group/flat
+  toggle in the view title (`$(list-tree)` / `$(list-flat)`) switches between the
+  two layouts; in the chronological layout each leaf is prefixed with its per-type
+  symbol (`⊟ ⊞ ⇄ ☰ 💬`) so the type stays visible without group headers. The choice
+  is persisted in the new `kaicrit.changes.grouping` setting (`type` — the default
+  — or `chronological`).
+
 ## [0.8.0] - 2026-06-03
 
 ### Added
@@ -324,7 +335,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/kaijen/kaicrit/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kaijen/kaicrit/compare/v0.7.5...v0.8.0
 [0.7.5]: https://github.com/kaijen/kaicrit/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/kaijen/kaicrit/compare/v0.7.3...v0.7.4

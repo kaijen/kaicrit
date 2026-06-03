@@ -17,12 +17,20 @@ class TypeNode extends vscode.TreeItem {
   }
 }
 
-/** Leaf node: a single change. Clicking it reveals the change in the editor. */
+/**
+ * Leaf node: a single change. Clicking it reveals the change in the editor.
+ * In the grouped view the leaves stay symbol-free (the parent `TypeNode` carries
+ * the glyph); in the flat/chronological view `showSymbol` prefixes the per-type
+ * glyph so the type stays visible without a group header.
+ */
 class ChangeNode extends vscode.TreeItem {
   readonly position: vscode.Position;
 
-  constructor(readonly change: CriticChange) {
-    super(labelFor(change), vscode.TreeItemCollapsibleState.None);
+  constructor(readonly change: CriticChange, showSymbol = false) {
+    super(
+      (showSymbol ? `${SYMBOLS[change.type]} ` : '') + labelFor(change),
+      vscode.TreeItemCollapsibleState.None,
+    );
     this.position = change.fullRange.start;
     this.description = descriptionFor(change);
     this.tooltip = tooltipFor(change);
@@ -37,12 +45,16 @@ class ChangeNode extends vscode.TreeItem {
 
 /**
  * Lists every CriticMarkup change of the active document in a dedicated sidebar
- * view, grouped by type. Each leaf jumps to its change on click and offers
- * inline Accept / Reject actions; the view title carries Accept-All / Reject-All.
+ * view. Two layouts, switched by the `kaicrit.changes.grouping` setting: `"type"`
+ * groups changes under per-type parents (sorted by position within each group),
+ * `"chronological"` lists them flat in document order with a per-type glyph on
+ * each leaf. Each leaf jumps to its change on click and offers inline Accept /
+ * Reject actions; the view title carries Accept-All / Reject-All and the
+ * group/flat toggle.
  *
  * Reads the `DecoratorManager`'s change cache (no extra parse) and refreshes on
- * its `onDidUpdate` event and when the active editor switches — both debounced
- * upstream — so the tree mirrors the editor live.
+ * its `onDidUpdate` event, when the active editor switches, and when the grouping
+ * setting changes — so the tree mirrors the editor live.
  */
 export class ChangesTreeProvider implements vscode.TreeDataProvider<Node>, vscode.Disposable {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
@@ -52,6 +64,7 @@ export class ChangesTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   constructor(private readonly dm: DecoratorManager) {
     this.doc = vscode.window.activeTextEditor?.document;
+    this.syncGroupingContext();
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor(editor => {
         this.doc = editor?.document;
@@ -62,7 +75,21 @@ export class ChangesTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       dm.onDidUpdate(editor => {
         if (editor.document === this.doc) { this._onDidChangeTreeData.fire(); }
       }),
+      // The grouping setting (also written by the view-title toggle) flipped →
+      // rebuild the list and update the toggle-button visibility context key.
+      vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration('kaicrit.changes.grouping')) {
+          this.syncGroupingContext();
+          this._onDidChangeTreeData.fire();
+        }
+      }),
     );
+  }
+
+  // Mirror the current grouping mode into the `kaicrit.changesGrouped` context
+  // key so the view title shows the right toggle button (group ⇄ flat).
+  private syncGroupingContext(): void {
+    vscode.commands.executeCommand('setContext', 'kaicrit.changesGrouped', groupingMode() === 'type');
   }
 
   getTreeItem(node: Node): vscode.TreeItem {
@@ -71,6 +98,14 @@ export class ChangesTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   getChildren(element?: Node): Node[] {
     if (!this.doc) { return []; }
+
+    // Flat/chronological: no grouping, every change as a symbol-prefixed leaf in
+    // document order (the cache is already in ascending-offset order).
+    if (groupingMode() === 'chronological') {
+      if (element) { return []; }
+      return this.dm.getChanges(this.doc).map(c => new ChangeNode(c, true));
+    }
+
     if (element instanceof TypeNode) {
       return element.changes.map(c => new ChangeNode(c));
     }
@@ -93,6 +128,14 @@ export class ChangesTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     this._onDidChangeTreeData.dispose();
     for (const d of this.disposables) { d.dispose(); }
   }
+}
+
+// The active sidebar layout. `"type"` groups by change type (default),
+// `"chronological"` lists every change flat in document order.
+function groupingMode(): 'type' | 'chronological' {
+  return vscode.workspace
+    .getConfiguration('kaicrit')
+    .get<'type' | 'chronological'>('changes.grouping', 'type');
 }
 
 // ── Label / description / tooltip helpers ─────────────────────────────────────
