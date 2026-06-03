@@ -324,7 +324,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.7.5...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/kaijen/kaicrit/compare/v0.7.5...v0.8.0
 [0.7.5]: https://github.com/kaijen/kaicrit/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/kaijen/kaicrit/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/kaijen/kaicrit/compare/v0.7.2...v0.7.3
