@@ -178,7 +178,8 @@ async function resolveAuthor(cfg: vscode.WorkspaceConfiguration, doc?: vscode.Te
     });
     author = stdout.toString().trim();
   } catch {
-    author = '';
+    // No name / git unavailable: leave author as '' (the metadata then carries
+    // just the date).
   }
   gitAuthorCache.set(folder, author);
   return author;

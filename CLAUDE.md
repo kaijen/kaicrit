@@ -8,14 +8,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install          # first time only
 npm run compile      # one-shot TypeScript compile → out/
 npm run watch        # incremental watch (run before F5)
+npm run lint         # ESLint over src/ (flat config, typescript-eslint recommended)
 npm test             # clean out/, compile + Node --test suites (out/**/ *.test.js)
 ```
+
+Lint is a flat-config ESLint ([eslint.config.js](eslint.config.js)) running the `typescript-eslint` *recommended* set (no type-checked rules, so no `parserOptions.project` — fast, no extra setup) over `src/**/*.ts`. `no-explicit-any` is relaxed only for the genuinely untyped boundaries (`preview/markdownIt.ts` and the `*.test.ts` fakes); the two remaining one-off `any`s (the untyped `vscode.git` exports and the preview's `extendMarkdownIt(md)`) carry justified inline disables.
 
 `npm test` runs a `pretest` step (`npm run clean`, a dependency-free cross-platform `fs.rmSync('out', …)`) that wipes `out/` first, so a renamed or deleted `*.test.ts` can't leave a stale `out/**/*.test.js` behind that the test globs would keep running (issue #67).
 
 `npm test` compiles, then runs every `*.test.js` under `out/{compare,core,doublepane,edit,preview}`. The edit suites that touch VS Code-only APIs (parser, navigator) load `edit/vscodeStub.js`, which shims `require('vscode')`, so the whole suite runs without an Extension Host. The `doublepane` suite is VS Code-free (like `actions.test.ts`), so it needs no stub.
 
-CI runs `npm test` on every push and pull request ([.github/workflows/ci.yml](.github/workflows/ci.yml)); the release workflow ([.github/workflows/build.yml](.github/workflows/build.yml)) also runs `npm test` before packaging so no release is built from a red tree.
+CI runs `npm run lint` then `npm test` on every push and pull request ([.github/workflows/ci.yml](.github/workflows/ci.yml)); the release workflow ([.github/workflows/build.yml](.github/workflows/build.yml)) also runs `npm test` before packaging so no release is built from a red tree.
 
 Press **F5** in VSCode to launch the Extension Development Host. Use **Developer: Reload Window** in the host to pick up changes without restarting the debugger.
 

@@ -166,7 +166,7 @@ export class DecoratorManager {
           if (c.oldRange) { substOldRanges.push(c.oldRange); }
           if (c.newRange) { substNewRanges.push(c.newRange); }
           // markers: {~~ (3 chars), ~> (2 chars), ~~} (3 chars)
-          collectSubstitutionMarkers(c, markerRanges, editor.document, c.oldText ?? '', c.newText ?? '');
+          collectSubstitutionMarkers(c, markerRanges, editor.document, c.oldText ?? '');
           break;
         case ChangeType.Highlight:
           if (c.contentRange) { highlightRanges.push(c.contentRange); }
@@ -252,7 +252,6 @@ function collectSubstitutionMarkers(
   out: vscode.Range[],
   doc: vscode.TextDocument,
   oldText: string,
-  newText: string,
 ): void {
   const fullStart = doc.offsetAt(c.fullRange.start);
   const fullEnd   = doc.offsetAt(c.fullRange.end);

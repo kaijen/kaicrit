@@ -152,6 +152,9 @@ export function activate(ctx: vscode.ExtensionContext) {
   // after a window reload. This is a documented known limitation (see
   // docs/preview.md); the editor parser re-reads the value per parse instead.
   return {
+    // The markdown-it instance handed to us by VS Code's preview is untyped
+    // (no @types/markdown-it dependency).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     extendMarkdownIt(md: any) {
       const commentMetadata = vscode.workspace
         .getConfiguration('kaicrit')

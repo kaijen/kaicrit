@@ -74,6 +74,9 @@ async function compareWithSelected(uri: vscode.Uri | undefined): Promise<void> {
  * unavailable, the file is outside a repository, or it has no committed state.
  */
 async function getGitHeadContent(uri: vscode.Uri): Promise<string | undefined> {
+  // The built-in Git extension ships no published type definitions, so its
+  // exports API is untyped here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gitExtension = vscode.extensions.getExtension<any>('vscode.git');
   if (!gitExtension) {
     vscode.window.showWarningMessage('kaicrit: the built-in Git extension is not available.');
