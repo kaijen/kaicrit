@@ -29,7 +29,9 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
     return results;
   }
 
-  const cfg = vscode.workspace.getConfiguration('kaicrit');
+  // Scope config reads to the document so folder-/language-specific overrides
+  // apply (issue #61).
+  const cfg = vscode.workspace.getConfiguration('kaicrit', doc);
 
   // Size guard: the marker regex scans lazily to the document end for every
   // unterminated opener, so a huge document full of unclosed `{--` openers can

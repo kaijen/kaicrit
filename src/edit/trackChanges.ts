@@ -48,7 +48,7 @@ export class TrackChangesManager {
     if (!this.isDocEnabled(doc)) { return; }
     this.seen.add(key);
     const on = vscode.workspace
-      .getConfiguration('kaicrit')
+      .getConfiguration('kaicrit', doc)
       .get<boolean>('edit.trackChanges', false);
     if (on) {
       this.enabled.add(key);
@@ -270,7 +270,7 @@ export class TrackChangesManager {
     }
 
     const on = vscode.workspace
-      .getConfiguration('kaicrit')
+      .getConfiguration('kaicrit', event.document)
       .get<boolean>('edit.preventNestingOnPaste', true);
     if (!on) { return; }
 

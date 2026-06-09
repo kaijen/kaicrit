@@ -12,8 +12,10 @@ interface Settings {
   maxDiffTokens: number;
 }
 
-function readSettings(): Settings {
-  const config = vscode.workspace.getConfiguration('kaicrit.compare');
+function readSettings(scope?: vscode.Uri): Settings {
+  // Scope to the document's URI when one is available so folder-specific
+  // overrides apply in a multi-root workspace (issue #61).
+  const config = vscode.workspace.getConfiguration('kaicrit.compare', scope);
   return {
     granularity: config.get<Granularity>('granularity', 'word'),
     combineSubstitutions: config.get<boolean>('combineSubstitutions', true),
@@ -83,8 +85,9 @@ export async function compareTextToCriticMarkup(
   originalText: string,
   modifiedText: string,
   autoLanguageId: string,
+  scope?: vscode.Uri,
 ): Promise<void> {
-  const settings = readSettings();
+  const settings = readSettings(scope);
 
   const result = diffWithGuard(originalText, modifiedText, settings);
   if (!result) {
@@ -142,5 +145,6 @@ export async function compareToCriticMarkup(
     originalDoc.getText(),
     modifiedDoc.getText(),
     modifiedDoc.languageId,
+    modified,
   );
 }

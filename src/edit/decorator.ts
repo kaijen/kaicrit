@@ -63,15 +63,16 @@ export class DecoratorManager {
       this.timers.delete(key);
       const editor = vscode.window.visibleTextEditors.find(e => e.document === doc);
       if (editor) { this.update(editor); }
-    }, this.debounceMs()));
+    }, this.debounceMs(doc)));
   }
 
   // Debounce interval read fresh from the setting each schedule, so a config edit
-  // takes effect on the next keystroke without needing a reload. Negative values
-  // are clamped to 0 (parse on the next tick).
-  private debounceMs(): number {
+  // takes effect on the next keystroke without needing a reload. Scoped to the
+  // document so folder-/language-specific overrides apply (issue #61). Negative
+  // values are clamped to 0 (parse on the next tick).
+  private debounceMs(doc: vscode.TextDocument): number {
     const ms = vscode.workspace
-      .getConfiguration('kaicrit.edit')
+      .getConfiguration('kaicrit.edit', doc)
       .get<number>('decorationDebounce', DEFAULT_DEBOUNCE_MS);
     return Math.max(0, ms);
   }

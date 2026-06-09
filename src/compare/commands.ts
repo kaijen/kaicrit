@@ -114,8 +114,9 @@ async function compareWithGitHead(): Promise<void> {
     return;
   }
 
-  // HEAD is file 1 (original); the current buffer is file 2 (modified).
-  await compareTextToCriticMarkup(headContent, doc.getText(), doc.languageId);
+  // HEAD is file 1 (original); the current buffer is file 2 (modified). Pass the
+  // document URI so compare settings honour folder-specific overrides (issue #61).
+  await compareTextToCriticMarkup(headContent, doc.getText(), doc.languageId, doc.uri);
 }
 
 /** Explorer command: two files selected at once; first is file 1, second is file 2. */

@@ -45,8 +45,10 @@ export class EnablementManager implements vscode.Disposable {
   isEnabled(doc: vscode.TextDocument): boolean {
     const override = this.overrides.get(doc.uri.toString());
     if (override !== undefined) { return override; }
+    // Scope the read to the document so folder- and language-specific overrides
+    // (`"[markdown]": { … }`, multi-root settings) are honoured (issue #61).
     const langs = vscode.workspace
-      .getConfiguration('kaicrit')
+      .getConfiguration('kaicrit', doc)
       .get<string[]>('enabledLanguages', DEFAULT_LANGUAGES);
     return langs.includes('*') || langs.includes(doc.languageId);
   }
