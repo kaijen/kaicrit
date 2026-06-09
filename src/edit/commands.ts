@@ -142,7 +142,7 @@ async function insertComment(tcm: TrackChangesManager): Promise<void> {
   const cfg = vscode.workspace.getConfiguration('kaicrit');
   let open = '{>>';
   if (cfg.get<boolean>('edit.commentMetadata', true)) {
-    const author = await resolveAuthor(cfg);
+    const author = await resolveAuthor(cfg, activeEditor()?.document);
     const date = isoToday();
     open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
   }
@@ -159,11 +159,15 @@ const gitAuthorCache = new Map<string, string>();
 // Author for a new comment: the configured name wins; otherwise fall back to
 // the repository's `git config user.name`. Returns '' when neither is available
 // (the metadata then carries just the date). The git lookup runs asynchronously
-// (and is cached) so it never blocks the extension host.
-async function resolveAuthor(cfg: vscode.WorkspaceConfiguration): Promise<string> {
+// (and is cached per folder) so it never blocks the extension host. The folder
+// is resolved from the *active document's* workspace folder, not always the
+// first one — in a multi-root workspace the document may live under a different
+// folder with a different `git config user.name` (issue #60).
+async function resolveAuthor(cfg: vscode.WorkspaceConfiguration, doc?: vscode.TextDocument): Promise<string> {
   const configured = (cfg.get<string>('edit.commentAuthor', '') ?? '').trim();
   if (configured) { return configured; }
-  const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  const docFolder = doc ? vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath : undefined;
+  const folder = docFolder ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
   const cached = gitAuthorCache.get(folder);
   if (cached !== undefined) { return cached; }
   let author = '';
