@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-09
+
+A maintenance release closing 19 review issues — correctness, robustness,
+security hardening, config scoping and build/CI tooling.
+
+### Fixed
+- **Accept/Reject could corrupt the document on a stale cache** (#52). Typing
+  within the decoration debounce window and then triggering accept/reject
+  (keybinding, CodeLens, hover, sidebar) resolved against pre-edit ranges and
+  could replace the wrong span. Resolutions now flush any pending parse and
+  verify the cached marker text (`CriticChange.raw`) before editing.
+- **Split view decorated only one pane** (#56). The same file open in two panes
+  now refreshes decorations in every visible editor, not just the focused one.
+- **Changes-view group/flat toggle was inert under a workspace override** (#57).
+  The toggle now writes `kaicrit.changes.grouping` into the scope that defines
+  it (WorkspaceFolder/Workspace/Global).
+- **Comment date used UTC** (#58). `insertComment` now stamps the local calendar
+  date, so it no longer records the previous day east of UTC.
+- **Cursor jumped after a failed authoring edit** (#59). `wrapSelection` and
+  `insertSubstitution` skip the caret correction when the edit didn't apply.
+- **Git author ignored multi-root workspaces** (#60). The comment author is now
+  resolved from the active document's workspace folder.
+- **Word diff fragmented non-ASCII words** (#55). The `word` tokenizer is now
+  Unicode-aware (`\p{L}`/`\p{N}`), so umlauts, ß and accented letters stay inside
+  their word.
+- **Track Changes shadow hardened against external mutations** (#68). An
+  inconsistent shadow snapshot is now resynced instead of producing a malformed
+  marker.
+
+### Changed
+- **Track Changes is now coupled to the enablement gate** (#53, #54). Turning it
+  on in a disabled document implicitly enables kaicrit for that file (so recorded
+  markup is visible/resolvable), and the normal-mode paste-flatten takes a cheap
+  early-out for ordinary typing and stays inert in disabled documents.
+- **Configuration is read with a resource scope** (#61), so folder- and
+  language-specific overrides (`"[markdown]": { … }`, multi-root settings) are
+  honoured across enablement, the parser, decorator, Track Changes and compare.
+
+### Added
+- **`kaicrit.edit.maxParseLength`** (#63, default 2 000 000 chars). A size guard
+  that disables marker parsing for pathologically large documents to avoid the
+  marker regex's O(n²) worst case freezing the host.
+
+### Security
+- **Hardened the change-action hover** (#62). `isTrusted` is now scoped to
+  kaicrit's own accept/reject commands instead of every `command:` URI, and
+  document-sourced comment author/date is escaped so it can't render a link.
+
+### Internal
+- **CI now runs lint + tests on every push and pull request** (#51), and the
+  release workflow runs the suite before packaging.
+- **ESLint added** (#69) — flat config with the typescript-eslint recommended
+  set, wired into CI.
+- **The extension is bundled with esbuild for packaging** (#65) — the `.vsix`
+  now ships a single ~40 KB module instead of ~30 files; the dev/F5 loop is
+  unchanged.
+- **Packaging cleanups**: dev-only files excluded from the `.vsix` (#64),
+  `out/` cleaned before tests so orphaned compiled tests can't run (#67), and the
+  docs unified on `@vscode/vsce` (#66).
+
 ## [0.9.0] - 2026-06-03
 
 ### Added
