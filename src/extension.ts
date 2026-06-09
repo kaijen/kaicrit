@@ -67,8 +67,20 @@ export function activate(ctx: vscode.ExtensionContext) {
   // View-title group/flat toggle: the buttons only write the grouping setting —
   // the provider's onDidChangeConfiguration listener rebuilds the list and flips
   // the `kaicrit.changesGrouped` context key that swaps the two buttons.
-  const setGrouping = (m: 'type' | 'chronological') =>
-    vscode.workspace.getConfiguration('kaicrit').update('changes.grouping', m, vscode.ConfigurationTarget.Global);
+  //
+  // Write into whichever scope already defines the value: a hard-coded Global
+  // write is masked by a Workspace-level override (e.g. .vscode/settings.json),
+  // leaving the toggle button inert — clicks land in Global but the effective
+  // value never changes (issue #57). Fall back to Global when nothing is set.
+  const setGrouping = (m: 'type' | 'chronological') => {
+    const cfg = vscode.workspace.getConfiguration('kaicrit');
+    const info = cfg.inspect<string>('changes.grouping');
+    const target =
+      info?.workspaceFolderValue !== undefined ? vscode.ConfigurationTarget.WorkspaceFolder
+      : info?.workspaceValue !== undefined ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    return cfg.update('changes.grouping', m, target);
+  };
   ctx.subscriptions.push(
     vscode.commands.registerCommand('kaicrit.changesSortChronological', () => setGrouping('chronological')),
     vscode.commands.registerCommand('kaicrit.changesGroupByType', () => setGrouping('type')),
