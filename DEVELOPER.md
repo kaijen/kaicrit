@@ -554,11 +554,11 @@ ohne den Debugger neu zu starten.
 **Lokal paketieren / installieren:**
 
 ```bash
-npx vsce package                       # erzeugt kaicrit-<version>.vsix
+npx @vscode/vsce package               # erzeugt kaicrit-<version>.vsix
 code --install-extension kaicrit-*.vsix
 ```
 
-`vsce package` bündelt Manifest, `out/` und Assets zu einer `.vsix`. Was
+`@vscode/vsce package` bündelt Manifest, `out/` und Assets zu einer `.vsix`. Was
 ausgeschlossen wird, steht in [.vscodeignore](.vscodeignore); `vscode:prepublish`
 (in `scripts`) stellt sicher, dass vor dem Paketieren kompiliert wird.
 
@@ -695,7 +695,7 @@ npx ovsx publish kaicrit-<version>.vsix -p "$OVSX_PAT"
 
 | Weg | Registry / Betreiber | Werkzeug | Zielgruppe |
 |---|---|---|---|
-| GitHub-Release (aktiv) | GitHub | `vsce package` + `action-gh-release` | manuelle `.vsix`-Installation |
+| GitHub-Release (aktiv) | GitHub | `@vscode/vsce package` + `action-gh-release` | manuelle `.vsix`-Installation |
 | Visual Studio Marketplace | Microsoft | `vsce publish` | reguläres VS Code |
 | Open VSX Registry | Eclipse Foundation | `ovsx publish` | VSCodium, Gitpod, Theia, Cloud-IDEs |
 

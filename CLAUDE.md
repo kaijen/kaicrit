@@ -19,7 +19,7 @@ Press **F5** in VSCode to launch the Extension Development Host. Use **Developer
 
 Package for local install:
 ```bash
-npx vsce package
+npx @vscode/vsce package
 code --install-extension kaicrit-*.vsix
 ```
 
@@ -30,7 +30,7 @@ code --install-extension kaicrit-*.vsix
 3. Commit: `chore(changelog): Prepare release vX.Y.Z`
 4. Push a matching tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
 
-The CI workflow builds the `.vsix` with `vsce package --version <tag>`, so the published package always reflects the git tag. The `package.json` version is the canonical source for local development (shown when pressing F5).
+The CI workflow builds the `.vsix` with `@vscode/vsce package` passing the tag (minus its `v` prefix) as the **positional** version argument, so the published package always reflects the git tag. The `package.json` version is the canonical source for local development (shown when pressing F5).
 
 ## Documentation
 
