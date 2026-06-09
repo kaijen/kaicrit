@@ -13,6 +13,8 @@ npm test             # compile + Node --test suites (out/**/ *.test.js)
 
 `npm test` compiles, then runs every `*.test.js` under `out/{compare,core,doublepane,edit,preview}`. The edit suites that touch VS Code-only APIs (parser, navigator) load `edit/vscodeStub.js`, which shims `require('vscode')`, so the whole suite runs without an Extension Host. The `doublepane` suite is VS Code-free (like `actions.test.ts`), so it needs no stub.
 
+CI runs `npm test` on every push and pull request ([.github/workflows/ci.yml](.github/workflows/ci.yml)); the release workflow ([.github/workflows/build.yml](.github/workflows/build.yml)) also runs `npm test` before packaging so no release is built from a red tree.
+
 Press **F5** in VSCode to launch the Extension Development Host. Use **Developer: Reload Window** in the host to pick up changes without restarting the debugger.
 
 Package for local install:

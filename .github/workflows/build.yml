@@ -20,7 +20,9 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run compile
+      # Run the full suite (compiles, then tests) so a release is never built
+      # from a red tree.
+      - run: npm test
 
       - run: npx @vscode/vsce package --no-dependencies "${GITHUB_REF_NAME#v}"
 
