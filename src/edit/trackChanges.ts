@@ -178,6 +178,22 @@ export class TrackChangesManager {
       return;
     }
 
+    // Defensive: the shadow must be geometrically consistent with this event.
+    // The engine extracts the deleted text from `pre` using each change's
+    // pre-edit `rangeOffset`/`rangeLength`; if an external mutation (e.g. another
+    // formatting provider, `reason === undefined`) ever left the shadow out of
+    // sync, those offsets would read the wrong span and could assemble a
+    // malformed marker (issue #68). When any change's pre-edit span falls outside
+    // the shadow, resync from the live document and skip wrapping this event —
+    // never emit a marker built from an inconsistent snapshot.
+    const consistent = event.contentChanges.every(
+      c => c.rangeOffset >= 0 && c.rangeOffset + c.rangeLength <= pre.length,
+    );
+    if (!consistent) {
+      this.shadow.set(key, event.document.getText());
+      return;
+    }
+
     const raw: RawEdit[] = event.contentChanges.map(c => ({
       offset: c.rangeOffset,
       oldLength: c.rangeLength,
