@@ -63,15 +63,16 @@ export class DecoratorManager {
       this.timers.delete(key);
       const editor = vscode.window.visibleTextEditors.find(e => e.document === doc);
       if (editor) { this.update(editor); }
-    }, this.debounceMs()));
+    }, this.debounceMs(doc)));
   }
 
   // Debounce interval read fresh from the setting each schedule, so a config edit
-  // takes effect on the next keystroke without needing a reload. Negative values
-  // are clamped to 0 (parse on the next tick).
-  private debounceMs(): number {
+  // takes effect on the next keystroke without needing a reload. Scoped to the
+  // document so folder-/language-specific overrides apply (issue #61). Negative
+  // values are clamped to 0 (parse on the next tick).
+  private debounceMs(doc: vscode.TextDocument): number {
     const ms = vscode.workspace
-      .getConfiguration('kaicrit.edit')
+      .getConfiguration('kaicrit.edit', doc)
       .get<number>('decorationDebounce', DEFAULT_DEBOUNCE_MS);
     return Math.max(0, ms);
   }
@@ -89,7 +90,21 @@ export class DecoratorManager {
       ? parseCriticMarkup(editor.document)
       : [];
     this.changeCache.set(key, changes);
-    this.applyDecorations(editor, changes);
+    // Apply the freshly parsed decorations to *every* visible editor showing
+    // this document, not just the one passed in: the same file can be open in a
+    // split, and decorating only one pane leaves the other showing stale markers
+    // until it regains focus (issue #56). The cache is per document, so this is
+    // one parse fanned out across panes.
+    let decorated = false;
+    for (const ed of vscode.window.visibleTextEditors) {
+      if (ed.document === editor.document) {
+        this.applyDecorations(ed, changes);
+        decorated = true;
+      }
+    }
+    // Fallback for a passed editor that isn't in the visible set (defensive;
+    // callers normally pass a visible editor).
+    if (!decorated) { this.applyDecorations(editor, changes); }
     this._onDidUpdate.fire(editor);
   }
 
@@ -102,6 +117,14 @@ export class DecoratorManager {
 
   getChanges(doc: vscode.TextDocument): CriticChange[] {
     return this.changeCache.get(doc.uri.toString()) ?? [];
+  }
+
+  // Whether a debounced re-parse is still queued for this document. When true,
+  // the cached changes predate the latest edit, so a reader that is about to act
+  // on `fullRange` offsets (accept/reject) should flush via `update` first to
+  // avoid resolving against stale spans (issue #52).
+  hasPending(doc: vscode.TextDocument): boolean {
+    return this.timers.has(doc.uri.toString());
   }
 
   // Whether this document's parse result is already cached (warm), regardless of
@@ -143,7 +166,7 @@ export class DecoratorManager {
           if (c.oldRange) { substOldRanges.push(c.oldRange); }
           if (c.newRange) { substNewRanges.push(c.newRange); }
           // markers: {~~ (3 chars), ~> (2 chars), ~~} (3 chars)
-          collectSubstitutionMarkers(c, markerRanges, editor.document, c.oldText ?? '', c.newText ?? '');
+          collectSubstitutionMarkers(c, markerRanges, editor.document, c.oldText ?? '');
           break;
         case ChangeType.Highlight:
           if (c.contentRange) { highlightRanges.push(c.contentRange); }
@@ -185,12 +208,24 @@ export class DecoratorManager {
 
 // Build the hover for a comment: shows author/date when present, otherwise
 // undefined (no hover) so plain comments behave exactly as before.
+//
+// author/date come straight from the document content. The author pattern
+// (`@\S+`) would otherwise allow markup like `@[Name](https://evil.example)` to
+// render as a clickable link in the hover (relevant for shared, third-party-
+// annotated files). Escape the interpolated values so they render as literal
+// text (issue #62); the surrounding `**`/`·` are our own and stay markup.
 function commentHover(c: CriticChange): vscode.MarkdownString | undefined {
   if (c.author === undefined && c.date === undefined) { return undefined; }
   const parts: string[] = [];
-  if (c.author !== undefined) { parts.push(`**@${c.author}**`); }
-  if (c.date !== undefined) { parts.push(c.date); }
+  if (c.author !== undefined) { parts.push(`**@${escapeMarkdown(c.author)}**`); }
+  if (c.date !== undefined) { parts.push(escapeMarkdown(c.date)); }
   return new vscode.MarkdownString(parts.join(' · '));
+}
+
+// Escape characters that markdown (and the hover's link/image syntax) treats as
+// special, so document-sourced text renders literally.
+function escapeMarkdown(text: string): string {
+  return text.replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, '\\$&');
 }
 
 function collectMarkers(
@@ -217,7 +252,6 @@ function collectSubstitutionMarkers(
   out: vscode.Range[],
   doc: vscode.TextDocument,
   oldText: string,
-  newText: string,
 ): void {
   const fullStart = doc.offsetAt(c.fullRange.start);
   const fullEnd   = doc.offsetAt(c.fullRange.end);

@@ -51,7 +51,12 @@ export function tokenize(text: string, granularity: Granularity): string[] {
     case 'word':
     default:
       // Runs of word characters, runs of whitespace, or single other characters.
-      return text.match(/\w+|\s+|[^\w\s]/g) ?? [];
+      // Use Unicode property classes (\p{L}, \p{N}) rather than ASCII-only \w so
+      // accented letters, umlauts and ß stay inside their word instead of being
+      // split off as single "other" characters — "schön" must tokenize as one
+      // token, not sch·ö·n (issue #55). The reconstruction invariant is unchanged
+      // (the classes still partition the text losslessly).
+      return text.match(/[\p{L}\p{N}_]+|\s+|[^\p{L}\p{N}_\s]/gu) ?? [];
   }
 }
 

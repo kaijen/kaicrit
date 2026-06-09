@@ -74,6 +74,9 @@ async function compareWithSelected(uri: vscode.Uri | undefined): Promise<void> {
  * unavailable, the file is outside a repository, or it has no committed state.
  */
 async function getGitHeadContent(uri: vscode.Uri): Promise<string | undefined> {
+  // The built-in Git extension ships no published type definitions, so its
+  // exports API is untyped here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const gitExtension = vscode.extensions.getExtension<any>('vscode.git');
   if (!gitExtension) {
     vscode.window.showWarningMessage('kaicrit: the built-in Git extension is not available.');
@@ -114,8 +117,9 @@ async function compareWithGitHead(): Promise<void> {
     return;
   }
 
-  // HEAD is file 1 (original); the current buffer is file 2 (modified).
-  await compareTextToCriticMarkup(headContent, doc.getText(), doc.languageId);
+  // HEAD is file 1 (original); the current buffer is file 2 (modified). Pass the
+  // document URI so compare settings honour folder-specific overrides (issue #61).
+  await compareTextToCriticMarkup(headContent, doc.getText(), doc.languageId, doc.uri);
 }
 
 /** Explorer command: two files selected at once; first is file 1, second is file 2. */

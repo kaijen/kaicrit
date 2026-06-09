@@ -553,6 +553,12 @@
           "minimum": 0,
           "description": "Delay in milliseconds between a document edit and the re-parse that refreshes CriticMarkup decorations, the status bar, and the Changes view. Higher values coalesce bursts of typing into a single parse (helpful in large documents that already contain markers); lower values update more eagerly. Accept/Reject still refresh immediately regardless of this value. Set to 0 to parse on the next tick."
         },
+        "kaicrit.edit.maxParseLength": {
+          "type": "integer",
+          "default": 2000000,
+          "minimum": 0,
+          "description": "Safety guard for the marker parser: the maximum document length (in characters) that kaicrit will scan for CriticMarkup. The marker regex scans lazily to the end of the document for every unterminated opener (`{--` with no closer), so a pathological document with many unclosed openers can degrade towards O(n²) and freeze the extension host. Above this length kaicrit disables its decorations/Changes view for the document (with a status-bar hint) instead of parsing. Set to 0 to disable the guard (not recommended)."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": [
@@ -607,14 +613,22 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "tsc -p ./",
+    "vscode:prepublish": "tsc -p ./ && npm run bundle",
+    "bundle": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "compile": "tsc -p ./",
+    "lint": "eslint \"src/**/*.ts\"",
     "watch": "tsc -watch -p ./",
+    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
+    "pretest": "npm run clean",
     "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/doublepane/*.test.js out/edit/*.test.js out/preview/*.test.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.85.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^18.0.0",
-    "typescript": "^5.3.0"
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.4.1",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.61.0"
   }
 }

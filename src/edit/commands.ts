@@ -44,7 +44,14 @@ export function registerEditCommands(
 
   reg('kaicrit.toggleTrackChanges', () => {
     const editor = activeEditor();
-    if (editor) { tcm.toggle(editor.document); }
+    if (!editor) { return; }
+    const doc = editor.document;
+    // Turning Track Changes ON in a kaicrit-disabled document would record
+    // markers that no decoration / accept-reject can act on — invisible text
+    // noise (issue #54). Implicitly enable kaicrit for this file first (the
+    // expected gesture) so the recorded markup is visible and resolvable.
+    if (!tcm.isEnabled(doc) && !em.isEnabled(doc)) { em.toggle(doc); }
+    tcm.toggle(doc);
   });
 
   // ── Per-file enable/disable ──────────────────────────────────────────────────
@@ -113,7 +120,11 @@ function wrapSelection(tcm: TrackChangesManager, open: string, close: string, cu
         eb.replace(sel, open + editor.document.getText(sel) + close);
       }
     }
-  })).then(() => {
+  })).then(applied => {
+    // Skip the caret correction when the edit didn't apply (e.g. read-only
+    // document): shifting selections left by close.length would jump the cursor
+    // for no reason (issue #59).
+    if (!applied) { return; }
     const doc = editor.document;
     editor.selections = editor.selections.map((sel, i) => {
       const base = doc.offsetAt(sel.active);
@@ -131,7 +142,7 @@ async function insertComment(tcm: TrackChangesManager): Promise<void> {
   const cfg = vscode.workspace.getConfiguration('kaicrit');
   let open = '{>>';
   if (cfg.get<boolean>('edit.commentMetadata', true)) {
-    const author = await resolveAuthor(cfg);
+    const author = await resolveAuthor(cfg, activeEditor()?.document);
     const date = isoToday();
     open = `{>>${author ? '@' + author + ' ' : ''}${date}: `;
   }
@@ -148,11 +159,15 @@ const gitAuthorCache = new Map<string, string>();
 // Author for a new comment: the configured name wins; otherwise fall back to
 // the repository's `git config user.name`. Returns '' when neither is available
 // (the metadata then carries just the date). The git lookup runs asynchronously
-// (and is cached) so it never blocks the extension host.
-async function resolveAuthor(cfg: vscode.WorkspaceConfiguration): Promise<string> {
+// (and is cached per folder) so it never blocks the extension host. The folder
+// is resolved from the *active document's* workspace folder, not always the
+// first one — in a multi-root workspace the document may live under a different
+// folder with a different `git config user.name` (issue #60).
+async function resolveAuthor(cfg: vscode.WorkspaceConfiguration, doc?: vscode.TextDocument): Promise<string> {
   const configured = (cfg.get<string>('edit.commentAuthor', '') ?? '').trim();
   if (configured) { return configured; }
-  const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+  const docFolder = doc ? vscode.workspace.getWorkspaceFolder(doc.uri)?.uri.fsPath : undefined;
+  const folder = docFolder ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
   const cached = gitAuthorCache.get(folder);
   if (cached !== undefined) { return cached; }
   let author = '';
@@ -163,14 +178,19 @@ async function resolveAuthor(cfg: vscode.WorkspaceConfiguration): Promise<string
     });
     author = stdout.toString().trim();
   } catch {
-    author = '';
+    // No name / git unavailable: leave author as '' (the metadata then carries
+    // just the date).
   }
   gitAuthorCache.set(folder, author);
   return author;
 }
 
+// Local calendar date as YYYY-MM-DD. `toISOString` would emit the UTC date,
+// which stamps tomorrow/yesterday for users whose local day differs from UTC
+// (e.g. Germany in the evening got the previous day — issue #58). Intl with the
+// 'sv-SE' locale yields the ISO-shaped, zero-padded date in the local zone.
 function isoToday(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(new Date());
 }
 
 function insertSubstitution(tcm: TrackChangesManager): void {
@@ -194,7 +214,10 @@ function insertSubstitution(tcm: TrackChangesManager): void {
     for (const sel of targets) {
       eb.replace(sel, `${open}${editor.document.getText(sel)}${sep}${close}`);
     }
-  })).then(() => {
+  })).then(applied => {
+    // Skip the caret correction on a failed edit (e.g. read-only doc) so the
+    // cursors aren't shifted left for no reason (issue #59).
+    if (!applied) { return; }
     // Park each cursor on the empty "new" side (before `~~}`) so the user can type
     // the replacement. After the replace, the cursor sits at the end of the
     // inserted text; the desired point is exactly `close.length` units before it.
@@ -262,13 +285,29 @@ function applyAt(
 ): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  const changes = dm.getChanges(editor.document);
-  const change = findAtCursor(changes, position);
+  // The cache is refreshed only debounced. If a re-parse is still queued (the
+  // user typed within the debounce window, then triggered accept/reject), the
+  // cached `fullRange` offsets predate that edit and would target the wrong
+  // span. Flush synchronously so we resolve against the document's current text
+  // (issue #52).
+  if (dm.hasPending(editor.document)) { dm.update(editor); }
+  let change = findAtCursor(dm.getChanges(editor.document), position);
   if (!change) {
     // Non-modal: a stray Alt+A/Alt+R with the cursor outside a change should be
     // a quiet no-op, not an interruptive box.
     vscode.window.setStatusBarMessage('Cursor is not inside a CriticMarkup change.', 3000);
     return;
+  }
+  // Defence in depth: confirm the cached span still spans this exact marker
+  // before editing. If it drifted (e.g. an edit landed between the flush and
+  // here), re-parse once and re-locate; abort rather than corrupt on mismatch.
+  if (!spanMatches(editor, change)) {
+    dm.update(editor);
+    change = findAtCursor(dm.getChanges(editor.document), position);
+    if (!change || !spanMatches(editor, change)) {
+      vscode.window.setStatusBarMessage('kaicrit: change moved, please retry.', 3000);
+      return;
+    }
   }
   const edit = new vscode.WorkspaceEdit();
   addResolution(edit, editor.document.uri, change, mode);
@@ -293,16 +332,37 @@ function dismissHover(): void {
 function applyAll(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept' | 'reject'): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  const changes = dm.getChanges(editor.document);
+  // Flush any queued debounced parse so every cached span reflects current text
+  // before we build one atomic edit over all of them (issue #52).
+  if (dm.hasPending(editor.document)) { dm.update(editor); }
+  let changes = dm.getChanges(editor.document);
   if (changes.length === 0) {
     vscode.window.showInformationMessage('No CriticMarkup changes found.');
     return;
+  }
+  // If any cached span no longer matches its marker text, re-parse once before
+  // committing — an Accept-All over drifted offsets would corrupt the document.
+  if (!changes.every(c => spanMatches(editor, c))) {
+    dm.update(editor);
+    changes = dm.getChanges(editor.document);
+    if (!changes.every(c => spanMatches(editor, c))) {
+      vscode.window.setStatusBarMessage('kaicrit: changes moved, please retry.', 3000);
+      return;
+    }
   }
   const edit = new vscode.WorkspaceEdit();
   for (const change of changes) {
     addResolution(edit, editor.document.uri, change, mode);
   }
   tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
+}
+
+// Whether the cached change still spans its exact marker text in the live
+// document. Changes parsed before the `raw` field existed (or built in tests)
+// carry no `raw` and are treated as matching, preserving prior behaviour.
+function spanMatches(editor: vscode.TextEditor, change: CriticChange): boolean {
+  return change.raw === undefined
+    || editor.document.getText(change.fullRange) === change.raw;
 }
 
 function addResolution(

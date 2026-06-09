@@ -12,6 +12,12 @@ export interface CriticChange {
   type: ChangeType;
   fullRange: vscode.Range;
 
+  // Verbatim marker text (`match[0]`) captured at parse time. Lets a consumer
+  // confirm that the cached `fullRange` still spans this exact marker before
+  // resolving it — a guard against acting on a stale (debounced) cache whose
+  // offsets predate an in-flight edit (issue #52).
+  raw?: string;
+
   // Non-substitution types: range of the text content (excluding markers)
   contentRange?: vscode.Range;
 

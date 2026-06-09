@@ -106,6 +106,16 @@ test('word tokenization preserves whitespace as standalone tokens', () => {
   assert.deepEqual(tokenize('hi!', 'word'), ['hi', '!']);
 });
 
+test('word tokenization keeps Unicode letters inside their word (issue #55)', () => {
+  // ASCII-only \w would split these into single "other" characters; the Unicode
+  // property classes keep umlauts, ß and accents inside the word.
+  assert.deepEqual(tokenize('schön', 'word'), ['schön']);
+  assert.deepEqual(tokenize('Müller', 'word'), ['Müller']);
+  assert.deepEqual(tokenize('Straße café', 'word'), ['Straße', ' ', 'café']);
+  // Digits stay attached too, punctuation still splits off.
+  assert.deepEqual(tokenize('über99!', 'word'), ['über99', '!']);
+});
+
 test('line tokenization keeps terminators and is lossless', () => {
   const text = 'a\n\nb';
   const tokens = tokenize(text, 'line');

@@ -82,6 +82,28 @@ test('guard is per document, not process-wide (task 14)', async () => {
   mgr.dispose();
 });
 
+test('shadow inconsistent with event geometry skips wrapping (issue #68)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///a.md', 'hello'); // shadow snapshot length 5
+  mgr.toggle(doc as unknown as vscode.TextDocument);
+
+  let calls = 0;
+  setApplyEditImpl(() => { calls++; return Promise.resolve(true); });
+
+  // A change whose pre-edit span (offset 5 + length 10) runs past the 5-char
+  // shadow — geometrically impossible against the snapshot. The recorder must
+  // resync rather than build a marker from the wrong extracted text.
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 5, rangeLength: 10, text: '' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  await flush();
+
+  assert.equal(calls, 0, 'no compensating edit should be applied on an inconsistent shadow');
+  mgr.dispose();
+});
+
 // Normal-mode (Track Changes OFF) flatten-on-paste. The doc is NEVER toggled, so
 // handleChange routes to handleNormalMode. makeDoc.getText() returns the
 // POST-edit text — handleNormalMode reconstructs the pre-edit text from it.
