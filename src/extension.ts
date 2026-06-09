@@ -27,8 +27,10 @@ export function activate(ctx: vscode.ExtensionContext) {
   ctx.subscriptions.push(sb);
 
   // Track Changes: live recorder that rewrites raw edits into CriticMarkup.
-  // State is per document; toggled via kaicrit.toggleTrackChanges.
-  const tcm = new TrackChangesManager();
+  // State is per document; toggled via kaicrit.toggleTrackChanges. Shares the
+  // enablement gate so it stays inert (and never auto-enables) in documents
+  // kaicrit is disabled for.
+  const tcm = new TrackChangesManager(doc => em.isEnabled(doc));
   ctx.subscriptions.push(tcm);
 
   registerEditCommands(ctx, dm, tcm, em);

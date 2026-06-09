@@ -44,7 +44,14 @@ export function registerEditCommands(
 
   reg('kaicrit.toggleTrackChanges', () => {
     const editor = activeEditor();
-    if (editor) { tcm.toggle(editor.document); }
+    if (!editor) { return; }
+    const doc = editor.document;
+    // Turning Track Changes ON in a kaicrit-disabled document would record
+    // markers that no decoration / accept-reject can act on — invisible text
+    // noise (issue #54). Implicitly enable kaicrit for this file first (the
+    // expected gesture) so the recorded markup is visible and resolvable.
+    if (!tcm.isEnabled(doc) && !em.isEnabled(doc)) { em.toggle(doc); }
+    tcm.toggle(doc);
   });
 
   // ── Per-file enable/disable ──────────────────────────────────────────────────

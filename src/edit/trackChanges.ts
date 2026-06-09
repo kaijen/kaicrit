@@ -20,7 +20,13 @@ export class TrackChangesManager {
   private readonly applyingOwnEdit = new Set<string>();
   private readonly statusItem: vscode.StatusBarItem;
 
-  constructor() {
+  // `isDocEnabled` gates the recorder against the same enablement decision the
+  // decorator uses (language whitelist + per-file toggle). Both the normal-mode
+  // paste-flatten and the `applyDefault` auto-enable consult it so the recorder
+  // never produces markers in a document where no decoration / accept-reject can
+  // act on them (issues #53, #54). Defaults to always-on so the manager works
+  // standalone (e.g. in tests).
+  constructor(private readonly isDocEnabled: (doc: vscode.TextDocument) => boolean = () => true) {
     this.statusItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right, 90,
     );
@@ -36,6 +42,10 @@ export class TrackChangesManager {
   applyDefault(doc: vscode.TextDocument): void {
     const key = doc.uri.toString();
     if (this.enabled.has(key) || this.seen.has(key)) { return; }
+    // Don't auto-enable recording in a kaicrit-disabled document (issue #54).
+    // Return *without* marking it seen so the default still applies the first
+    // time the document later becomes enabled.
+    if (!this.isDocEnabled(doc)) { return; }
     this.seen.add(key);
     const on = vscode.workspace
       .getConfiguration('kaicrit')
@@ -224,13 +234,24 @@ export class TrackChangesManager {
     // since tracking is off — the same per-document guard the tracked path uses).
     if (this.applyingOwnEdit.has(key)) { return; }
 
+    // Cheapest possible early-out on the hottest path in the extension (every
+    // keystroke in every document). The paste-flatten can only ever do something
+    // when the inserted text carries a complete marker, which requires a '{'. For
+    // ordinary typing this skips the config read, the full-document getText, the
+    // pre-text slice reconstruction and the marker scan entirely (issue #53). An
+    // empty contentChanges array also exits here (`some` is false).
+    if (!event.contentChanges.some(c => c.text.includes('{'))) { return; }
+
+    // The paste-flatten is an editor feature, so it must stay inert in documents
+    // kaicrit is disabled for — matching every other reader (issues #53, #54).
+    if (!this.isDocEnabled(event.document)) { return; }
+
     if (
       event.reason === vscode.TextDocumentChangeReason.Undo ||
       event.reason === vscode.TextDocumentChangeReason.Redo
     ) {
       return;
     }
-    if (event.contentChanges.length === 0) { return; }
 
     const on = vscode.workspace
       .getConfiguration('kaicrit')
