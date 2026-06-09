@@ -104,6 +104,14 @@ export class DecoratorManager {
     return this.changeCache.get(doc.uri.toString()) ?? [];
   }
 
+  // Whether a debounced re-parse is still queued for this document. When true,
+  // the cached changes predate the latest edit, so a reader that is about to act
+  // on `fullRange` offsets (accept/reject) should flush via `update` first to
+  // avoid resolving against stale spans (issue #52).
+  hasPending(doc: vscode.TextDocument): boolean {
+    return this.timers.has(doc.uri.toString());
+  }
+
   // Whether this document's parse result is already cached (warm), regardless of
   // how many changes it holds. Lets readers distinguish "cache cold" from "cache
   // warm but empty" so they don't re-scan a marker-free document on every query.

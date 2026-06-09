@@ -36,6 +36,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
         fullRange,
         contentRange: new vscode.Range(contentStart, contentEnd),
         text: match[1],
+        raw: match[0],
       });
     } else if (match[2] !== undefined) {
       const contentStart = doc.positionAt(match.index + 3);
@@ -45,6 +46,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
         fullRange,
         contentRange: new vscode.Range(contentStart, contentEnd),
         text: match[2],
+        raw: match[0],
       });
     } else if (match[3] !== undefined) {
       // Substitution: {~~old~>new~~}
@@ -60,6 +62,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
         newRange: new vscode.Range(newStart, newEnd),
         oldText: match[3],
         newText: match[4],
+        raw: match[0],
       });
     } else if (match[5] !== undefined) {
       const contentStart = doc.positionAt(match.index + 3);
@@ -69,6 +72,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
         fullRange,
         contentRange: new vscode.Range(contentStart, contentEnd),
         text: match[5],
+        raw: match[0],
       });
     } else if (match[6] !== undefined) {
       const contentStart = doc.positionAt(match.index + 3);
@@ -78,6 +82,7 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
         fullRange,
         contentRange: new vscode.Range(contentStart, contentEnd),
         text: match[6],
+        raw: match[0],
       };
       if (metaEnabled) {
         const meta = parseCommentMeta(match[6]);

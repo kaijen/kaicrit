@@ -262,13 +262,29 @@ function applyAt(
 ): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  const changes = dm.getChanges(editor.document);
-  const change = findAtCursor(changes, position);
+  // The cache is refreshed only debounced. If a re-parse is still queued (the
+  // user typed within the debounce window, then triggered accept/reject), the
+  // cached `fullRange` offsets predate that edit and would target the wrong
+  // span. Flush synchronously so we resolve against the document's current text
+  // (issue #52).
+  if (dm.hasPending(editor.document)) { dm.update(editor); }
+  let change = findAtCursor(dm.getChanges(editor.document), position);
   if (!change) {
     // Non-modal: a stray Alt+A/Alt+R with the cursor outside a change should be
     // a quiet no-op, not an interruptive box.
     vscode.window.setStatusBarMessage('Cursor is not inside a CriticMarkup change.', 3000);
     return;
+  }
+  // Defence in depth: confirm the cached span still spans this exact marker
+  // before editing. If it drifted (e.g. an edit landed between the flush and
+  // here), re-parse once and re-locate; abort rather than corrupt on mismatch.
+  if (!spanMatches(editor, change)) {
+    dm.update(editor);
+    change = findAtCursor(dm.getChanges(editor.document), position);
+    if (!change || !spanMatches(editor, change)) {
+      vscode.window.setStatusBarMessage('kaicrit: change moved, please retry.', 3000);
+      return;
+    }
   }
   const edit = new vscode.WorkspaceEdit();
   addResolution(edit, editor.document.uri, change, mode);
@@ -293,16 +309,37 @@ function dismissHover(): void {
 function applyAll(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept' | 'reject'): void {
   const editor = activeEditor();
   if (!editor) { return; }
-  const changes = dm.getChanges(editor.document);
+  // Flush any queued debounced parse so every cached span reflects current text
+  // before we build one atomic edit over all of them (issue #52).
+  if (dm.hasPending(editor.document)) { dm.update(editor); }
+  let changes = dm.getChanges(editor.document);
   if (changes.length === 0) {
     vscode.window.showInformationMessage('No CriticMarkup changes found.');
     return;
+  }
+  // If any cached span no longer matches its marker text, re-parse once before
+  // committing — an Accept-All over drifted offsets would corrupt the document.
+  if (!changes.every(c => spanMatches(editor, c))) {
+    dm.update(editor);
+    changes = dm.getChanges(editor.document);
+    if (!changes.every(c => spanMatches(editor, c))) {
+      vscode.window.setStatusBarMessage('kaicrit: changes moved, please retry.', 3000);
+      return;
+    }
   }
   const edit = new vscode.WorkspaceEdit();
   for (const change of changes) {
     addResolution(edit, editor.document.uri, change, mode);
   }
   tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
+}
+
+// Whether the cached change still spans its exact marker text in the live
+// document. Changes parsed before the `raw` field existed (or built in tests)
+// carry no `raw` and are treated as matching, preserving prior behaviour.
+function spanMatches(editor: vscode.TextEditor, change: CriticChange): boolean {
+  return change.raw === undefined
+    || editor.document.getText(change.fullRange) === change.raw;
 }
 
 function addResolution(

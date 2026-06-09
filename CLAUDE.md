@@ -107,6 +107,7 @@ Each `CriticChange` carries:
 - `contentRange` — content inside markers (non-substitution types)
 - `oldRange` / `newRange` — substitution sub-ranges for separate decoration
 - `author?` / `date?` — comment metadata, set only on comments with the optional `@author YYYY-MM-DD:` prefix (and only when `kaicrit.edit.commentMetadata` is enabled). The convention lives in [core/comment.ts](src/core/comment.ts); a comment without the prefix carries neither field and behaves exactly as a plain comment.
+- `raw?` — the verbatim marker text (`match[0]`) captured at parse time. `commands.ts`'s `applyAt`/`applyAll` confirm `document.getText(fullRange) === raw` before an accept/reject (after flushing any pending debounced parse via `dm.hasPending`/`dm.update`) so a stale cache whose offsets predate an in-flight edit can't resolve against the wrong span and corrupt the document (issue #52).
 
 Marker characters (`{--`, `--}`, etc.) get a separate dimming decoration (opacity 0.4) via `markerType` in `DecoratorManager`. The five content decorations additionally set `overviewRulerColor`/`overviewRulerLane` (Right) so changes show on the scrollbar; the dimmed `markerType` deliberately omits ruler markers.
 
