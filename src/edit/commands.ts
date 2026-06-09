@@ -120,7 +120,11 @@ function wrapSelection(tcm: TrackChangesManager, open: string, close: string, cu
         eb.replace(sel, open + editor.document.getText(sel) + close);
       }
     }
-  })).then(() => {
+  })).then(applied => {
+    // Skip the caret correction when the edit didn't apply (e.g. read-only
+    // document): shifting selections left by close.length would jump the cursor
+    // for no reason (issue #59).
+    if (!applied) { return; }
     const doc = editor.document;
     editor.selections = editor.selections.map((sel, i) => {
       const base = doc.offsetAt(sel.active);
@@ -205,7 +209,10 @@ function insertSubstitution(tcm: TrackChangesManager): void {
     for (const sel of targets) {
       eb.replace(sel, `${open}${editor.document.getText(sel)}${sep}${close}`);
     }
-  })).then(() => {
+  })).then(applied => {
+    // Skip the caret correction on a failed edit (e.g. read-only doc) so the
+    // cursors aren't shifted left for no reason (issue #59).
+    if (!applied) { return; }
     // Park each cursor on the empty "new" side (before `~~}`) so the user can type
     // the replacement. After the replace, the cursor sits at the end of the
     // inserted text; the desired point is exactly `close.length` units before it.
