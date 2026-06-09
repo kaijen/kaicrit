@@ -176,8 +176,12 @@ async function resolveAuthor(cfg: vscode.WorkspaceConfiguration): Promise<string
   return author;
 }
 
+// Local calendar date as YYYY-MM-DD. `toISOString` would emit the UTC date,
+// which stamps tomorrow/yesterday for users whose local day differs from UTC
+// (e.g. Germany in the evening got the previous day — issue #58). Intl with the
+// 'sv-SE' locale yields the ISO-shaped, zero-padded date in the local zone.
 function isoToday(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat('sv-SE').format(new Date());
 }
 
 function insertSubstitution(tcm: TrackChangesManager): void {
