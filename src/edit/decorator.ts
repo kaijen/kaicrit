@@ -89,7 +89,21 @@ export class DecoratorManager {
       ? parseCriticMarkup(editor.document)
       : [];
     this.changeCache.set(key, changes);
-    this.applyDecorations(editor, changes);
+    // Apply the freshly parsed decorations to *every* visible editor showing
+    // this document, not just the one passed in: the same file can be open in a
+    // split, and decorating only one pane leaves the other showing stale markers
+    // until it regains focus (issue #56). The cache is per document, so this is
+    // one parse fanned out across panes.
+    let decorated = false;
+    for (const ed of vscode.window.visibleTextEditors) {
+      if (ed.document === editor.document) {
+        this.applyDecorations(ed, changes);
+        decorated = true;
+      }
+    }
+    // Fallback for a passed editor that isn't in the visible set (defensive;
+    // callers normally pass a visible editor).
+    if (!decorated) { this.applyDecorations(editor, changes); }
     this._onDidUpdate.fire(editor);
   }
 
