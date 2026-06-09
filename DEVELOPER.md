@@ -558,9 +558,17 @@ npx @vscode/vsce package               # erzeugt kaicrit-<version>.vsix
 code --install-extension kaicrit-*.vsix
 ```
 
-`@vscode/vsce package` bündelt Manifest, `out/` und Assets zu einer `.vsix`. Was
-ausgeschlossen wird, steht in [.vscodeignore](.vscodeignore); `vscode:prepublish`
-(in `scripts`) stellt sicher, dass vor dem Paketieren kompiliert wird.
+`@vscode/vsce package` bündelt Manifest, das esbuild-Bundle und Assets zu einer
+`.vsix`. Was ausgeschlossen wird, steht in [.vscodeignore](.vscodeignore);
+`vscode:prepublish` (in `scripts`) führt vor dem Paketieren `tsc -p ./`
+(Typprüfung) und anschließend `npm run bundle` aus. `bundle` packt
+`src/extension.ts` per esbuild (`--bundle --external:vscode --format=cjs
+--platform=node --minify`) in eine einzige minifizierte `out/extension.js`; die
+`.vscodeignore` versendet aus `out/` ausschließlich dieses Bundle
+(`out/**` + `!out/extension.js`), sodass die `.vsix` statt ~30 Einzelmodulen nur
+ein ~40 KB großes Modul enthält. Die Entwicklung bleibt unverändert: `npm run
+watch` / F5 nutzen weiterhin die per-Datei-`tsc`-Ausgabe in `out/`; das Bundle
+entsteht nur beim Paketieren.
 
 ### Release-Workflow in GitHub Actions
 

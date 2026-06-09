@@ -25,6 +25,8 @@ npx @vscode/vsce package
 code --install-extension kaicrit-*.vsix
 ```
 
+`vscode:prepublish` runs `tsc -p ./` (type-check) then `npm run bundle`, which esbuilds `src/extension.ts` into a single minified `out/extension.js` (`--bundle --external:vscode --format=cjs --platform=node`). `.vscodeignore` ships only that bundle from `out/` (`out/**` + `!out/extension.js`), so the `.vsix` is a single ~40 KB module instead of ~30 separate files — smaller and faster to load (issue #65). Development is unchanged: `npm run watch` / F5 use the plain per-file `tsc` output in `out/` (the bundle is produced only at package time), and the test suite runs against the per-file `out/**/*.test.js` as before.
+
 ## Releasing
 
 1. Bump `"version"` in [package.json](package.json) to the new version (e.g. `0.2.0`)

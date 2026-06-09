@@ -15,9 +15,7 @@ mkdocs.yml
 CLAUDE.md
 DEVELOPER.md
 TODO.md
-out/edit/vscodeStub.js
-out/edit/vscodeStub.js.map
-out/**/*.test.js
-out/**/*.test.js.map
+out/**
+!out/extension.js
 **/*.map
 **/*.ts
