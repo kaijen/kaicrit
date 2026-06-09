@@ -553,6 +553,12 @@
           "minimum": 0,
           "description": "Delay in milliseconds between a document edit and the re-parse that refreshes CriticMarkup decorations, the status bar, and the Changes view. Higher values coalesce bursts of typing into a single parse (helpful in large documents that already contain markers); lower values update more eagerly. Accept/Reject still refresh immediately regardless of this value. Set to 0 to parse on the next tick."
         },
+        "kaicrit.edit.maxParseLength": {
+          "type": "integer",
+          "default": 2000000,
+          "minimum": 0,
+          "description": "Safety guard for the marker parser: the maximum document length (in characters) that kaicrit will scan for CriticMarkup. The marker regex scans lazily to the end of the document for every unterminated opener (`{--` with no closer), so a pathological document with many unclosed openers can degrade towards O(n²) and freeze the extension host. Above this length kaicrit disables its decorations/Changes view for the document (with a status-bar hint) instead of parsing. Set to 0 to disable the guard (not recommended)."
+        },
         "kaicrit.compare.granularity": {
           "type": "string",
           "enum": [

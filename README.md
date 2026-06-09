@@ -253,6 +253,7 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 | Setting | Default | Effect |
 |---|---|---|
 | `kaicrit.edit.decorationDebounce` | `150` | Milliseconds to wait after an edit before re-parsing the document to refresh decorations, the status bar, and the Changes view. Higher values coalesce bursts of typing into one parse (helpful in large documents that already contain markers); accept/reject still refresh immediately regardless of this value. `0` parses on the next tick. |
+| `kaicrit.edit.maxParseLength` | `2000000` | Safety guard for the marker parser: the maximum document length (in characters) kaicrit will scan. Above it, decorations and the Changes view go inert for that document (with a status-bar hint) to avoid the marker regex's O(n²) worst case on pathological input (many unterminated `{--` openers). `0` disables the guard. |
 
 ### Keybindings
 
