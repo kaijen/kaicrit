@@ -616,6 +616,8 @@
     "vscode:prepublish": "tsc -p ./",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
+    "pretest": "npm run clean",
     "test": "tsc -p ./ && node --test out/compare/*.test.js out/core/*.test.js out/doublepane/*.test.js out/edit/*.test.js out/preview/*.test.js"
   },
   "devDependencies": {

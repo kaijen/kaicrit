@@ -8,8 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install          # first time only
 npm run compile      # one-shot TypeScript compile → out/
 npm run watch        # incremental watch (run before F5)
-npm test             # compile + Node --test suites (out/**/ *.test.js)
+npm test             # clean out/, compile + Node --test suites (out/**/ *.test.js)
 ```
+
+`npm test` runs a `pretest` step (`npm run clean`, a dependency-free cross-platform `fs.rmSync('out', …)`) that wipes `out/` first, so a renamed or deleted `*.test.ts` can't leave a stale `out/**/*.test.js` behind that the test globs would keep running (issue #67).
 
 `npm test` compiles, then runs every `*.test.js` under `out/{compare,core,doublepane,edit,preview}`. The edit suites that touch VS Code-only APIs (parser, navigator) load `edit/vscodeStub.js`, which shims `require('vscode')`, so the whole suite runs without an Extension Host. The `doublepane` suite is VS Code-free (like `actions.test.ts`), so it needs no stub.
 
