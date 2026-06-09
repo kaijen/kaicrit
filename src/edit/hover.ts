@@ -35,7 +35,10 @@ export class CriticHoverProvider implements vscode.HoverProvider {
     if (!change) { return undefined; }
 
     const md = new vscode.MarkdownString(actionHoverMarkdown(change.fullRange.start));
-    md.isTrusted = true;
+    // Allow only kaicrit's own accept/reject command links rather than trusting
+    // every `command:` URI — defense in depth, since the markdown is generated
+    // here but cheap to scope down (issue #62).
+    md.isTrusted = { enabledCommands: ['kaicrit.acceptChangeAt', 'kaicrit.rejectChangeAt'] };
     md.supportThemeIcons = true;
     return new vscode.Hover(md, change.fullRange);
   }

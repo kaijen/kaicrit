@@ -207,12 +207,24 @@ export class DecoratorManager {
 
 // Build the hover for a comment: shows author/date when present, otherwise
 // undefined (no hover) so plain comments behave exactly as before.
+//
+// author/date come straight from the document content. The author pattern
+// (`@\S+`) would otherwise allow markup like `@[Name](https://evil.example)` to
+// render as a clickable link in the hover (relevant for shared, third-party-
+// annotated files). Escape the interpolated values so they render as literal
+// text (issue #62); the surrounding `**`/`·` are our own and stay markup.
 function commentHover(c: CriticChange): vscode.MarkdownString | undefined {
   if (c.author === undefined && c.date === undefined) { return undefined; }
   const parts: string[] = [];
-  if (c.author !== undefined) { parts.push(`**@${c.author}**`); }
-  if (c.date !== undefined) { parts.push(c.date); }
+  if (c.author !== undefined) { parts.push(`**@${escapeMarkdown(c.author)}**`); }
+  if (c.date !== undefined) { parts.push(escapeMarkdown(c.date)); }
   return new vscode.MarkdownString(parts.join(' · '));
+}
+
+// Escape characters that markdown (and the hover's link/image syntax) treats as
+// special, so document-sourced text renders literally.
+function escapeMarkdown(text: string): string {
+  return text.replace(/[\\`*_{}[\]()#+\-.!<>|~]/g, '\\$&');
 }
 
 function collectMarkers(
