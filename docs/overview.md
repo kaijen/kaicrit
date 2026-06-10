@@ -16,19 +16,21 @@ in the `kaicrit.changes.grouping` setting (`type` — the default — or
 **Grouped by type** (`type`) — a two-level tree:
 
 - **Type groups** — one node per change type that occurs in the document
-  (Deletions, Additions, Substitutions, Highlights, Comments), each labelled
-  with the same per-type symbol as the [status bar](index.md) and its count,
-  e.g. `⊟ Deletions (3)`. Groups appear in the same fixed order as the status
-  bar summary, and only for types that are actually present.
+  (Deletions, Additions, Substitutions, Highlights, Comments), each carrying a
+  per-type icon **tinted in the type's configured color** (the same `kaicrit.*`
+  [theme colors](markup.md#colors) that style the editor
+  decorations and the status-bar counts) plus the group's count, e.g.
+  `Deletions (3)`. Groups appear in the same fixed order as the status bar
+  summary, and only for types that are actually present.
 - **Changes** — under each group, one leaf per change. The label is a short,
   whitespace-collapsed preview of the content (for a substitution,
   `old → new`); the description shows the line number, and for comments with
   [metadata](markup.md#comment-metadata-author--date) the author and date.
 
 **Chronological** (`chronological`) — a flat list, no group headers: every
-change in document order, each leaf prefixed with its per-type symbol
-(`⊟ ⊞ ⇄ ☰ 💬`) so the type stays visible. Labels and descriptions are otherwise
-identical to the grouped leaves.
+change in document order, each leaf carrying its color-tinted per-type icon so
+the type stays visible. Labels and descriptions are otherwise identical to the
+grouped leaves.
 
 The view tracks the active editor and refreshes live as you type, insert, or
 resolve changes — it reads the same parsed-change cache that powers the editor
