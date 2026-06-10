@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-10
+
+### Added
+- **Activity-Bar badge** — the kaicrit icon in the Activity Bar now shows a
+  number badge with the active document's CriticMarkup change count (like the
+  Explorer's unsaved-files badge). Hidden when the document has no changes or
+  kaicrit is disabled for it; updates live as you type or resolve changes.
+
 ## [0.10.0] - 2026-06-09
 
 A maintenance release closing 19 review issues — correctness, robustness,
@@ -395,7 +403,9 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/kaijen/kaicrit/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/kaijen/kaicrit/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/kaijen/kaicrit/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kaijen/kaicrit/compare/v0.7.5...v0.8.0
 [0.7.5]: https://github.com/kaijen/kaicrit/compare/v0.7.4...v0.7.5
