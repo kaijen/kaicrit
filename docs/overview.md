@@ -3,6 +3,9 @@
 kaicrit contributes a dedicated **CriticMarkup** view container to the Activity
 Bar. Its **Changes** view lists every CriticMarkup change in the *active*
 document so you can review a file at a glance without scrolling through it.
+The Activity Bar icon carries a **number badge** with the active document's
+change count — like the Explorer's unsaved-files badge — and disappears when
+the document has no changes (or kaicrit is disabled for it).
 
 ## Layout
 

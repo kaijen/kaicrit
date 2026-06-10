@@ -61,10 +61,19 @@ export function activate(ctx: vscode.ExtensionContext) {
   // Sidebar overview: lists the active document's changes grouped by type, with
   // click-to-jump and inline accept/reject. Fed from the same change cache.
   const changesView = new ChangesTreeProvider(dm);
-  ctx.subscriptions.push(
-    changesView,
-    vscode.window.createTreeView('kaicrit.changes', { treeDataProvider: changesView }),
-  );
+  const changesTreeView = vscode.window.createTreeView('kaicrit.changes', { treeDataProvider: changesView });
+  ctx.subscriptions.push(changesView, changesTreeView);
+
+  // Activity-Bar badge: mirror the active document's change count onto the
+  // kaicrit container icon (the container holds only this view, so the view
+  // badge shows on the icon). Same scope and triggers as the status bar.
+  const syncBadge = () => {
+    const doc = vscode.window.activeTextEditor?.document;
+    const count = doc ? dm.getChanges(doc).length : 0;
+    changesTreeView.badge = count > 0
+      ? { value: count, tooltip: `${count} CriticMarkup change${count === 1 ? '' : 's'}` }
+      : undefined;
+  };
 
   // View-title group/flat toggle: the buttons only write the grouping setting —
   // the provider's onDidChangeConfiguration listener rebuilds the list and flips
@@ -93,6 +102,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     dm.update(editor);
   }
   sb.update(vscode.window.activeTextEditor);
+  syncBadge();
   if (vscode.window.activeTextEditor) {
     tcm.applyDefault(vscode.window.activeTextEditor.document);
   }
@@ -104,6 +114,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.window.onDidChangeActiveTextEditor(editor => {
       if (editor) { dm.update(editor); tcm.applyDefault(editor.document); }
       sb.update(editor);
+      syncBadge();
       tcm.syncActiveEditor(editor);
       em.syncStatusBar(editor);
       dm.syncContext(editor);
@@ -125,6 +136,7 @@ export function activate(ctx: vscode.ExtensionContext) {
       for (const editor of vscode.window.visibleTextEditors) { dm.update(editor); }
       const active = vscode.window.activeTextEditor;
       sb.update(active);
+      syncBadge();
       dm.syncContext(active);
       em.syncStatusBar(active);
     }),
@@ -133,6 +145,7 @@ export function activate(ctx: vscode.ExtensionContext) {
     dm.onDidUpdate(editor => {
       if (editor === vscode.window.activeTextEditor) {
         sb.update(editor);
+        syncBadge();
         dm.syncContext(editor);
       }
     }),

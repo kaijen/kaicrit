@@ -29,7 +29,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
 - **Overview ruler markers** — changes are mirrored as colored marks on the scrollbar, so you can see where they sit without scrolling
 - **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`); click the entry to jump to the first change
-- **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document, grouped by type or flat in document order (toggle in the view title); click an entry to jump to it, resolve it inline, or accept/reject all from the view title
+- **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document, grouped by type or flat in document order (toggle in the view title); click an entry to jump to it, resolve it inline, or accept/reject all from the view title. The Activity Bar icon carries a number badge with the active document's change count
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Inline actions** — clickable **Accept · Reject** so edits can be resolved with the mouse without learning the shortcuts; shown **on hover** by default, or as an always-on **CodeLens** row, or off (`kaicrit.edit.changeActions`)
@@ -110,7 +110,7 @@ kaicrit offers clickable **Accept · Reject** actions for each change, resolving
 
 ## Changes sidebar (overview)
 
-kaicrit adds a **CriticMarkup** view to the Activity Bar that lists every change in the active document. The view tracks the active editor and updates live as you type or resolve changes. Two layouts, switched by the group/flat button in the view title (and persisted in `kaicrit.changes.grouping`):
+kaicrit adds a **CriticMarkup** view to the Activity Bar that lists every change in the active document. The Activity Bar icon shows a **number badge** with the active document's change count (like the Explorer's unsaved-files badge); it disappears when the document has no changes. The view tracks the active editor and updates live as you type or resolve changes. Two layouts, switched by the group/flat button in the view title (and persisted in `kaicrit.changes.grouping`):
 
 - **Grouped by type** (default) — changes sit under per-type parents (Deletions, Additions, Substitutions, Highlights, Comments) with a per-group count, each group sorted by position.
 - **Chronological** — every change listed flat in document order, prefixed with its type symbol (⊟ ⊞ ⇄ ☰ 💬).
