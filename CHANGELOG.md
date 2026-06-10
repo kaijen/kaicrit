@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-06-10
+
 ### Changed
 - **Type colors in the sidebar and status bar** — the Changes sidebar's group
   nodes (and the leaves in chronological layout) now carry a per-type icon

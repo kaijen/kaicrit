@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
