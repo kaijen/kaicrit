@@ -28,7 +28,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Syntax highlighting** — each change type gets a distinct color; markers are visually de-emphasized
 - **Configurable colors** — all decoration colors can be overridden via `workbench.colorCustomizations`
 - **Overview ruler markers** — changes are mirrored as colored marks on the scrollbar, so you can see where they sit without scrolling
-- **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`); click the entry to jump to the first change
+- **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`), each count tinted in its type's configured color; click the entry to jump to the first change
 - **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document, grouped by type or flat in document order (toggle in the view title); click an entry to jump to it, resolve it inline, or accept/reject all from the view title. The Activity Bar icon carries a number badge with the active document's change count
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
@@ -112,8 +112,8 @@ kaicrit offers clickable **Accept · Reject** actions for each change, resolving
 
 kaicrit adds a **CriticMarkup** view to the Activity Bar that lists every change in the active document. The Activity Bar icon shows a **number badge** with the active document's change count (like the Explorer's unsaved-files badge); it disappears when the document has no changes. The view tracks the active editor and updates live as you type or resolve changes. Two layouts, switched by the group/flat button in the view title (and persisted in `kaicrit.changes.grouping`):
 
-- **Grouped by type** (default) — changes sit under per-type parents (Deletions, Additions, Substitutions, Highlights, Comments) with a per-group count, each group sorted by position.
-- **Chronological** — every change listed flat in document order, prefixed with its type symbol (⊟ ⊞ ⇄ ☰ 💬).
+- **Grouped by type** (default) — changes sit under per-type parents (Deletions, Additions, Substitutions, Highlights, Comments) with a per-group count, each group sorted by position and carrying a type icon tinted in the type's configured color.
+- **Chronological** — every change listed flat in document order, each carrying its color-tinted type icon.
 
 - **Click** a change to jump to it in the editor (it scrolls into view and selects the marker).
 - **Inline Accept / Reject** buttons on each entry resolve exactly that change.
@@ -247,6 +247,8 @@ All decoration colors are configurable via `workbench.colorCustomizations` in `s
 | `kaicrit.highlightForeground` | `#333333` | Highlight text |
 | `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
 | `kaicrit.commentForeground` | `#555555` | Comment text |
+
+The same colors also tint the per-type counts in the status bar and the type icons in the Changes sidebar (deletion/addition/substitution via their foreground, highlight/comment via their background), so a customization carries through every surface.
 
 ### Performance
 

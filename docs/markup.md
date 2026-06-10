@@ -118,9 +118,11 @@ Each change type uses a configurable decoration color. Defaults follow the activ
 | `kaicrit.commentBackground` | `#e0e0e0` | Comment background |
 | `kaicrit.commentForeground` | `#555555` | Comment text |
 
+The same colors also tint the per-type counts in the [status bar](#status-bar) and the type icons in the [Changes sidebar](overview.md), so a customization carries through every surface. Deletion, addition, and substitution use their (new-side) foreground there; highlight and comment use their *background* color, whose foregrounds are grays tuned to sit on those backgrounds and would be hard to see standing alone.
+
 ## Status bar
 
-When the active editor contains CriticMarkup, a status bar entry summarizes the open changes by type:
+When the active editor contains CriticMarkup, a status bar entry summarizes the open changes by type, each count tinted in its type's configured color:
 
 ```
 ⊟3 ⊞5 ⇄2 ☰1 💬4
