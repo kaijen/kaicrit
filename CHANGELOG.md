@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-06-16
+
+### Added
+- **Files overview display modes** — the **Files with Changes** view can now
+  show its files either as the existing flat name **List** (the path shows on
+  hover) or as a collapsible folder **Tree** mirroring the directory structure,
+  switched with a button in the view title (and the `kaicrit.files.displayMode`
+  setting, default `list`). Tree folders carry the aggregate change count of the
+  files beneath them and are expanded by default; collapsing or expanding a
+  folder is remembered across refreshes and reloads. File leaves stay directly
+  clickable (#77).
+
+### Changed
+- **Open scope now also lists Git-changed files** — the Files overview's
+  *Open & changed files* scope lists the open editor documents **plus** every
+  file Git reports as changed in the working tree (modified, added, untracked,
+  renamed, …), read from disk when not open. It refreshes live as you modify,
+  stage, or revert files, so it tracks your current uncommitted review set even
+  for files you haven't opened. Falls back to just the open documents when no
+  Git repository is available.
+- **Files overview workspace scan now honours `kaicrit.enabledLanguages`** — the
+  whole-workspace scope previously listed any text file containing CriticMarkup
+  regardless of type. It now resolves each disk file's language from its path
+  (extension / `files.associations`) and skips file types kaicrit isn't enabled
+  for, so the overview is consistent with the editor features and the open
+  scope. Non-enabled files are skipped before any disk read, so the scan is also
+  faster.
+
 ## [0.13.0] - 2026-06-16
 
 ### Added
@@ -423,7 +451,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/kaijen/kaicrit/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/kaijen/kaicrit/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/kaijen/kaicrit/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/kaijen/kaicrit/compare/v0.10.0...v0.11.0

@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -150,7 +150,7 @@
       },
       {
         "command": "kaicrit.filesSetScopeOpen",
-        "title": "Files Overview: Scan Open Files Only",
+        "title": "Files Overview: Scan Open & Changed Files",
         "category": "CriticMarkup",
         "icon": "$(files)"
       },
@@ -159,6 +159,18 @@
         "title": "Files Overview: Refresh",
         "category": "CriticMarkup",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "kaicrit.filesDisplayTree",
+        "title": "Files Overview: Show as Tree",
+        "category": "CriticMarkup",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "kaicrit.filesDisplayList",
+        "title": "Files Overview: Show as List",
+        "category": "CriticMarkup",
+        "icon": "$(list-flat)"
       },
       {
         "command": "kaicrit.toggleTrackChanges",
@@ -456,9 +468,19 @@
           "group": "navigation@0"
         },
         {
+          "command": "kaicrit.filesDisplayTree",
+          "when": "view == kaicrit.files && !kaicrit.filesDisplayIsTree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "kaicrit.filesDisplayList",
+          "when": "view == kaicrit.files && kaicrit.filesDisplayIsTree",
+          "group": "navigation@1"
+        },
+        {
           "command": "kaicrit.refreshFiles",
           "when": "view == kaicrit.files",
-          "group": "navigation@1"
+          "group": "navigation@2"
         },
         {
           "command": "kaicrit.changesSortChronological",
@@ -520,7 +542,7 @@
     "viewsWelcome": [
       {
         "view": "kaicrit.files",
-        "contents": "No files with CriticMarkup changes found.\nSwitch the scope between open files and the whole workspace with the button in the view title."
+        "contents": "No files with CriticMarkup changes found.\nSwitch the scope between open & Git-changed files and the whole workspace with the button in the view title."
       },
       {
         "view": "kaicrit.changes",
@@ -548,11 +570,24 @@
             "workspace"
           ],
           "enumDescriptions": [
-            "List only files currently open in the editor (fast; reads the in-memory text).",
+            "List the files open in the editor plus the files Git reports as changed in the working tree (fast; open docs read in-memory, Git-changed files read from disk).",
             "Scan every file in the workspace on disk as well (slower; reads files lazily, up to 5000 files)."
           ],
           "default": "open",
-          "markdownDescription": "Which files the **Files with Changes** overview in the CriticMarkup sidebar lists: only open documents, or every file in the workspace. Toggle directly with the scope button in the view title. The workspace scan reads files from disk (preferring the in-memory text of any unsaved open file) and counts markers regardless of `#kaicrit.enabledLanguages#`; the open scope honours the language whitelist."
+          "markdownDescription": "Which files the **Files with Changes** overview in the CriticMarkup sidebar lists: the open documents **and** the Git working-tree-changed files, or every file in the workspace. Toggle directly with the scope button in the view title. Both scopes honour `#kaicrit.enabledLanguages#` (the language of a file that isn't open is resolved from its path — extension / `files.associations`) and prefer the in-memory text of any unsaved open file."
+        },
+        "kaicrit.files.displayMode": {
+          "type": "string",
+          "enum": [
+            "list",
+            "tree"
+          ],
+          "enumDescriptions": [
+            "Flat list of file names (the relative path shows on hover).",
+            "Collapsible folder tree mirroring the directory structure; folders with changes are expanded by default."
+          ],
+          "default": "list",
+          "markdownDescription": "How the **Files with Changes** overview lists files: a flat list of names, or a collapsible folder tree. Toggle directly with the list/tree button in the view title."
         },
         "kaicrit.changes.grouping": {
           "type": "string",

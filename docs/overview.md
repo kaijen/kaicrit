@@ -15,16 +15,38 @@ that contains CriticMarkup, each with its change count after the file name.
 **Click** a file to open it. A scope button in the view title (and the
 `kaicrit.files.scope` setting) switches what gets listed:
 
-- **Open files** (`open`, the default) — only the documents currently open in
-  the editor. This reads the same parsed-change cache as the Changes view (no
-  extra scan) and honours the [enablement gate](activation.md), so it lists
-  exactly the open files kaicrit acts on.
+- **Open & changed files** (`open`, the default) — the documents currently open
+  in the editor **plus** the files Git reports as changed in the working tree
+  (modified, added, untracked, renamed, …). Open documents read the same
+  parsed-change cache as the Changes view (no extra scan); Git-changed files that
+  aren't open are read from disk. The list refreshes live as you modify, stage,
+  or revert files — even from outside the editor — so it tracks your current,
+  uncommitted review set. Honours the [enablement gate](activation.md) (a
+  not-open file's language is resolved from its path). When no Git repository is
+  available it falls back to just the open documents.
 - **Whole workspace** (`workspace`) — additionally scans every file on disk
   (up to 5000 files; oversized/binary files are skipped), preferring the
-  in-memory text of any unsaved open file so edits show before a save. The
-  on-disk scan counts markers in any text file regardless of language. A
-  **Refresh** button in the view title re-scans on demand; the view also
-  refreshes (debounced) on edits, file open/close, and save.
+  in-memory text of any unsaved open file so edits show before a save. Like the
+  open scope it honours the [enablement gate](activation.md): a disk file's
+  language is resolved from its path (its extension, or a `files.associations`
+  override) and matched against `kaicrit.enabledLanguages`, so only the enabled
+  file types are read and listed — the workspace scan never surfaces a file type
+  kaicrit isn't active for. A **Refresh** button in the view title re-scans on
+  demand; the view also refreshes (debounced) on edits, file open/close, and
+  save.
+
+A second button in the view title (and the `kaicrit.files.displayMode` setting)
+switches how the files are presented — handy when a change set spans many nested
+folders:
+
+- **List** (`list`, the default) — a flat, alphabetically-sorted list of file
+  names; the file's relative path shows on hover.
+- **Tree** (`tree`) — a collapsible folder tree mirroring the directory
+  structure. Each folder carries the aggregate change count of the files beneath
+  it and is **expanded by default**; collapsing or expanding a folder is
+  remembered (persisted in workspace state) so a refresh or window reload keeps
+  your layout instead of snapping back to fully expanded. File leaves stay
+  directly clickable to open the file.
 
 ## Changes view layout
 
@@ -66,6 +88,7 @@ no CriticMarkup, the view shows a short empty-state hint.
 | Group ⇄ Chronological | Toggle button in the view title | Switches between the grouped and flat layouts (writes `kaicrit.changes.grouping`) |
 | Open a file | Click a file in the Files overview | Opens that file in the editor |
 | Open files ⇄ Whole workspace | Scope button in the Files view title | Switches the overview scope (writes `kaicrit.files.scope`) |
+| List ⇄ Tree | List/tree button in the Files view title | Switches the overview between a flat name list and a folder tree (writes `kaicrit.files.displayMode`) |
 | Refresh files | Refresh button in the Files view title | Re-scans the workspace for files with changes |
 
 Inline and title actions reuse the same accept/reject logic as the

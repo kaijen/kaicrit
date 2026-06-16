@@ -4,7 +4,7 @@ import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
 import { CriticHoverProvider } from './edit/hover';
 import { ChangesTreeProvider } from './edit/changesView';
-import { FilesTreeProvider, FilesScope } from './edit/filesView';
+import { FilesTreeProvider, FilesScope, FilesDisplayMode } from './edit/filesView';
 import { TrackChangesManager } from './edit/trackChanges';
 import { EnablementManager } from './edit/enablement';
 import { registerEditCommands } from './edit/commands';
@@ -62,9 +62,21 @@ export function activate(ctx: vscode.ExtensionContext) {
   // Sidebar overview (top): lists every file that contains CriticMarkup changes
   // with a per-file change count; click a file to open it. Scope (open documents
   // vs. whole workspace) is configurable and toggled from the view title.
-  const filesView = new FilesTreeProvider(dm, doc => em.isEnabled(doc));
+  const filesView = new FilesTreeProvider(
+    dm,
+    doc => em.isEnabled(doc),
+    uri => em.isUriEnabled(uri),
+    ctx.workspaceState,
+  );
   const filesTreeView = vscode.window.createTreeView('kaicrit.files', { treeDataProvider: filesView });
-  ctx.subscriptions.push(filesView, filesTreeView);
+  ctx.subscriptions.push(
+    filesView,
+    filesTreeView,
+    // Remember each folder's manual expand/collapse in tree mode so a refresh /
+    // reload keeps the layout instead of re-expanding everything.
+    filesTreeView.onDidExpandElement(e => filesView.setExpanded(e.element, true)),
+    filesTreeView.onDidCollapseElement(e => filesView.setExpanded(e.element, false)),
+  );
 
   // Sidebar overview (below): lists the active document's changes grouped by
   // type, with click-to-jump and inline accept/reject. Fed from the same cache.
@@ -90,6 +102,24 @@ export function activate(ctx: vscode.ExtensionContext) {
     vscode.commands.registerCommand('kaicrit.filesSetScopeOpen', () => setFilesScope('open')),
     vscode.commands.registerCommand('kaicrit.filesSetScopeWorkspace', () => setFilesScope('workspace')),
     vscode.commands.registerCommand('kaicrit.refreshFiles', () => filesView.refresh()),
+  );
+
+  // Display-mode toggle for the Files overview (list ⇄ tree): the buttons only
+  // write the setting — the provider's onDidChangeConfiguration listener rebuilds
+  // the view and flips the `kaicrit.filesDisplayIsTree` context key that swaps the
+  // two buttons. Same scope-masking guard as the scope/grouping toggles (#57).
+  const setFilesDisplayMode = (m: FilesDisplayMode) => {
+    const cfg = vscode.workspace.getConfiguration('kaicrit');
+    const info = cfg.inspect<string>('files.displayMode');
+    const target =
+      info?.workspaceFolderValue !== undefined ? vscode.ConfigurationTarget.WorkspaceFolder
+      : info?.workspaceValue !== undefined ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    return cfg.update('files.displayMode', m, target);
+  };
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand('kaicrit.filesDisplayList', () => setFilesDisplayMode('list')),
+    vscode.commands.registerCommand('kaicrit.filesDisplayTree', () => setFilesDisplayMode('tree')),
   );
 
   // Activity-Bar badge: mirror the active document's change count onto the

@@ -37,7 +37,14 @@ export class EnablementManager implements vscode.Disposable {
         if (e.affectsConfiguration('kaicrit.enabledLanguages')) {
           this._onDidChange.fire();
         }
+        // The path → language-id resolver caches `files.associations`; drop it
+        // when that setting changes so `isUriEnabled` stays accurate.
+        if (e.affectsConfiguration('files.associations')) {
+          this.langResolver = undefined;
+        }
       }),
+      // Installing/removing an extension can add or drop contributed languages.
+      vscode.extensions.onDidChange(() => { this.langResolver = undefined; }),
     );
   }
 
@@ -51,6 +58,72 @@ export class EnablementManager implements vscode.Disposable {
       .getConfiguration('kaicrit', doc)
       .get<string[]>('enabledLanguages', DEFAULT_LANGUAGES);
     return langs.includes('*') || langs.includes(doc.languageId);
+  }
+
+  /**
+   * Whether kaicrit should act on a file identified only by its URI — used by
+   * the Files overview's workspace scan so it honours the **same** language
+   * whitelist as the open scope (and the editor features), instead of listing
+   * marker-bearing files of any type. Resolves the file's language id from its
+   * path via the contributed-language registry (and `files.associations`)
+   * without opening the document, then applies the `enabledLanguages` check.
+   * A file whose language can't be resolved is treated as not enabled (unless
+   * the whitelist is `"*"`).
+   */
+  isUriEnabled(uri: vscode.Uri): boolean {
+    const langs = vscode.workspace
+      .getConfiguration('kaicrit', uri)
+      .get<string[]>('enabledLanguages', DEFAULT_LANGUAGES);
+    if (langs.includes('*')) { return true; }
+    const lang = this.languageForUri(uri);
+    return lang !== undefined && langs.includes(lang);
+  }
+
+  // Cached path → language-id resolver, built lazily from every contributed
+  // language (`contributes.languages`) plus the `files.associations` setting.
+  // Invalidated when extensions change or that setting is edited (see the
+  // constructor listeners).
+  private langResolver: {
+    ext: Map<string, string>;
+    filenames: Map<string, string>;
+    assoc: [string, string][];
+  } | undefined;
+
+  private resolver(): NonNullable<EnablementManager['langResolver']> {
+    if (this.langResolver) { return this.langResolver; }
+    const ext = new Map<string, string>();
+    const filenames = new Map<string, string>();
+    for (const e of vscode.extensions.all) {
+      const langs = (e.packageJSON?.contributes?.languages ?? []) as Array<{
+        id: string; extensions?: string[]; filenames?: string[];
+      }>;
+      for (const l of langs) {
+        for (const x of l.extensions ?? []) { ext.set(x.toLowerCase(), l.id); }
+        for (const f of l.filenames ?? []) { filenames.set(f, l.id); }
+      }
+    }
+    const assocCfg = vscode.workspace
+      .getConfiguration('files')
+      .get<Record<string, string>>('associations') ?? {};
+    this.langResolver = { ext, filenames, assoc: Object.entries(assocCfg) };
+    return this.langResolver;
+  }
+
+  // Resolve the language id VS Code would assign to a file path, without opening
+  // it: user `files.associations` win over contributed defaults, then an exact
+  // file-name match, then the extension.
+  private languageForUri(uri: vscode.Uri): string | undefined {
+    const path = uri.path;
+    const base = path.substring(path.lastIndexOf('/') + 1);
+    const { ext, filenames, assoc } = this.resolver();
+    for (const [pattern, lang] of assoc) {
+      if (matchAssociation(pattern, base)) { return lang; }
+    }
+    const byName = filenames.get(base);
+    if (byName) { return byName; }
+    const dot = base.lastIndexOf('.');
+    if (dot > 0) { return ext.get(base.substring(dot).toLowerCase()); }
+    return undefined;
   }
 
   /** Flip kaicrit on/off for a single document; fires `onDidChange`. */
@@ -86,4 +159,17 @@ export class EnablementManager implements vscode.Disposable {
     this._onDidChange.dispose();
     for (const d of this.disposables) { d.dispose(); }
   }
+}
+
+/**
+ * Match a `files.associations` glob against a bare file name. Handles the common
+ * forms — `*.ext`, `**​/*.ext`, and an exact file name; more complex globs are
+ * left to VS Code's own resolution and ignored here (the file then falls back to
+ * the contributed-language extension match). Pure → unit-tested.
+ */
+export function matchAssociation(pattern: string, base: string): boolean {
+  if (pattern.startsWith('**/*.')) { return base.endsWith(pattern.slice(4)); }
+  if (pattern.startsWith('*.')) { return base.endsWith(pattern.slice(1)); }
+  if (!pattern.includes('*') && !pattern.includes('/')) { return base === pattern; }
+  return false;
 }
