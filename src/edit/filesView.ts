@@ -117,7 +117,10 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
   // working-tree-changed files alongside the open documents.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private gitApi: any;
-  private gitInitStarted = false;
+  // Re-entrancy guard for `initGit` only — NOT a permanent latch: a failed or
+  // too-early init (Git extension not yet registered) leaves it false so a later
+  // scan / `onDidChange` retries (issue: closed git-modified files never listed).
+  private gitInitInFlight = false;
 
   constructor(
     private readonly dm: DecoratorManager,
@@ -152,6 +155,12 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
           this.refresh();
         }
       }),
+      // Recover the open scope's Git half if `vscode.git` only becomes available
+      // after the first scan (e.g. it activates after kaicrit's view first
+      // renders at startup): retry the init, which fires its own refresh on
+      // success. Without this, a too-early first `initGit` would leave the
+      // Git-changed files silently absent until some unrelated event.
+      vscode.extensions.onDidChange(() => { if (!this.gitApi) { void this.initGit(); } }),
     );
   }
 
@@ -238,19 +247,26 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
     return buildFileTree(items).map(convert);
   }
 
-  // Activate the built-in Git extension once and subscribe to working-tree
-  // changes so the open scope refreshes live as files are modified, staged, or
-  // reverted (even from outside the editor). Fire-and-forget: the first render
-  // may show only the open documents; the post-init refresh fills in the
-  // Git-changed files a moment later. A no-op (open scope = open docs only) when
-  // Git is unavailable.
+  // Activate the built-in Git extension and subscribe to working-tree changes so
+  // the open scope refreshes live as files are modified, staged, or reverted
+  // (even from outside the editor). Fire-and-forget: the first render may show
+  // only the open documents; the post-init refresh fills in the Git-changed
+  // files a moment later. Retry-capable, not a one-shot latch — if the Git
+  // extension isn't registered yet (or activation throws) `gitApi` stays unset
+  // and a later scan / the `extensions.onDidChange` listener retries; a no-op
+  // (open scope = open docs only) while Git stays unavailable.
   private async initGit(): Promise<void> {
-    if (this.gitInitStarted) { return; }
-    this.gitInitStarted = true;
+    // Already initialised, or an init is in flight — nothing to do. (No
+    // permanent latch: the early-return paths below leave a retry open.)
+    if (this.gitApi || this.gitInitInFlight) { return; }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ext = vscode.extensions.getExtension<any>('vscode.git');
+    // Extension not registered yet (can happen if kaicrit's view renders before
+    // `vscode.git` at startup) — do NOT latch; the next scan / `onDidChange`
+    // retries.
+    if (!ext) { return; }
+    this.gitInitInFlight = true;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ext = vscode.extensions.getExtension<any>('vscode.git');
-      if (!ext) { return; }
       const git = ext.isActive ? ext.exports : await ext.activate();
       const api = git.getAPI(1);
       this.gitApi = api;
@@ -265,8 +281,10 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
       // Existing repos may already carry changes — show them on the next tick.
       this.scheduleRefresh();
     } catch {
-      // Git extension missing or failed to activate — open scope falls back to
-      // the open documents only.
+      // Activation failed — leave `gitApi` unset so a later scan / `onDidChange`
+      // can retry; open scope falls back to the open documents until then.
+    } finally {
+      this.gitInitInFlight = false;
     }
   }
 

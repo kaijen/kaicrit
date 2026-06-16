@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-06-16
+
+### Fixed
+- **Files overview: closed Git-changed files now reliably listed (Open scope)** —
+  the open scope's Git half initialised the built-in `vscode.git` API with a
+  one-shot latch: if the Git extension wasn't registered yet at the first scan
+  (or activation threw), the API stayed unset **permanently**, so closed
+  CriticMarkup files that Git reported as changed never appeared — not even after
+  a manual Refresh. The initialisation is now retry-capable: it retries on a
+  later scan and when `vscode.extensions.onDidChange` fires (e.g. once `vscode.git`
+  finishes activating after startup), so the working-tree-changed files fill in
+  on their own.
+
 ## [0.14.0] - 2026-06-16
 
 ### Added
@@ -451,7 +464,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.14.1...HEAD
+[0.14.1]: https://github.com/kaijen/kaicrit/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/kaijen/kaicrit/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/kaijen/kaicrit/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/kaijen/kaicrit/compare/v0.11.0...v0.12.0
