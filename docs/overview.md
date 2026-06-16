@@ -16,8 +16,9 @@ that contains CriticMarkup, each with its change count after the file name.
 `kaicrit.files.scope` setting) switches what gets listed:
 
 - **Open & changed files** (`open`, the default) — the documents currently open
-  in the editor **plus** the files Git reports as changed in the working tree
-  (modified, added, untracked, renamed, …). Open documents read the same
+  in the editor **plus** the files Git reports as changed (working-tree changes:
+  modified, added, untracked, renamed, … **and** staged-only / merge changes, so
+  a file whose only change is staged shows too). Open documents read the same
   parsed-change cache as the Changes view (no extra scan); Git-changed files that
   aren't open are read from disk. The list refreshes live as you modify, stage,
   or revert files — even from outside the editor — so it tracks your current,
