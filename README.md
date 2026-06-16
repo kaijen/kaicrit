@@ -30,6 +30,7 @@ All five types are rendered with distinct visual decorations in the editor. Mark
 - **Overview ruler markers** — changes are mirrored as colored marks on the scrollbar, so you can see where they sit without scrolling
 - **Status bar counts** — the active editor's open changes are summarized by type (`⊟ ⊞ ⇄ ☰ 💬`), each count tinted in its type's configured color; click the entry to jump to the first change
 - **Changes sidebar** — a dedicated CriticMarkup view in the Activity Bar lists every change of the active document, grouped by type or flat in document order (toggle in the view title); click an entry to jump to it, resolve it inline, or accept/reject all from the view title. The Activity Bar icon carries a number badge with the active document's change count
+- **Files overview** — above the per-file change list, a second view lists every file that contains CriticMarkup changes with a per-file count; click a file to open it. The scope toggles between open files only and the whole workspace (`kaicrit.files.scope`)
 - **Navigation** — jump between changes without scrolling
 - **Accept / Reject** — resolve one change at the cursor or all changes at once
 - **Inline actions** — clickable **Accept · Reject** so edits can be resolved with the mouse without learning the shortcuts; shown **on hover** by default, or as an always-on **CodeLens** row, or off (`kaicrit.edit.changeActions`)
@@ -124,6 +125,17 @@ Each entry shows a short preview of the change (for substitutions, `old → new`
 | Setting | Values | Default | Effect |
 |---|---|---|---|
 | `kaicrit.changes.grouping` | `type`, `chronological` | `type` | Sidebar layout: group changes by type, or list them flat in document order with a per-type symbol. Also toggled by the group/flat button in the view title. |
+
+### Files with changes (overview)
+
+Above the per-file Changes list sits a **Files with Changes** view that lists every file containing CriticMarkup, each with its change count after the file name. **Click** a file to open it. A scope button in the view title (and the `kaicrit.files.scope` setting) switches between:
+
+- **Open files** (default) — only the documents currently open in the editor. This honours the `kaicrit.enabledLanguages` whitelist and reads the in-memory text, so it mirrors exactly what the Changes view sees and costs nothing extra.
+- **Whole workspace** — additionally scans every file on disk (up to 5000 files, oversized/binary files skipped), preferring the in-memory text of any unsaved open file so edits show before you save. The on-disk scan counts markers in any text file regardless of language. Use the **Refresh** button in the view title to re-scan on demand.
+
+| Setting | Values | Default | Effect |
+|---|---|---|---|
+| `kaicrit.files.scope` | `open`, `workspace` | `open` | Whether the Files overview lists only open documents or scans the whole workspace. Also toggled by the scope button in the view title. |
 
 ## Comment metadata (author & date)
 

@@ -4,6 +4,7 @@ import { StatusBarManager } from './edit/statusBar';
 import { CriticCodeLensProvider } from './edit/codeLens';
 import { CriticHoverProvider } from './edit/hover';
 import { ChangesTreeProvider } from './edit/changesView';
+import { FilesTreeProvider, FilesScope } from './edit/filesView';
 import { TrackChangesManager } from './edit/trackChanges';
 import { EnablementManager } from './edit/enablement';
 import { registerEditCommands } from './edit/commands';
@@ -58,11 +59,38 @@ export function activate(ctx: vscode.ExtensionContext) {
     ),
   );
 
-  // Sidebar overview: lists the active document's changes grouped by type, with
-  // click-to-jump and inline accept/reject. Fed from the same change cache.
+  // Sidebar overview (top): lists every file that contains CriticMarkup changes
+  // with a per-file change count; click a file to open it. Scope (open documents
+  // vs. whole workspace) is configurable and toggled from the view title.
+  const filesView = new FilesTreeProvider(dm, doc => em.isEnabled(doc));
+  const filesTreeView = vscode.window.createTreeView('kaicrit.files', { treeDataProvider: filesView });
+  ctx.subscriptions.push(filesView, filesTreeView);
+
+  // Sidebar overview (below): lists the active document's changes grouped by
+  // type, with click-to-jump and inline accept/reject. Fed from the same cache.
   const changesView = new ChangesTreeProvider(dm);
   const changesTreeView = vscode.window.createTreeView('kaicrit.changes', { treeDataProvider: changesView });
   ctx.subscriptions.push(changesView, changesTreeView);
+
+  // Scope toggle for the Files overview: the buttons only write the setting —
+  // the provider's onDidChangeConfiguration listener rebuilds the list and flips
+  // the `kaicrit.filesScopeIsWorkspace` context key that swaps the two buttons.
+  // Write into whichever scope already defines the value (same masking guard as
+  // the grouping toggle below, issue #57).
+  const setFilesScope = (s: FilesScope) => {
+    const cfg = vscode.workspace.getConfiguration('kaicrit');
+    const info = cfg.inspect<string>('files.scope');
+    const target =
+      info?.workspaceFolderValue !== undefined ? vscode.ConfigurationTarget.WorkspaceFolder
+      : info?.workspaceValue !== undefined ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    return cfg.update('files.scope', s, target);
+  };
+  ctx.subscriptions.push(
+    vscode.commands.registerCommand('kaicrit.filesSetScopeOpen', () => setFilesScope('open')),
+    vscode.commands.registerCommand('kaicrit.filesSetScopeWorkspace', () => setFilesScope('workspace')),
+    vscode.commands.registerCommand('kaicrit.refreshFiles', () => filesView.refresh()),
+  );
 
   // Activity-Bar badge: mirror the active document's change count onto the
   // kaicrit container icon (the container holds only this view, so the view

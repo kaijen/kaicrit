@@ -143,6 +143,24 @@
         "icon": "$(list-tree)"
       },
       {
+        "command": "kaicrit.filesSetScopeWorkspace",
+        "title": "Files Overview: Scan Whole Workspace",
+        "category": "CriticMarkup",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "kaicrit.filesSetScopeOpen",
+        "title": "Files Overview: Scan Open Files Only",
+        "category": "CriticMarkup",
+        "icon": "$(files)"
+      },
+      {
+        "command": "kaicrit.refreshFiles",
+        "title": "Files Overview: Refresh",
+        "category": "CriticMarkup",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "kaicrit.toggleTrackChanges",
         "title": "Toggle Track Changes",
         "category": "CriticMarkup",
@@ -428,6 +446,21 @@
       ],
       "view/title": [
         {
+          "command": "kaicrit.filesSetScopeWorkspace",
+          "when": "view == kaicrit.files && !kaicrit.filesScopeIsWorkspace",
+          "group": "navigation@0"
+        },
+        {
+          "command": "kaicrit.filesSetScopeOpen",
+          "when": "view == kaicrit.files && kaicrit.filesScopeIsWorkspace",
+          "group": "navigation@0"
+        },
+        {
+          "command": "kaicrit.refreshFiles",
+          "when": "view == kaicrit.files",
+          "group": "navigation@1"
+        },
+        {
           "command": "kaicrit.changesSortChronological",
           "when": "view == kaicrit.changes && kaicrit.changesGrouped",
           "group": "navigation@0"
@@ -473,6 +506,11 @@
     "views": {
       "kaicrit": [
         {
+          "id": "kaicrit.files",
+          "name": "Files with Changes",
+          "contextualTitle": "CriticMarkup Files"
+        },
+        {
           "id": "kaicrit.changes",
           "name": "Changes",
           "contextualTitle": "CriticMarkup Changes"
@@ -480,6 +518,10 @@
       ]
     },
     "viewsWelcome": [
+      {
+        "view": "kaicrit.files",
+        "contents": "No files with CriticMarkup changes found.\nSwitch the scope between open files and the whole workspace with the button in the view title."
+      },
       {
         "view": "kaicrit.changes",
         "contents": "No CriticMarkup changes in the active editor.\nOpen a document with CriticMarkup, or insert a change to see it listed here."
@@ -498,6 +540,19 @@
             "plaintext"
           ],
           "markdownDescription": "Language ids for which kaicrit's editor features (decorations, inline Accept/Reject actions, status bar, Changes view, accept/reject) are active. Matched against a document's language id; use `\"*\"` to enable every language. Override per file with the `$(eye) CriticMarkup` toggle in the status bar (session-only)."
+        },
+        "kaicrit.files.scope": {
+          "type": "string",
+          "enum": [
+            "open",
+            "workspace"
+          ],
+          "enumDescriptions": [
+            "List only files currently open in the editor (fast; reads the in-memory text).",
+            "Scan every file in the workspace on disk as well (slower; reads files lazily, up to 5000 files)."
+          ],
+          "default": "open",
+          "markdownDescription": "Which files the **Files with Changes** overview in the CriticMarkup sidebar lists: only open documents, or every file in the workspace. Toggle directly with the scope button in the view title. The workspace scan reads files from disk (preferring the in-memory text of any unsaved open file) and counts markers regardless of `#kaicrit.enabledLanguages#`; the open scope honours the language whitelist."
         },
         "kaicrit.changes.grouping": {
           "type": "string",

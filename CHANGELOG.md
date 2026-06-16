@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Files with Changes overview** — a new view in the CriticMarkup sidebar,
+  shown above the per-file Changes list, lists every file that contains
+  CriticMarkup with a per-file change count; click a file to open it. A scope
+  button in the view title (and the `kaicrit.files.scope` setting, default
+  `open`) switches between listing only the open documents and scanning the
+  whole workspace on disk; a Refresh button re-scans on demand (#75).
+
 ## [0.12.0] - 2026-06-10
 
 ### Changed
