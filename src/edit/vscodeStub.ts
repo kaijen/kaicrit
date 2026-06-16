@@ -72,6 +72,20 @@ export class WorkspaceEdit {
 
 export const StatusBarAlignment = { Left: 1, Right: 2 } as const;
 export const TextDocumentChangeReason = { Undo: 1, Redo: 2 } as const;
+export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 } as const;
+
+// Minimal TreeItem base: the tree providers (`FilesTreeProvider`,
+// `ChangesTreeProvider`) subclass `vscode.TreeItem`, so the class must exist at
+// module-load time even for tests that only exercise the providers' pure
+// helpers.
+export class TreeItem {
+  label: unknown;
+  collapsibleState: unknown;
+  constructor(label?: unknown, collapsibleState?: unknown) {
+    this.label = label;
+    this.collapsibleState = collapsibleState;
+  }
+}
 
 // Configurable returns for workspace.getConfiguration('kaicrit').get(key, def).
 // Keyed by the `key` argument (e.g. 'edit.commentMetadata'); unset keys fall
@@ -93,6 +107,8 @@ const vscodeFake = {
   WorkspaceEdit,
   StatusBarAlignment,
   TextDocumentChangeReason,
+  TreeItemCollapsibleState,
+  TreeItem,
   workspace: {
     getConfiguration(_section?: string) {
       return {
