@@ -163,7 +163,8 @@ export class EnablementManager implements vscode.Disposable {
 
 /**
  * Match a `files.associations` glob against a bare file name. Handles the common
- * forms — `*.ext`, `**​/*.ext`, and an exact file name; more complex globs are
+ * forms — a bare `*.ext`, the recursive double-star variant, and an exact file
+ * name; more complex globs are
  * left to VS Code's own resolution and ignored here (the file then falls back to
  * the contributed-language extension match). Pure → unit-tested.
  */

@@ -278,6 +278,26 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         api.onDidOpenRepository((repo: any) => { watch(repo); this.scheduleRefresh(); }),
       );
+      // Git's repository discovery is asynchronous: a freshly activated Git
+      // extension returns `getAPI(1)` with `state: 'uninitialized'` and an EMPTY
+      // `repositories` list that only fills in once the workspace scan finishes.
+      // Because `gitApi` latches after the first init, a too-early init would
+      // snapshot zero repos and — since `onDidOpenRepository` may have already
+      // fired before we subscribed, and `extensions.onDidChange` fires only on
+      // install/enable, never on activation — nothing would ever re-scan, so a
+      // closed working-tree-modified file stayed absent even after a manual
+      // Refresh (issue #78). Subscribe to `onDidChangeState` and refresh once
+      // discovery completes so the repositories (and their changes) get read.
+      if (api.state !== 'initialized' && api.onDidChangeState) {
+        this.disposables.push(
+          api.onDidChangeState((state: string) => {
+            if (state === 'initialized') {
+              for (const repo of api.repositories) { watch(repo); }
+              this.scheduleRefresh();
+            }
+          }),
+        );
+      }
       // Existing repos may already carry changes — show them on the next tick.
       this.scheduleRefresh();
     } catch {
@@ -288,17 +308,25 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
     }
   }
 
-  // Every file URI Git reports as changed in the working tree, across all repos
-  // (modified, added, untracked, deleted, renamed — the user-chosen "all
-  // working-tree changes"). Empty until `initGit` has resolved, or when Git is
-  // unavailable.
+  // Every file URI Git reports as changed across all repos: the working-tree
+  // changes (unstaged modified/added/deleted/renamed), the index changes
+  // (staged-only edits), merge changes, and untracked files. Reading all four
+  // groups — not just `workingTreeChanges` — means a file whose only change is
+  // staged still surfaces (issue #78). Empty until `initGit` has resolved, or
+  // when Git is unavailable. Duplicates (a file both staged and further
+  // modified) are deduped by URI in `scanOpen`.
   private gitModifiedUris(): vscode.Uri[] {
     const api = this.gitApi;
     if (!api) { return []; }
     const uris: vscode.Uri[] = [];
     for (const repo of api.repositories) {
-      for (const change of repo.state.workingTreeChanges) {
-        uris.push(change.uri);
+      const s = repo.state;
+      // `untrackedChanges` is a newer API field — guard each group so an older
+      // Git extension runtime (no such property) doesn't throw.
+      for (const group of [s.workingTreeChanges, s.indexChanges, s.mergeChanges, s.untrackedChanges]) {
+        if (!group) { continue; }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const change of group) { uris.push((change as any).uri); }
       }
     }
     return uris;

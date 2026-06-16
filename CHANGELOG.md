@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Files overview: closed Git-changed files now appear even when the Git
+  extension is still initialising (Open scope)** — the v0.14.1 retry made the
+  `vscode.git` init recover from a *missing* extension, but not from the more
+  common race where the extension is present yet its repository discovery hasn't
+  finished: `getAPI(1)` returns with `state: 'uninitialized'` and an **empty**
+  `repositories` list, so the first scan (and a manual Refresh) read no
+  working-tree changes, and nothing ever re-scanned once the list filled in —
+  `onDidOpenRepository` could have fired before kaicrit subscribed, and
+  `vscode.extensions.onDidChange` only fires on install/enable, never on
+  activation. The init now also subscribes to the Git API's `onDidChangeState`
+  and refreshes once discovery completes, watching the repositories that appear
+  then. Additionally, the Open scope now reads a repo's **staged** (`indexChanges`),
+  **merge**, and **untracked** changes alongside the working-tree changes, so a
+  file whose only change is staged also surfaces (#78).
+
 ## [0.14.1] - 2026-06-16
 
 ### Fixed
