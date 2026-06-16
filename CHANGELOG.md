@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-06-16
+
 ### Added
 - **Files with Changes overview** — a new view in the CriticMarkup sidebar,
   shown above the per-file Changes list, lists every file that contains
