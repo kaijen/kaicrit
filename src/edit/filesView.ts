@@ -270,9 +270,19 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
       const git = ext.isActive ? ext.exports : await ext.activate();
       const api = git.getAPI(1);
       this.gitApi = api;
+      // Subscribe each repo's working-tree change event exactly once, even though
+      // `watch` is reachable from three paths below (the init snapshot,
+      // `onDidOpenRepository`, and the `onDidChangeState` → 'initialized' rescan);
+      // keyed by repo root so a repo seen twice doesn't accrue duplicate
+      // subscriptions (and duplicate refreshes).
+      const watched = new Set<string>();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const watch = (repo: any) =>
+      const watch = (repo: any) => {
+        const key = repo.rootUri?.toString() ?? String(repo.rootUri);
+        if (watched.has(key)) { return; }
+        watched.add(key);
         this.disposables.push(repo.state.onDidChange(() => this.scheduleRefresh()));
+      };
       for (const repo of api.repositories) { watch(repo); }
       this.disposables.push(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
