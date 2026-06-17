@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-17
+
+### Changed
+- **Files overview, Open scope, now lists only files open as editor tabs** — the
+  scope previously tried to also include files Git reported as changed in the
+  working tree, but that integration never worked reliably (issue #78). It has
+  been removed. The Open scope (`kaicrit.files.scope: "open"`) now lists exactly
+  the files currently open as editor tabs (foreground or background) — phantom
+  buffers without a real text tab (diff/HEAD comparisons, …) are no longer
+  listed, and the list refreshes on tab open/close. Closed, Git-modified files
+  are no longer surfaced by the Open scope; use the **Whole workspace** scope to
+  find marker-bearing files that aren't open.
+
+### Removed
+- The built-in `vscode.git` integration of the Files overview (Open scope) and
+  all its supporting wiring.
+
 ## [0.15.0] - 2026-06-17
 
 ### Added

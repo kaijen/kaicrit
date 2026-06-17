@@ -15,16 +15,12 @@ that contains CriticMarkup, each with its change count after the file name.
 **Click** a file to open it. A scope button in the view title (and the
 `kaicrit.files.scope` setting) switches what gets listed:
 
-- **Open & changed files** (`open`, the default) — the documents currently open
-  in the editor **plus** the files Git reports as changed (working-tree changes:
-  modified, added, untracked, renamed, … **and** staged-only / merge changes, so
-  a file whose only change is staged shows too). Open documents read the same
-  parsed-change cache as the Changes view (no extra scan); Git-changed files that
-  aren't open are read from disk. The list refreshes live as you modify, stage,
-  or revert files — even from outside the editor — so it tracks your current,
-  uncommitted review set. Honours the [enablement gate](activation.md) (a
-  not-open file's language is resolved from its path). When no Git repository is
-  available it falls back to just the open documents.
+- **Open files** (`open`, the default) — only the files currently open as editor
+  tabs, whether in the foreground or a background tab. Phantom buffers without a
+  real text tab (diff/HEAD comparisons and the like) are not listed. Open
+  documents read the same parsed-change cache as the Changes view (no extra
+  scan). The list refreshes live as you open or close tabs. Honours the
+  [enablement gate](activation.md).
 - **Whole workspace** (`workspace`) — additionally scans every file on disk
   (up to 5000 files; oversized/binary files are skipped), preferring the
   in-memory text of any unsaved open file so edits show before a save. Like the
