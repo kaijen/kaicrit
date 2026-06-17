@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-06-17
+
+### Fixed
+- **Files overview, Whole workspace scope, now lists closed Markdown/plaintext
+  files on Remote/Server/WSL** — the disk scan resolves each file's language from
+  its path (without opening it) to honour the `kaicrit.enabledLanguages`
+  whitelist. That resolver only read languages contributed by enumerable
+  extensions, but VS Code's "language basics" extensions (which map `.md` →
+  markdown, `.txt` → plaintext) aren't always enumerable — notably the
+  `markdown-basics` extension is absent in Remote/Server/WSL installs — so every
+  *closed* Markdown/plaintext file was dropped and the workspace scan listed
+  nothing but the files already open. The resolver now falls back to a built-in
+  map for the default prose extensions, so the scan finds them again. Open files
+  were never affected (they resolve via VS Code's own `languageId`).
+
 ## [0.16.0] - 2026-06-17
 
 ### Changed

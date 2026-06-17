@@ -2,6 +2,34 @@ import * as vscode from 'vscode';
 
 const DEFAULT_LANGUAGES = ['markdown', 'plaintext'];
 
+// Fallback extension → language-id map for the prose languages kaicrit enables by
+// default. VS Code's "language basics" extensions (which contribute `.md`→markdown,
+// `.txt`→plaintext) are not always enumerable via `vscode.extensions.all` — notably
+// in Remote/Server/WSL installs the `markdown-basics` extension is absent — so the
+// contributed-language scan alone leaves `languageForUri` blind to closed
+// markdown/plaintext files on disk, and the Files overview's workspace scan then
+// lists nothing but the open files. These built-in mappings are always known and
+// are consulted only as a fallback, so a genuinely contributed language for the
+// same extension (checked first in `languageForUri`) still wins.
+const BUILTIN_EXT_LANG: Record<string, string> = {
+  '.md': 'markdown', '.markdown': 'markdown', '.mdown': 'markdown',
+  '.mkd': 'markdown', '.mkdn': 'markdown', '.mdwn': 'markdown',
+  '.mdtxt': 'markdown', '.mdtext': 'markdown', '.workbook': 'markdown',
+  '.txt': 'plaintext',
+};
+
+/**
+ * Resolve a file's language id from its base name against the built-in fallback
+ * map alone (no contributed languages). Pure → unit-tested; used by
+ * `languageForUri` as the last resort when the contributed-language scan doesn't
+ * cover the extension.
+ */
+export function builtinLanguageForBase(base: string): string | undefined {
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0) { return undefined; }
+  return BUILTIN_EXT_LANG[base.substring(dot).toLowerCase()];
+}
+
 /**
  * Decides which documents kaicrit's editor features (decorations, CodeLens,
  * status bar, changes view, accept/reject) act on.
@@ -122,7 +150,11 @@ export class EnablementManager implements vscode.Disposable {
     const byName = filenames.get(base);
     if (byName) { return byName; }
     const dot = base.lastIndexOf('.');
-    if (dot > 0) { return ext.get(base.substring(dot).toLowerCase()); }
+    if (dot > 0) {
+      // Contributed languages win; the built-in fallback fills gaps left when the
+      // relevant language-basics extension isn't enumerable (Remote/Server/WSL).
+      return ext.get(base.substring(dot).toLowerCase()) ?? builtinLanguageForBase(base);
+    }
     return undefined;
   }
 

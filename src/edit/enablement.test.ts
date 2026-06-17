@@ -3,7 +3,7 @@
 import './vscodeStub';
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { matchAssociation } from './enablement';
+import { matchAssociation, builtinLanguageForBase } from './enablement';
 
 test('matchAssociation: `*.ext` matches by extension, anywhere', () => {
   assert.equal(matchAssociation('*.md', 'README.md'), true);
@@ -26,4 +26,19 @@ test('matchAssociation: complex globs are left to VS Code (no match here)', () =
   // contributed-language extension match instead.
   assert.equal(matchAssociation('src/**/*.ts', 'main.ts'), false);
   assert.equal(matchAssociation('Dockerfile.*', 'Dockerfile.dev'), false);
+});
+
+test('builtinLanguageForBase: resolves the default prose extensions', () => {
+  // The fallback that keeps the workspace scan honouring `.md`/`.txt` even when
+  // the language-basics extension isn't enumerable (Remote/Server/WSL).
+  assert.equal(builtinLanguageForBase('README.md'), 'markdown');
+  assert.equal(builtinLanguageForBase('page.de-DE.markdown'), 'markdown');
+  assert.equal(builtinLanguageForBase('NOTES.MD'), 'markdown');
+  assert.equal(builtinLanguageForBase('notes.txt'), 'plaintext');
+});
+
+test('builtinLanguageForBase: unknown / extension-less names stay unresolved', () => {
+  assert.equal(builtinLanguageForBase('main.ts'), undefined);
+  assert.equal(builtinLanguageForBase('Makefile'), undefined);
+  assert.equal(builtinLanguageForBase('.gitignore'), undefined);
 });
