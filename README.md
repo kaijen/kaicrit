@@ -97,6 +97,23 @@ All commands are also available via the Command Palette (`Ctrl+Shift+P`) under t
 
 Accept All / Reject All apply all resolutions in a single atomic edit — no offset drift.
 
+### Whitespace tidy-up
+
+A change that resolves to *nothing* — a comment (always), an **accepted** deletion, or a **rejected** addition — can leave an orphaned whitespace artifact when it was surrounded by whitespace: a stray **double space** if it sat between two spaces, or an empty **blank line** if it sat alone on its own line. By default kaicrit tidies this up so the result reads as intended:
+
+| Before | Resolution | Result |
+|---|---|---|
+| `the {--quick--} brown` | accept | `the brown` |
+| `foo {++bar++} baz` | reject | `foo baz` |
+| `Hello {>>a note<<} world` | accept / reject | `Hello world` |
+| a marker alone on its own line | accept / reject | the now-empty line is removed |
+
+| Setting | Default | Effect |
+|---|---|---|
+| `kaicrit.edit.collapseWhitespaceOnResolve` | `true` | Drop one orphaned flanking space / the now-empty line when a change resolves to nothing. Set to `false` for strictly literal resolution, where every replacement is exactly the marker's accept/reject text. |
+
+Only spaces/tabs and a single adjacent line break are ever removed, and only for changes that collapse to empty — substitutions, highlights, and reject-of-deletion stay exact.
+
 ## Inline actions
 
 kaicrit offers clickable **Accept · Reject** actions for each change, resolving exactly that change with the same logic as the keyboard shortcuts. How they appear is controlled by `kaicrit.edit.changeActions`:

@@ -28,6 +28,21 @@ Accepting or rejecting a change strips the markup and resolves the content:
 
 Accept All / Reject All apply all resolutions atomically in a single edit.
 
+### Whitespace tidy-up on resolve
+
+A change that resolves to *nothing* — a comment (on both accept and reject), an
+**accepted** deletion, or a **rejected** addition — can leave an orphaned whitespace
+artifact when it was surrounded by whitespace: a stray **double space** if it sat between
+two spaces (`the {--quick--} brown` → accept → `the brown`), or an empty **blank line** if
+it sat alone on its own line (the now-empty line is removed instead of left blank).
+
+The setting `kaicrit.edit.collapseWhitespaceOnResolve` (default `true`, document-scoped)
+controls this tidy-up. Only spaces/tabs and a single adjacent line break are ever removed,
+and only for changes that collapse to empty — substitutions, highlights, and
+reject-of-deletion stay exact. Set it to `false` for strictly literal resolution, where
+every replacement is exactly the marker's accept/reject text (matching the original
+CriticMarkup semantics; the Compare round-trip is exact regardless).
+
 > **Note on substitution syntax:** the `~>` separator is mandatory. An arrow-less
 > `{~~text~~}` is **not** a valid CriticMarkup marker (it is neither a substitution
 > nor a deletion, per the [CriticMarkup spec](https://github.com/CriticMarkup/CriticMarkup-toolkit)).

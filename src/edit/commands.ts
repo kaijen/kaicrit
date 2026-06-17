@@ -7,7 +7,7 @@ import { DecoratorManager } from './decorator';
 import { TrackChangesManager } from './trackChanges';
 import { EnablementManager } from './enablement';
 import { findAtCursor, findNext, findPrev, findFirst, findLast, revealChange } from './navigator';
-import { resolveReplacement } from './resolve';
+import { resolveReplacement, collapseAdjustment } from './resolve';
 
 export function registerEditCommands(
   ctx: vscode.ExtensionContext,
@@ -310,7 +310,8 @@ function applyAt(
     }
   }
   const edit = new vscode.WorkspaceEdit();
-  addResolution(edit, editor.document.uri, change, mode);
+  addResolution(edit, editor.document, fullText(editor.document), change, mode,
+    collapseEnabled(editor.document));
   // Route through the recorder so a resolution applied while Track Changes is on
   // isn't re-interpreted as a user edit (which would undo the accept/reject).
   tcm.applyResolution(editor.document, edit).then(() => {
@@ -351,8 +352,16 @@ function applyAll(dm: DecoratorManager, tcm: TrackChangesManager, mode: 'accept'
     }
   }
   const edit = new vscode.WorkspaceEdit();
+  const text = fullText(editor.document);
+  const collapse = collapseEnabled(editor.document);
+  // Whitespace collapse can widen a replacement past the marker's own span, so an
+  // Accept-All must keep ranges from overlapping. `changes` is ascending; clamp
+  // each widened range's start to the previous emitted range's end so no two
+  // overlap (a WorkspaceEdit rejects overlapping ranges). The blank-line rule
+  // already tiles cleanly; this only guards the one contrived last-line corner.
+  let prevEnd = -1;
   for (const change of changes) {
-    addResolution(edit, editor.document.uri, change, mode);
+    prevEnd = addResolution(edit, editor.document, text, change, mode, collapse, prevEnd);
   }
   tcm.applyResolution(editor.document, edit).then(() => dm.update(editor));
 }
@@ -365,11 +374,41 @@ function spanMatches(editor: vscode.TextEditor, change: CriticChange): boolean {
     || editor.document.getText(change.fullRange) === change.raw;
 }
 
+// Whether the active document opts into the whitespace tidy-up on resolve.
+// Document-scoped so folder-/language-specific overrides are honoured (issue #61).
+function collapseEnabled(doc: vscode.TextDocument): boolean {
+  return vscode.workspace.getConfiguration('kaicrit', doc)
+    .get<boolean>('edit.collapseWhitespaceOnResolve', true);
+}
+
+const fullText = (doc: vscode.TextDocument): string => doc.getText();
+
+// Build the WorkspaceEdit replacement for one change. When `collapse` is on and the
+// change collapses to empty, `collapseAdjustment` may widen the replaced range to also
+// drop an orphaned flanking space or blank line (issues #79, #73). `text` is the
+// document's full text (read once by the caller). `prevEnd` (offset, default -1) lets an
+// Accept-All clamp the widened start so ranges can't overlap; returns the emitted range's
+// end offset for the next call.
 function addResolution(
   edit: vscode.WorkspaceEdit,
-  uri: vscode.Uri,
+  document: vscode.TextDocument,
+  text: string,
   change: CriticChange,
   mode: 'accept' | 'reject',
-): void {
-  edit.replace(uri, change.fullRange, resolveReplacement(change, mode));
+  collapse: boolean,
+  prevEnd = -1,
+): number {
+  const repl = resolveReplacement(change, mode);
+  const startOff = document.offsetAt(change.fullRange.start);
+  const endOff = document.offsetAt(change.fullRange.end);
+  const adj = collapse
+    ? collapseAdjustment(text, startOff, endOff, repl)
+    : { extendStart: 0, extendEnd: 0 };
+  const widenedStart = Math.max(startOff - adj.extendStart, prevEnd);
+  const widenedEnd = endOff + adj.extendEnd;
+  const range = (widenedStart !== startOff || widenedEnd !== endOff)
+    ? new vscode.Range(document.positionAt(widenedStart), document.positionAt(widenedEnd))
+    : change.fullRange;
+  edit.replace(document.uri, range, repl);
+  return widenedEnd;
 }
