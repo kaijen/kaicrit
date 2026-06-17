@@ -7,7 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-06-17
+
+### Added
+- **`kaicrit.edit.collapseWhitespaceOnResolve` setting (default `true`)** —
+  controls whether accepting/rejecting a change that resolves to empty also
+  removes orphaned surrounding whitespace. Turn it off for strictly literal
+  resolution that never touches text outside the marker (#79).
+
 ### Fixed
+- **Accept/reject no longer leaves orphaned flanking whitespace** — resolving a
+  change that collapses to empty (a comment, an accepted deletion, or a rejected
+  addition) left a stray double space when the marker sat between two spaces, or
+  a blank line when it sat alone on its own line. The resolution now also removes
+  that orphaned whitespace — one trailing space for the double-space case, or the
+  marker's line plus one adjacent line break for the blank-line case. Non-empty
+  resolutions (substitution, highlight, rejected deletion) stay exact, so the
+  Compare round-trip is unaffected; gated by the new
+  `kaicrit.edit.collapseWhitespaceOnResolve` setting (#79, #73).
 - **Files overview: closed Git-changed files now appear even when the Git
   extension is still initialising (Open scope)** — the v0.14.1 retry made the
   `vscode.git` init recover from a *missing* extension, but not from the more
@@ -480,7 +497,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/kaijen/kaicrit/compare/v0.14.1...v0.15.0
 [0.14.1]: https://github.com/kaijen/kaicrit/compare/v0.14.0...v0.14.1
 [0.14.0]: https://github.com/kaijen/kaicrit/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/kaijen/kaicrit/compare/v0.12.0...v0.13.0
