@@ -2,7 +2,7 @@
   "name": "kaicrit",
   "displayName": "kaicrit — CriticMarkup",
   "description": "CriticMarkup for VS Code: edit, compare two files into CriticMarkup, and preview changes in the built-in Markdown preview.",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "publisher": "0x2e6b6169",
   "author": {
     "name": "0x2e6b6169",
@@ -150,7 +150,7 @@
       },
       {
         "command": "kaicrit.filesSetScopeOpen",
-        "title": "Files Overview: Scan Open & Changed Files",
+        "title": "Files Overview: Scan Open Files",
         "category": "CriticMarkup",
         "icon": "$(files)"
       },
@@ -542,7 +542,7 @@
     "viewsWelcome": [
       {
         "view": "kaicrit.files",
-        "contents": "No files with CriticMarkup changes found.\nSwitch the scope between open & Git-changed files and the whole workspace with the button in the view title."
+        "contents": "No files with CriticMarkup changes found.\nSwitch the scope between open files and the whole workspace with the button in the view title."
       },
       {
         "view": "kaicrit.changes",
@@ -570,11 +570,11 @@
             "workspace"
           ],
           "enumDescriptions": [
-            "List the files open in the editor plus the files Git reports as changed in the working tree (fast; open docs read in-memory, Git-changed files read from disk).",
+            "List only the files currently open as editor tabs (fast; read in-memory).",
             "Scan every file in the workspace on disk as well (slower; reads files lazily, up to 5000 files)."
           ],
           "default": "open",
-          "markdownDescription": "Which files the **Files with Changes** overview in the CriticMarkup sidebar lists: the open documents **and** the Git working-tree-changed files, or every file in the workspace. Toggle directly with the scope button in the view title. Both scopes honour `#kaicrit.enabledLanguages#` (the language of a file that isn't open is resolved from its path — extension / `files.associations`) and prefer the in-memory text of any unsaved open file."
+          "markdownDescription": "Which files the **Files with Changes** overview in the CriticMarkup sidebar lists: only the files open as editor tabs, or every file in the workspace. Toggle directly with the scope button in the view title. Both scopes honour `#kaicrit.enabledLanguages#` (in the workspace scope the language of a file that isn't open is resolved from its path — extension / `files.associations`) and prefer the in-memory text of any unsaved open file."
         },
         "kaicrit.files.displayMode": {
           "type": "string",

@@ -3,8 +3,8 @@ import { findMarkers } from '../core/markers';
 import { DecoratorManager } from './decorator';
 import { parseCriticMarkup } from './parser';
 
-// Which files the overview lists. `"open"` counts only the documents currently
-// open in the editor (cheap, reads the decorator cache / in-memory text);
+// Which files the overview lists. `"open"` counts only the files currently open
+// as editor tabs (cheap, reads the decorator cache / in-memory text);
 // `"workspace"` additionally scans every file on disk in the workspace
 // (heavier, reads files lazily). Default is `"open"`.
 export type FilesScope = 'open' | 'workspace';
@@ -91,17 +91,16 @@ type FilesNode = FileNode | FolderNode;
  * a file opens it.
  *
  * Two scopes, switched by the scope button in the view title (and persisted in
- * `kaicrit.files.scope`): `"open"` lists the open documents (read from the
- * decorator's change cache or a direct parse) **plus** the files Git reports as
- * changed in the working tree (read from disk), so an unsaved review set shows
- * even for files not currently open; `"workspace"` additionally scans every file
- * on disk via `findFiles` + `fs.readFile`. Both honour the enablement gate and
- * prefer the in-memory text of any open (possibly unsaved) document.
+ * `kaicrit.files.scope`): `"open"` lists the files currently open as editor tabs
+ * (read from the decorator's change cache or a direct parse); `"workspace"`
+ * additionally scans every file on disk via `findFiles` + `fs.readFile`. Both
+ * honour the enablement gate and prefer the in-memory text of any open (possibly
+ * unsaved) document.
  *
- * Refreshes — debounced — on the decorator's `onDidUpdate`, document
- * open/close/save, a Git working-tree change (open scope), and a
- * `kaicrit.files.scope` / `kaicrit.enabledLanguages` config change; the view
- * title also offers a manual Refresh.
+ * Refreshes — debounced — on the decorator's `onDidUpdate`, a tab open/close
+ * (open scope), a document save (workspace scope), and a `kaicrit.files.scope` /
+ * `kaicrit.enabledLanguages` config change; the view title also offers a manual
+ * Refresh.
  */
 export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vscode.Disposable {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
@@ -112,15 +111,6 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
   // expanded), seeded from and written back to workspaceState so the layout
   // survives a refresh and a reload.
   private readonly collapsed: Set<string>;
-  // Lazily-activated built-in Git extension API (untyped — it ships no type
-  // defs, same as `compare/commands.ts`). Used by the open scope to list
-  // working-tree-changed files alongside the open documents.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private gitApi: any;
-  // Re-entrancy guard for `initGit` only — NOT a permanent latch: a failed or
-  // too-early init (Git extension not yet registered) leaves it false so a later
-  // scan / `onDidChange` retries (issue: closed git-modified files never listed).
-  private gitInitInFlight = false;
 
   constructor(
     private readonly dm: DecoratorManager,
@@ -135,8 +125,9 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
       // A document's change set was re-parsed (typing, accept/reject) → counts
       // may have changed.
       this.dm.onDidUpdate(() => this.scheduleRefresh()),
-      vscode.workspace.onDidOpenTextDocument(() => this.scheduleRefresh()),
-      vscode.workspace.onDidCloseTextDocument(() => this.scheduleRefresh()),
+      // Open scope lists files with an editor tab, so a tab open/close/move
+      // changes membership.
+      vscode.window.tabGroups.onDidChangeTabs(() => this.scheduleRefresh()),
       // In the workspace scope the disk copy is what gets re-read, so a save can
       // change the count even when no decorator update fired.
       vscode.workspace.onDidSaveTextDocument(() => this.scheduleRefresh()),
@@ -155,12 +146,6 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
           this.refresh();
         }
       }),
-      // Recover the open scope's Git half if `vscode.git` only becomes available
-      // after the first scan (e.g. it activates after kaicrit's view first
-      // renders at startup): retry the init, which fires its own refresh on
-      // success. Without this, a too-early first `initGit` would leave the
-      // Git-changed files silently absent until some unrelated event.
-      vscode.extensions.onDidChange(() => { if (!this.gitApi) { void this.initGit(); } }),
     );
   }
 
@@ -247,132 +232,32 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
     return buildFileTree(items).map(convert);
   }
 
-  // Activate the built-in Git extension and subscribe to working-tree changes so
-  // the open scope refreshes live as files are modified, staged, or reverted
-  // (even from outside the editor). Fire-and-forget: the first render may show
-  // only the open documents; the post-init refresh fills in the Git-changed
-  // files a moment later. Retry-capable, not a one-shot latch — if the Git
-  // extension isn't registered yet (or activation throws) `gitApi` stays unset
-  // and a later scan / the `extensions.onDidChange` listener retries; a no-op
-  // (open scope = open docs only) while Git stays unavailable.
-  private async initGit(): Promise<void> {
-    // Already initialised, or an init is in flight — nothing to do. (No
-    // permanent latch: the early-return paths below leave a retry open.)
-    if (this.gitApi || this.gitInitInFlight) { return; }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ext = vscode.extensions.getExtension<any>('vscode.git');
-    // Extension not registered yet (can happen if kaicrit's view renders before
-    // `vscode.git` at startup) — do NOT latch; the next scan / `onDidChange`
-    // retries.
-    if (!ext) { return; }
-    this.gitInitInFlight = true;
-    try {
-      const git = ext.isActive ? ext.exports : await ext.activate();
-      const api = git.getAPI(1);
-      this.gitApi = api;
-      // Subscribe each repo's working-tree change event exactly once, even though
-      // `watch` is reachable from three paths below (the init snapshot,
-      // `onDidOpenRepository`, and the `onDidChangeState` → 'initialized' rescan);
-      // keyed by repo root so a repo seen twice doesn't accrue duplicate
-      // subscriptions (and duplicate refreshes).
-      const watched = new Set<string>();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const watch = (repo: any) => {
-        const key = repo.rootUri?.toString() ?? String(repo.rootUri);
-        if (watched.has(key)) { return; }
-        watched.add(key);
-        this.disposables.push(repo.state.onDidChange(() => this.scheduleRefresh()));
-      };
-      for (const repo of api.repositories) { watch(repo); }
-      this.disposables.push(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        api.onDidOpenRepository((repo: any) => { watch(repo); this.scheduleRefresh(); }),
-      );
-      // Git's repository discovery is asynchronous: a freshly activated Git
-      // extension returns `getAPI(1)` with `state: 'uninitialized'` and an EMPTY
-      // `repositories` list that only fills in once the workspace scan finishes.
-      // Because `gitApi` latches after the first init, a too-early init would
-      // snapshot zero repos and — since `onDidOpenRepository` may have already
-      // fired before we subscribed, and `extensions.onDidChange` fires only on
-      // install/enable, never on activation — nothing would ever re-scan, so a
-      // closed working-tree-modified file stayed absent even after a manual
-      // Refresh (issue #78). Subscribe to `onDidChangeState` and refresh once
-      // discovery completes so the repositories (and their changes) get read.
-      if (api.state !== 'initialized' && api.onDidChangeState) {
-        this.disposables.push(
-          api.onDidChangeState((state: string) => {
-            if (state === 'initialized') {
-              for (const repo of api.repositories) { watch(repo); }
-              this.scheduleRefresh();
-            }
-          }),
-        );
-      }
-      // Existing repos may already carry changes — show them on the next tick.
-      this.scheduleRefresh();
-    } catch {
-      // Activation failed — leave `gitApi` unset so a later scan / `onDidChange`
-      // can retry; open scope falls back to the open documents until then.
-    } finally {
-      this.gitInitInFlight = false;
-    }
-  }
-
-  // Every file URI Git reports as changed across all repos: the working-tree
-  // changes (unstaged modified/added/deleted/renamed), the index changes
-  // (staged-only edits), merge changes, and untracked files. Reading all four
-  // groups — not just `workingTreeChanges` — means a file whose only change is
-  // staged still surfaces (issue #78). Empty until `initGit` has resolved, or
-  // when Git is unavailable. Duplicates (a file both staged and further
-  // modified) are deduped by URI in `scanOpen`.
-  private gitModifiedUris(): vscode.Uri[] {
-    const api = this.gitApi;
-    if (!api) { return []; }
-    const uris: vscode.Uri[] = [];
-    for (const repo of api.repositories) {
-      const s = repo.state;
-      // `untrackedChanges` is a newer API field — guard each group so an older
-      // Git extension runtime (no such property) doesn't throw.
-      for (const group of [s.workingTreeChanges, s.indexChanges, s.mergeChanges, s.untrackedChanges]) {
-        if (!group) { continue; }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        for (const change of group) { uris.push((change as any).uri); }
-      }
-    }
-    return uris;
-  }
-
-  // Open scope: the currently open documents **plus** the files Git reports as
-  // changed in the working tree (modified, added, untracked, renamed, …). Open
-  // documents use the decorator's warm cache where available (no re-parse) and
-  // the per-file enablement override, so they mirror exactly what the per-file
-  // Changes view sees; Git-changed files that aren't open are read from disk and
-  // gated by `isUriEnabled` (language resolved from the path), like the
-  // workspace scan. The two halves are deduped by URI (an open doc wins).
+  // Open scope: the files currently open as editor tabs (foreground or
+  // background). The set of open-tab URIs is collected from `tabGroups` so only
+  // real editor tabs count — phantom/diff/HEAD buffers without a `TabInputText`
+  // tab are excluded. Each open document uses the decorator's warm cache where
+  // available (no re-parse) and the per-file enablement override, so the counts
+  // mirror exactly what the per-file Changes view sees.
   private async scanOpen(): Promise<FileEntry[]> {
-    void this.initGit();
-    const byUri = new Map<string, FileEntry>();
-    const seen = new Set<string>();
+    const openTabUris = new Set<string>();
+    for (const group of vscode.window.tabGroups.all) {
+      for (const tab of group.tabs) {
+        if (tab.input instanceof vscode.TabInputText) {
+          openTabUris.add(tab.input.uri.toString());
+        }
+      }
+    }
 
+    const byUri = new Map<string, FileEntry>();
     for (const doc of vscode.workspace.textDocuments) {
       if (doc.isClosed) { continue; }
       if (!isCountableScheme(doc.uri)) { continue; }
-      seen.add(doc.uri.toString());
+      if (!openTabUris.has(doc.uri.toString())) { continue; }
       if (!this.isEnabled(doc)) { continue; }
       const count = this.dm.hasCache(doc)
         ? this.dm.getChanges(doc).length
         : parseCriticMarkup(doc).length;
       if (count > 0) { byUri.set(doc.uri.toString(), { uri: doc.uri, count }); }
-    }
-
-    for (const uri of this.gitModifiedUris()) {
-      const key = uri.toString();
-      if (seen.has(key)) { continue; }
-      seen.add(key);
-      if (!isCountableScheme(uri)) { continue; }
-      if (!this.isUriEnabled(uri)) { continue; }
-      const count = await this.diskMarkerCount(uri);
-      if (count > 0) { byUri.set(key, { uri, count }); }
     }
     return [...byUri.values()];
   }
@@ -415,8 +300,7 @@ export class FilesTreeProvider implements vscode.TreeDataProvider<FilesNode>, vs
 
   // Read a file from disk and count its markers, with the same size guard as the
   // open-doc path. Returns 0 for an oversized, unreadable, binary or vanished
-  // file (e.g. a Git-deleted entry). Shared by the workspace scan and the open
-  // scope's Git-changed half.
+  // file. Used by the workspace scan for files not open in memory.
   private async diskMarkerCount(uri: vscode.Uri): Promise<number> {
     try {
       const stat = await vscode.workspace.fs.stat(uri);
