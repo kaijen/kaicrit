@@ -637,6 +637,11 @@
           "default": true,
           "description": "Even with Track Changes off, when CriticMarkup is pasted into the content of an existing marker, flatten the pasted markers to plain text so no nested (spec-invalid) markup is created (e.g. pasting {++x++} inside {++ab|c++} yields {++abxc++}). Plain text and standalone pasted markup are left untouched. Turn off to paste literal CriticMarkup verbatim (e.g. when documenting the syntax)."
         },
+        "kaicrit.edit.collapseWhitespaceOnResolve": {
+          "type": "boolean",
+          "default": true,
+          "description": "When accepting/rejecting a change that resolves to nothing (a comment, an accepted deletion, or a rejected addition), tidy the surrounding whitespace so no orphan is left behind: drop one space when the marker sat between two spaces, and remove the now-empty line when the marker sat alone on its own line. Turn off for strictly literal resolution, where every replacement is exactly the marker's accept/reject text."
+        },
         "kaicrit.edit.decorationDebounce": {
           "type": "integer",
           "default": 150,
