@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The extension no longer freezes (hover stuck on "Loading", accept/reject from
+  the changes list unresponsive) on documents with unterminated markers** — the
+  marker parser scanned the whole document with a single regex whose global-match
+  retry across start positions is O(n²) on pathological input: a stray
+  unterminated opener (most expensively `{~~`) plus enough surrounding text made
+  every parse take seconds, and since parsing runs synchronously on the extension
+  host — on each decoration refresh, on cache-cold hovers, and after every
+  accept/reject — the whole UI froze. The parser now uses a linear (O(n)) scanner
+  that locates each marker by its delimiters in a single forward pass and never
+  re-scans the tail once a closer is exhausted, so even multi-megabyte documents
+  parse in milliseconds regardless of how malformed the markup is. Marker
+  semantics are unchanged (a differential test keeps the scanner match-for-match
+  equivalent to the previous regex). The `kaicrit.edit.maxParseLength` guard
+  remains as a harmless backstop. (issue #63 follow-up)
+
 ## [0.16.2] - 2026-06-26
 
 ### Fixed
