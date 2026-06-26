@@ -6,6 +6,14 @@ import {
 
 const CONTEXT_KEY = 'kaicrit.trackChanges';
 
+// Safety valve for the reconcile chain (a user edit racing an in-flight
+// compensating edit re-enters beginCompensating). Convergence normally holds —
+// once the user stops typing, `reconcile`'s `cur === baseline` guard ends it — but
+// that relies on the shadow staying exactly in sync with the document. If that
+// assumption ever broke, the chain could spin; this caps it. Reset on every fresh
+// user edit (handleChange starts at depth 0), so normal fast typing never reaches it.
+const MAX_RECONCILE_DEPTH = 50;
+
 // Live "track changes" recorder. State is per document: each tracked document
 // keeps an entry in `enabled` and a `shadow` snapshot of its text (needed to
 // recover deleted text, which the change event does not carry). The compensating
@@ -261,6 +269,7 @@ export class TrackChangesManager {
     edits: CompEdit[],
     selections: number[],
     restoreSel = true,
+    depth = 0,
   ): void {
     // The text the document should hold once our edit lands. `shadow` currently
     // equals the post-raw-edit (unwrapped) document, which is what the edits apply
@@ -284,8 +293,9 @@ export class TrackChangesManager {
           // A user typed while this edit was in flight. The shadow (kept in sync by
           // replaying every event) now holds our markers plus that raw text; wrap
           // the difference from `expected`. Don't restore the caret — the user's
-          // own caret position is more current than our computed one.
-          this.reconcile(key, doc, expected);
+          // own caret position is more current than our computed one. Thread the
+          // depth so a runaway chain can't spin forever.
+          this.reconcile(key, doc, expected, depth + 1);
         } else {
           this.shadow.set(key, expected);
           if (restoreSel) { this.restoreSelections(doc, selections); }
@@ -306,15 +316,19 @@ export class TrackChangesManager {
   // corrupt it. The single-edit diff is exact for contiguous typing and degrades
   // to one spanning wrap otherwise; either way nothing is dropped. Re-enters
   // beginCompensating, so a burst of races converges over a few cycles.
-  private reconcile(key: string, doc: vscode.TextDocument, baseline: string): void {
+  private reconcile(key: string, doc: vscode.TextDocument, baseline: string, depth = 0): void {
     const cur = this.shadow.get(key);
     // No net difference (e.g. the echo arrived but no user text actually raced):
     // the shadow already equals the baseline, nothing to wrap.
     if (cur === undefined || cur === baseline) { return; }
+    // Safety valve: a reconcile chain should converge within a few cycles. If it
+    // hasn't after MAX_RECONCILE_DEPTH, something has gone wrong (a desynced shadow);
+    // resync from the live document and stop rather than spin and pin the host.
+    if (depth >= MAX_RECONCILE_DEPTH) { this.shadow.set(key, doc.getText()); return; }
     const rawEdit = diffSingleEdit(baseline, cur);
     const result = computeTrackChanges(baseline, [rawEdit]);
     if (result.edits.length === 0) { return; }
-    this.beginCompensating(key, doc, result.edits, result.selections, /* restoreSel */ false);
+    this.beginCompensating(key, doc, result.edits, result.selections, /* restoreSel */ false, depth);
   }
 
   private restoreSelections(doc: vscode.TextDocument, selections: number[]): void {

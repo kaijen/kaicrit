@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **`kaicrit.edit.maxParseLength` default raised from 2 000 000 to 20 000 000
+  characters.** The guard only ever existed to bound the old marker regex's O(n²)
+  worst case; now that the parser scans in linear time it is just a UX backstop
+  against a hitch on tens-of-MB documents, so the much lower cap was needlessly
+  disabling decorations and accept/reject on large (but perfectly fine) files.
+- **Track Changes reconcile chain now has a safety valve.** The fast-typing
+  reconcile loop already converges in normal use; a depth cap (50) was added so
+  that if a desynced shadow ever prevented convergence it resyncs from the live
+  document and stops instead of spinning — defensive hardening, no behaviour
+  change in normal use.
+
 ### Fixed
 - **The extension no longer freezes (hover stuck on "Loading", accept/reject from
   the changes list unresponsive) on documents with unterminated markers** — the
