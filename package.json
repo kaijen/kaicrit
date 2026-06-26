@@ -650,9 +650,9 @@
         },
         "kaicrit.edit.maxParseLength": {
           "type": "integer",
-          "default": 2000000,
+          "default": 20000000,
           "minimum": 0,
-          "description": "Safety guard for the marker parser: the maximum document length (in characters) that kaicrit will scan for CriticMarkup. The marker regex scans lazily to the end of the document for every unterminated opener (`{--` with no closer), so a pathological document with many unclosed openers can degrade towards O(n²) and freeze the extension host. Above this length kaicrit disables its decorations/Changes view for the document (with a status-bar hint) instead of parsing. Set to 0 to disable the guard (not recommended)."
+          "description": "Safety backstop for the marker parser: the maximum document length (in characters) that kaicrit will scan for CriticMarkup. The parser uses a linear (O(n)) scanner, so this no longer guards against the old freeze on documents with many unterminated openers — it only stops the debounced per-keystroke parse of an extremely large document (tens of MB) from causing a noticeable hitch. Above this length kaicrit disables its decorations/Changes view for the document (with a status-bar hint) instead of parsing. Set to 0 to disable the backstop."
         },
         "kaicrit.compare.granularity": {
           "type": "string",

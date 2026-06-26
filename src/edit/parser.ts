@@ -3,10 +3,13 @@ import { ChangeType, CriticChange } from '../core/types';
 import { findMarkers } from '../core/markers';
 import { parseCommentMeta } from '../core/comment';
 
-// Default ceiling for `kaicrit.edit.maxParseLength` (characters). Above this a
-// document is left unparsed to avoid the marker regex's O(n²) worst case on
-// pathological input (many unterminated openers — issue #63).
-const DEFAULT_MAX_PARSE_LENGTH = 2_000_000;
+// Default ceiling for `kaicrit.edit.maxParseLength` (characters). `findMarkers`
+// is now a linear O(n) scan, so this is no longer the defence against the old
+// regex's O(n²) freeze on unterminated openers (issue #63) — it is purely a UX
+// backstop so the debounced per-keystroke parse of an absurdly large document
+// (tens of MB) can't cause a noticeable main-thread hitch. Raised from 2 000 000
+// to 20 000 000 once the scan became linear, so real documents are never disabled.
+const DEFAULT_MAX_PARSE_LENGTH = 20_000_000;
 
 // Documents already warned about exceeding the parse-length guard, so the hint
 // is shown once per crossing rather than on every debounced parse. Cleared when
@@ -33,11 +36,12 @@ export function parseCriticMarkup(doc: vscode.TextDocument): CriticChange[] {
   // apply (issue #61).
   const cfg = vscode.workspace.getConfiguration('kaicrit', doc);
 
-  // Size guard: the marker regex scans lazily to the document end for every
-  // unterminated opener, so a huge document full of unclosed `{--` openers can
-  // freeze the host (O(n²)) — the editor counterpart of compare's maxDiffTokens.
-  // Above the limit we skip parsing entirely (decorations go inert) and surface
-  // a one-time status hint. 0 disables the guard.
+  // Size guard (UX backstop only, since `findMarkers` is linear): on a truly
+  // enormous document the debounced parse still touches every character, so above
+  // the limit we skip parsing entirely (decorations go inert) and surface a
+  // one-time status hint rather than risk a visible main-thread hitch. 0 disables
+  // the guard. This is no longer the primary defence it was under the old O(n²)
+  // regex (issue #63) — the linear scanner removed that freeze.
   const maxLen = cfg.get<number>('edit.maxParseLength', DEFAULT_MAX_PARSE_LENGTH);
   if (maxLen > 0 && text.length > maxLen) {
     if (!overLimitWarned.has(key)) {
