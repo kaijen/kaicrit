@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
-import { computeTrackChanges, computeNormalModeFlatten, RawEdit } from './trackChangesEngine';
+import {
+  computeTrackChanges, computeNormalModeFlatten, RawEdit, CompEdit,
+  applyRawEdits, applyCompEdits, diffSingleEdit, matchesSelfEdit,
+} from './trackChangesEngine';
 
 const CONTEXT_KEY = 'kaicrit.trackChanges';
 
@@ -10,14 +13,29 @@ const CONTEXT_KEY = 'kaicrit.trackChanges';
 // Code wrapper that wires it to document events and the UI.
 export class TrackChangesManager {
   private readonly enabled = new Set<string>();
+  // `shadow` is kept exactly equal to the live document text by REPLAYING every
+  // change event's contentChanges into it (applyRawEdits), rather than reading it
+  // back from an asynchronously-refreshed `getText()`. This is what makes the
+  // recorder safe under fast typing: the pre-edit text the engine classifies
+  // against is always accurate, even when several events arrive before a
+  // compensating `applyEdit` settles.
   private readonly shadow = new Map<string, string>();
   private readonly seen = new Set<string>();
-  // Re-entrancy guard, keyed per document: a document is added before its own
-  // compensating `applyEdit` and removed once that edit settles (success OR
-  // failure). A per-document set — rather than a single process-wide flag — keeps
-  // an edit in document B from being dropped while document A's async `applyEdit`
-  // is still in flight.
+  // Re-entrancy guard for the edits kaicrit ITSELF originates outside the recorder
+  // loop — accept/reject resolutions (`applyResolution`) and explicit markup
+  // authoring (`applyAuthoringEdit`). While a document is in this set, the change
+  // event those edits fire is skipped entirely (never tracked). Per-document so an
+  // in-flight edit in A can't drop an edit in B (issues #42, #44).
   private readonly applyingOwnEdit = new Set<string>();
+  // The recorder's own compensating edit currently in flight, per document. Holds
+  // the edits we submitted (to recognise their echo) and the `expected` document
+  // text once that echo lands. Presence ⇒ a compensating `applyEdit` is awaiting
+  // its result; new compensating edits are serialised behind it.
+  private readonly compensating = new Map<string, { edits: CompEdit[]; expected: string }>();
+  // Set when a genuine user edit arrives WHILE a compensating edit is in flight.
+  // After that edit settles, `reconcile` wraps the text the user typed during the
+  // window — so no keystroke is ever dropped (the bug this design fixes).
+  private readonly dirty = new Set<string>();
   private readonly statusItem: vscode.StatusBarItem;
 
   // `isDocEnabled` gates the recorder against the same enablement decision the
@@ -153,13 +171,16 @@ export class TrackChangesManager {
     this.shadow.delete(key);
     this.seen.delete(key);
     this.applyingOwnEdit.delete(key);
+    this.compensating.delete(key);
+    this.dirty.delete(key);
   }
 
   handleChange(event: vscode.TextDocumentChangeEvent): void {
     const key = event.document.uri.toString();
     if (!this.enabled.has(key)) { this.handleNormalMode(event, key); return; }
 
-    // Never re-process our own compensating edit (checked per document).
+    // Resolution / authoring edits kaicrit originates outside the recorder loop:
+    // their change event must never be tracked (issues #42, #44).
     if (this.applyingOwnEdit.has(key)) { return; }
 
     // Undo/redo is deliberately left untouched (the two-step undo design); just
@@ -199,45 +220,111 @@ export class TrackChangesManager {
       oldLength: c.rangeLength,
       newText: c.text,
     }));
-    const result = computeTrackChanges(pre, raw);
 
-    // Everything was already inside an addition (or removed added text): nothing
-    // to wrap, just record the new state.
-    if (result.edits.length === 0) {
-      this.shadow.set(key, event.document.getText());
+    // A compensating edit is already in flight for this document. We must NOT
+    // start a second one concurrently (the document is mid-transform), but we must
+    // also NOT drop this event — that was the fast-typing bug. Two cases:
+    //   - It is the echo of our own WorkspaceEdit → consume it: advance the shadow
+    //     to the text we expected, and stop. Recognised by matchesSelfEdit.
+    //   - It is a genuine user edit racing the in-flight compensation → keep its
+    //     text in the shadow (replay) and mark the document dirty, so the wrap is
+    //     applied once the in-flight edit settles (see beginCompensating's reconcile).
+    const inFlight = this.compensating.get(key);
+    if (inFlight) {
+      if (matchesSelfEdit(inFlight.edits, raw)) {
+        this.shadow.set(key, inFlight.expected);
+      } else {
+        this.shadow.set(key, applyRawEdits(pre, raw));
+        this.dirty.add(key);
+      }
       return;
     }
 
+    const result = computeTrackChanges(pre, raw);
+    // Keep the shadow equal to the document after the raw edit (markers not yet
+    // applied). beginCompensating advances it to the wrapped text on settle.
+    this.shadow.set(key, applyRawEdits(pre, raw));
+
+    // Everything was already inside an addition (or removed added text): nothing
+    // to wrap.
+    if (result.edits.length === 0) { return; }
+
+    this.beginCompensating(key, event.document, result.edits, result.selections);
+  }
+
+  // Apply one compensating WorkspaceEdit and manage its in-flight lifecycle. The
+  // edit is serialised per document via `compensating`; on settle, if a user edit
+  // raced it (`dirty`), the raced text is wrapped by `reconcile` rather than lost.
+  private beginCompensating(
+    key: string,
+    doc: vscode.TextDocument,
+    edits: CompEdit[],
+    selections: number[],
+    restoreSel = true,
+  ): void {
+    // The text the document should hold once our edit lands. `shadow` currently
+    // equals the post-raw-edit (unwrapped) document, which is what the edits apply
+    // over. Used both to recognise our echo and as the reconcile baseline.
+    const expected = applyCompEdits(this.shadow.get(key) ?? '', edits);
+
     const we = new vscode.WorkspaceEdit();
-    for (const e of result.edits) {
-      const range = new vscode.Range(
-        event.document.positionAt(e.start),
-        event.document.positionAt(e.end),
-      );
-      we.replace(event.document.uri, range, e.replacement);
+    for (const e of edits) {
+      const range = new vscode.Range(doc.positionAt(e.start), doc.positionAt(e.end));
+      we.replace(doc.uri, range, e.replacement);
     }
 
-    this.applyingOwnEdit.add(key);
+    this.compensating.set(key, { edits, expected });
+    this.dirty.delete(key);
     void vscode.workspace.applyEdit(we).then(
       (applied) => {
-        // Always clear the guard so a single failure can't wedge the recorder.
-        this.applyingOwnEdit.delete(key);
+        this.compensating.delete(key);
+        const raced = this.dirty.delete(key);
         if (!applied) { return; }
-        this.shadow.set(key, event.document.getText());
-        const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
-        if (editor && result.selections.length > 0) {
-          editor.selections = result.selections.map(off => {
-            const p = event.document.positionAt(off);
-            return new vscode.Selection(p, p);
-          });
+        if (raced) {
+          // A user typed while this edit was in flight. The shadow (kept in sync by
+          // replaying every event) now holds our markers plus that raw text; wrap
+          // the difference from `expected`. Don't restore the caret — the user's
+          // own caret position is more current than our computed one.
+          this.reconcile(key, doc, expected);
+        } else {
+          this.shadow.set(key, expected);
+          if (restoreSel) { this.restoreSelections(doc, selections); }
         }
       },
       () => {
-        // applyEdit rejected (e.g. read-only doc, conflicting edit): release the
-        // guard without the success follow-up so recording stays alive.
-        this.applyingOwnEdit.delete(key);
+        // applyEdit rejected (read-only doc, conflicting edit): release the in-flight
+        // slot without the success follow-up so recording stays alive.
+        this.compensating.delete(key);
+        this.dirty.delete(key);
       },
     );
+  }
+
+  // Wrap the text a user typed while a compensating edit was in flight. Works
+  // purely from two known strings — the `baseline` we expected and the current
+  // shadow (kept equal to the live document) — so no stale event coordinate can
+  // corrupt it. The single-edit diff is exact for contiguous typing and degrades
+  // to one spanning wrap otherwise; either way nothing is dropped. Re-enters
+  // beginCompensating, so a burst of races converges over a few cycles.
+  private reconcile(key: string, doc: vscode.TextDocument, baseline: string): void {
+    const cur = this.shadow.get(key);
+    // No net difference (e.g. the echo arrived but no user text actually raced):
+    // the shadow already equals the baseline, nothing to wrap.
+    if (cur === undefined || cur === baseline) { return; }
+    const rawEdit = diffSingleEdit(baseline, cur);
+    const result = computeTrackChanges(baseline, [rawEdit]);
+    if (result.edits.length === 0) { return; }
+    this.beginCompensating(key, doc, result.edits, result.selections, /* restoreSel */ false);
+  }
+
+  private restoreSelections(doc: vscode.TextDocument, selections: number[]): void {
+    if (selections.length === 0) { return; }
+    const editor = vscode.window.visibleTextEditors.find(e => e.document === doc);
+    if (!editor) { return; }
+    editor.selections = selections.map(off => {
+      const p = doc.positionAt(off);
+      return new vscode.Selection(p, p);
+    });
   }
 
   // Track Changes is OFF for this document. We normally do nothing (pure
@@ -342,5 +429,7 @@ export class TrackChangesManager {
     this.shadow.clear();
     this.seen.clear();
     this.applyingOwnEdit.clear();
+    this.compensating.clear();
+    this.dirty.clear();
   }
 }

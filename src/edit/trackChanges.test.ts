@@ -1,7 +1,7 @@
 // Tests for the re-entrancy guard in TrackChangesManager.
 // Must import the stub first so `require('vscode')` resolves to the fake.
 import './vscodeStub';
-import { setApplyEditImpl, setConfig, resetConfig } from './vscodeStub';
+import { setApplyEditImpl, setConfig, resetConfig, WorkspaceEdit as StubWorkspaceEdit } from './vscodeStub';
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
 import * as vscode from 'vscode';
@@ -305,6 +305,74 @@ test('applyAuthoringEdit releases the guard after its applyEdit settles (issue #
   } as unknown as vscode.TextDocumentChangeEvent);
   await flush();
   assert.equal(calls, 1, 'guard wedged after an authoring edit — later edits were dropped');
+  mgr.dispose();
+});
+
+// --- Fast typing / racing edits (Option A: no keystroke is ever dropped) ---
+
+// Builds a controllable applyEdit whose promises we resolve manually, so a test
+// can hold a compensating edit "in flight" and fire further user events into the
+// window — exactly the fast-typing race that used to drop keystrokes.
+function deferredApplyEdit() {
+  const calls: { we: StubWorkspaceEdit; resolve: (ok: boolean) => void }[] = [];
+  setApplyEditImpl((we) => new Promise<boolean>((resolve) => { calls.push({ we, resolve }); }));
+  return calls;
+}
+
+test('a user keystroke racing an in-flight compensating edit is wrapped, not dropped', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///fast.md', 'hello');
+  mgr.toggle(doc as unknown as vscode.TextDocument); // enable, shadow='hello'
+
+  const calls = deferredApplyEdit();
+
+  // 1) User types ' world' at offset 5 → compensating edit #1 starts (in flight).
+  mgr.handleChange(insertEvent(doc));
+  assert.equal(calls.length, 1, 'first compensating edit should have been submitted');
+  assert.equal(calls[0].we.edits[0].text, '{++ world++}');
+
+  // 2) The echo of edit #1 lands while it is still in flight. Shadow advances to
+  //    the wrapped text; this must NOT be mistaken for a user edit.
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 5, rangeLength: 6, text: '{++ world++}' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  assert.equal(calls.length, 1, 'the echo of our own edit must not trigger another edit');
+
+  // 3) User types '!' at the end (offset 17 of 'hello{++ world++}') — the racing
+  //    keystroke. Still in flight, so no new edit yet, but it must be remembered.
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [{ rangeOffset: 17, rangeLength: 0, text: '!' }],
+  } as unknown as vscode.TextDocumentChangeEvent);
+  assert.equal(calls.length, 1, 'a racing keystroke must not start a concurrent edit');
+
+  // 4) Edit #1 settles → reconcile wraps the '!' that was typed during the window.
+  calls[0].resolve(true);
+  await flush();
+  assert.equal(calls.length, 2, 'the racing keystroke was dropped — reconcile did not run');
+  assert.equal(calls[1].we.edits[0].text, '{++!++}', 'the raced keystroke should be wrapped');
+
+  calls[1].resolve(true);
+  await flush();
+  mgr.dispose();
+});
+
+test('no racing edit means no reconcile (single compensating edit only)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///fast.md', 'hello');
+  mgr.toggle(doc as unknown as vscode.TextDocument);
+
+  const calls = deferredApplyEdit();
+  mgr.handleChange(insertEvent(doc));
+  assert.equal(calls.length, 1);
+
+  // Settle with no intervening user event: exactly one edit, no reconcile cycle.
+  calls[0].resolve(true);
+  await flush();
+  assert.equal(calls.length, 1, 'a clean edit must not spawn a spurious reconcile');
   mgr.dispose();
 });
 

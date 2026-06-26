@@ -315,6 +315,57 @@ function classify(
   };
 }
 
+// Apply raw user edits to a text, reproducing what VS Code did to the document.
+// Offsets are in `text` (pre-edit) coordinates; non-overlapping edits are spliced
+// highest-offset-first so earlier offsets stay valid. Used by the live recorder to
+// keep its shadow snapshot exactly equal to the document by replaying every change
+// event's contentChanges, instead of trusting an asynchronously-refreshed getText().
+export function applyRawEdits(text: string, rawEdits: RawEdit[]): string {
+  return [...rawEdits]
+    .sort((a, b) => b.offset - a.offset)
+    .reduce((t, e) => t.slice(0, e.offset) + e.newText + t.slice(e.offset + e.oldLength), text);
+}
+
+// Apply compensating edits (post-raw-edit coordinates) to a text. Mirrors the
+// splice the caller's WorkspaceEdit performs, so the recorder can predict the
+// document text its own edit will produce ("expected").
+export function applyCompEdits(text: string, edits: CompEdit[]): string {
+  return [...edits]
+    .sort((a, b) => b.start - a.start)
+    .reduce((t, e) => t.slice(0, e.start) + e.replacement + t.slice(e.end), text);
+}
+
+// Minimal single contiguous edit that turns `before` into `after`, found via the
+// longest common prefix + suffix. For ordinary contiguous typing this is exact;
+// for scattered changes it returns one edit spanning the whole differing region —
+// still a valid wrap, never a loss. Used by the reconcile path to wrap the text a
+// user typed while a compensating edit was in flight, working purely from two
+// known strings (no stale event coordinates).
+export function diffSingleEdit(before: string, after: string): RawEdit {
+  let p = 0;
+  const max = Math.min(before.length, after.length);
+  while (p < max && before[p] === after[p]) { p++; }
+  let s = 0;
+  while (s < max - p && before[before.length - 1 - s] === after[after.length - 1 - s]) { s++; }
+  return { offset: p, oldLength: before.length - p - s, newText: after.slice(p, after.length - s) };
+}
+
+// Does an incoming change event (rawEdits) match the compensating edit we just
+// submitted? The recorder uses this to recognise the echo of its own
+// WorkspaceEdit — VS Code reports it as a change with rangeOffset/rangeLength/text
+// equal to each CompEdit's start/(end-start)/replacement — so the echo is consumed
+// rather than mistaken for a fresh user edit. Both sides are sorted by offset
+// before the field-by-field compare.
+export function matchesSelfEdit(selfEdits: CompEdit[], rawEdits: RawEdit[]): boolean {
+  if (selfEdits.length !== rawEdits.length) { return false; }
+  const self = [...selfEdits].sort((a, b) => a.start - b.start);
+  const raw = [...rawEdits].sort((a, b) => a.offset - b.offset);
+  return self.every((e, i) =>
+    e.start === raw[i].offset &&
+    e.end - e.start === raw[i].oldLength &&
+    e.replacement === raw[i].newText);
+}
+
 export function computeTrackChanges(preText: string, rawEdits: RawEdit[]): TrackResult {
   const sorted = [...rawEdits].sort((a, b) => a.offset - b.offset);
   const single = sorted.length === 1;

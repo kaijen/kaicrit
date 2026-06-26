@@ -30,8 +30,15 @@ kaicrit cannot intercept your keystroke. Instead it reacts to
    deleted text from a per-document **shadow snapshot**) and applies a single
    compensating `WorkspaceEdit` that wraps the region in the matching marker
    (`S1 → S2`).
-3. A re-entrancy guard makes sure kaicrit never re-processes its own edit, and
-   the shadow snapshot is refreshed to `S2`.
+3. The recorder recognises the echo of its own `WorkspaceEdit` (so it is never
+   re-processed) and refreshes the shadow snapshot to `S2`.
+
+Because `applyEdit` is asynchronous, you can type another character before step 2
+settles. The recorder **serialises** its compensating edits per document and keeps
+the shadow snapshot exactly in step with the buffer by replaying every change
+event into it — so the keystroke that raced the in-flight edit is **reconciled and
+wrapped** once that edit lands, never dropped. Fast typing therefore stays fully
+tracked.
 
 To keep continued typing natural, the caret is parked **inside** a freshly
 created addition (just before `++}`). The next character therefore lands in
@@ -149,5 +156,9 @@ documenting the syntax.
 - **All sources are recorded.** Any buffer edit while recording is on — typing,
   paste, formatters, code actions — is captured. Turn the mode off before bulk
   reformatting if you do not want those edits annotated.
-- **Very fast typing** can, in rare cases, race the compensating edit; the
-  shadow snapshot is re-synced on every event to recover.
+- **Very fast typing is reconciled, not dropped.** A keystroke that lands while a
+  compensating edit is still in flight is wrapped once that edit settles. In the
+  rare case where a keystroke and the compensating edit cross at the buffer level,
+  the raced text may be wrapped as a separate adjacent marker (e.g. `{++a++}{++b++}`
+  instead of a merged `{++ab++}`) rather than absorbed — correct markup, no lost
+  text, just less tidy.

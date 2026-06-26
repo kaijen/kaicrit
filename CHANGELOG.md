@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-06-26
+
+### Fixed
+- **Track Changes no longer drops keystrokes when typing fast** — the recorder
+  applies its compensating marker wrap through an asynchronous `applyEdit`, and
+  any keystroke that arrived while that edit was still in flight used to be
+  silently dropped (it landed in the buffer as untracked plain text). The
+  recorder now keeps its shadow snapshot exactly in step with the buffer by
+  replaying every change event, serialises its compensating edits per document,
+  recognises the echo of its own edit, and reconciles any keystroke that raced an
+  in-flight edit once that edit settles — so fast typing stays fully tracked. In
+  the rare case where a keystroke and the compensating edit cross at the buffer
+  level, the raced text is wrapped as a separate adjacent marker
+  (`{++a++}{++b++}`) rather than merged — correct markup, no lost text.
+
 ## [0.16.1] - 2026-06-17
 
 ### Fixed
@@ -529,7 +544,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.1...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.2...HEAD
+[0.16.2]: https://github.com/kaijen/kaicrit/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/kaijen/kaicrit/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/kaijen/kaicrit/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/kaijen/kaicrit/compare/v0.14.1...v0.15.0

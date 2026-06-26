@@ -3,7 +3,10 @@
 
 import { test } from 'node:test';
 import { strict as assert } from 'node:assert';
-import { computeTrackChanges, computeNormalModeFlatten, RawEdit, CompEdit } from './trackChangesEngine';
+import {
+  computeTrackChanges, computeNormalModeFlatten, RawEdit, CompEdit,
+  applyRawEdits, applyCompEdits, diffSingleEdit, matchesSelfEdit,
+} from './trackChangesEngine';
 
 /** Apply non-overlapping {start,end,replacement} edits (descending, no drift). */
 function splice(text: string, edits: { start: number; end: number; replacement: string }[]): string {
@@ -397,4 +400,56 @@ test('normal mode multi-change: only the in-marker markup paste produces an edit
   const r = computeNormalModeFlatten(pre, raw);
   assert.equal(r.edits.length, 1);
   assert.equal(finalText(pre, raw, r.edits), 'aXb{++cdZ++}');
+});
+
+// --- Concurrency helpers (Option A: serialised compensation + reconcile) ---
+
+test('applyRawEdits replays a single insertion', () => {
+  assert.equal(applyRawEdits('hello', [{ offset: 5, oldLength: 0, newText: ' world' }]), 'hello world');
+});
+
+test('applyRawEdits replays multiple non-overlapping edits (multi-cursor)', () => {
+  // Offsets are in pre-edit coordinates; order of input must not matter.
+  const raw: RawEdit[] = [
+    { offset: 0, oldLength: 0, newText: 'A' },
+    { offset: 2, oldLength: 1, newText: 'Z' }, // replace 'c'
+  ];
+  assert.equal(applyRawEdits('abc', raw), 'AabZ');
+});
+
+test('applyCompEdits applies compensating wraps highest-offset-first', () => {
+  const edits: CompEdit[] = [{ start: 5, end: 11, replacement: '{++ world++}' }];
+  assert.equal(applyCompEdits('hello world', edits), 'hello{++ world++}');
+});
+
+test('diffSingleEdit finds a contiguous insertion', () => {
+  assert.deepEqual(diffSingleEdit('hello', 'hello!'), { offset: 5, oldLength: 0, newText: '!' });
+});
+
+test('diffSingleEdit finds an insertion after a marker (the reconcile case)', () => {
+  // baseline already has the wrap; the user typed '!' at the very end.
+  assert.deepEqual(
+    diffSingleEdit('hello{++ world++}', 'hello{++ world++}!'),
+    { offset: 17, oldLength: 0, newText: '!' },
+  );
+});
+
+test('diffSingleEdit finds a deletion', () => {
+  assert.deepEqual(diffSingleEdit('hello', 'heo'), { offset: 2, oldLength: 2, newText: '' });
+});
+
+test('diffSingleEdit on identical strings is a no-op edit', () => {
+  assert.deepEqual(diffSingleEdit('same', 'same'), { offset: 4, oldLength: 0, newText: '' });
+});
+
+test('matchesSelfEdit recognises the echo of a submitted compensating edit', () => {
+  const self: CompEdit[] = [{ start: 5, end: 11, replacement: '{++ world++}' }];
+  const echo: RawEdit[] = [{ offset: 5, oldLength: 6, newText: '{++ world++}' }];
+  assert.equal(matchesSelfEdit(self, echo), true);
+});
+
+test('matchesSelfEdit rejects a different edit (a racing user keystroke)', () => {
+  const self: CompEdit[] = [{ start: 5, end: 11, replacement: '{++ world++}' }];
+  const user: RawEdit[] = [{ offset: 17, oldLength: 0, newText: '!' }];
+  assert.equal(matchesSelfEdit(self, user), false);
 });
