@@ -43,6 +43,16 @@ const CORPUS: string[] = [
   '}{--a--}{',
   '{--a--}{++b++}{~~c~>d~~}{==e==}{>>f<<}',
   'nested-ish {--a {++b++} c--}',                               // first --} closes, inner ++ is content
+  // Markdown links — complete markers in/around a link are ordinary content;
+  // brackets/parens/tildes in a URL are not delimiters.
+  '[{++added++}](https://example.com)',
+  '{~~[old](http://a)~>[new](http://b)~~}',
+  'see [link]({++https://new.example.com++})',
+  '[text](https://example.com/~user/path)',                    // single ~ in URL
+  '[a](https://ex.com/~~weird)',                               // ~~ in URL, no marker
+  '[x](https://api.example.com/{id}/users)',                   // { in URL, not a valid opener
+  '[x](https://host/{~~placeholder)',                          // { + ~~ in URL, UNTERMINATED opener
+  '[{--unclosed](url) trailing prose',                         // unterminated opener in link text
 ];
 
 for (const [i, input] of CORPUS.entries()) {
