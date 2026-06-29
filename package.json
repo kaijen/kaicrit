@@ -711,7 +711,7 @@
     "vscode:prepublish": "tsc -p ./ && npm run bundle",
     "bundle": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
     "compile": "tsc -p ./",
-    "lint": "eslint \"src/**/*.ts\"",
+    "lint": "node node_modules/eslint/bin/eslint.js \"src/**/*.ts\"",
     "watch": "tsc -watch -p ./",
     "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
     "pretest": "npm run clean",
