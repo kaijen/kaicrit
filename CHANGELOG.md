@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The Markdown preview no longer freezes the whole extension host on a
+  CriticMarkup marker placed inside a Markdown link** — e.g.
+  `[label {~~old~>new~~} more](https://…)`. The preview's inline rule returned
+  `true` from its *silent* code path without advancing `state.pos`. markdown-it
+  runs inline rules in silent mode (via `skipToken`) when it scans the interior
+  of another inline construct such as a link label; a rule that reports a match
+  but doesn't move the position makes that scan never advance, so older
+  markdown-it builds — including the one VS Code bundles — loop forever, blocking
+  the extension host thread permanently (every file's hover stuck on "Loading",
+  the whole extension unresponsive until a window reload). The rule now advances
+  `state.pos` past the marker in both modes and only emits tokens when not
+  silent. New tests assert the silent-mode contract for every marker type.
+
 ## [0.16.3] - 2026-06-29
 
 ### Fixed

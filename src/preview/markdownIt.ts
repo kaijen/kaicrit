@@ -53,12 +53,16 @@ function critic(state: any, silent: boolean, commentMeta: boolean): boolean {
     if (arrowIdx < 0 || arrowIdx >= closeIdx) {
       return false;
     }
-    if (silent) {
-      return true;
+    if (!silent) {
+      pushSpan(state, 'del', 'critic-del', contentStart, arrowIdx);
+      pushSpan(state, 'ins', 'critic-ins', arrowIdx + 2, closeIdx);
     }
-
-    pushSpan(state, 'del', 'critic-del', contentStart, arrowIdx);
-    pushSpan(state, 'ins', 'critic-ins', arrowIdx + 2, closeIdx);
+    // Advance past the marker in *both* modes. markdown-it calls inline rules in
+    // silent mode via `skipToken` when scanning the interior of another inline
+    // construct (e.g. a link label `[…]`); a rule that returns `true` without
+    // moving `state.pos` makes that scan never advance — older markdown-it builds
+    // (such as the one bundled in VS Code) then loop forever, freezing the whole
+    // extension host. So a marker inside a Markdown link must still advance here.
     state.pos = closeIdx + 3;
     return true;
   }
@@ -74,11 +78,10 @@ function critic(state: any, silent: boolean, commentMeta: boolean): boolean {
     if (closeIdx < 0) {
       return false;
     }
-    if (silent) {
-      return true;
+    if (!silent) {
+      pushComment(state, contentStart, closeIdx, commentMeta);
     }
-    pushComment(state, contentStart, closeIdx, commentMeta);
-    state.pos = closeIdx + 3;
+    state.pos = closeIdx + 3; // advance in both modes (see the ~~ branch)
     return true;
   }
 
@@ -91,12 +94,10 @@ function critic(state: any, silent: boolean, commentMeta: boolean): boolean {
   if (closeIdx < 0) {
     return false;
   }
-  if (silent) {
-    return true;
+  if (!silent) {
+    pushSpan(state, def.tag, def.cls, contentStart, closeIdx);
   }
-
-  pushSpan(state, def.tag, def.cls, contentStart, closeIdx);
-  state.pos = closeIdx + def.close.length;
+  state.pos = closeIdx + def.close.length; // advance in both modes (see the ~~ branch)
   return true;
 }
 

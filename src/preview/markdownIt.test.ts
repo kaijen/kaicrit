@@ -71,11 +71,11 @@ function makeState(src: string, md: any) {
 }
 
 /** Run the plugin's inline rule once at pos 0 over `src`. */
-function run(src: string, opts?: { commentMetadata?: boolean }) {
+function run(src: string, opts?: { commentMetadata?: boolean; silent?: boolean }) {
   const { md, getRule } = makeMd();
   criticMarkupPlugin(md, opts);
   const state = makeState(src, md);
-  const handled = getRule()(state, false);
+  const handled = getRule()(state, opts?.silent ?? false);
   const classes = state.tokens
     .map((t) => t.attrs['class'])
     .filter((c): c is string => c !== undefined);
@@ -144,6 +144,34 @@ test('substitution with an empty side still emits both spans', () => {
 
 test('unterminated marker is left for normal text rules', () => {
   const { handled, state } = run('{--no close');
+  assert.equal(handled, false);
+  assert.equal(state.pos, 0);
+});
+
+// Silent-mode contract: markdown-it calls inline rules with silent=true via
+// `skipToken` when scanning the interior of another inline construct (a link
+// label `[…{++x++}…]`). A rule that returns true MUST advance state.pos, or that
+// scan never moves and older markdown-it builds (incl. the one VS Code bundles)
+// loop forever — freezing the whole extension host. Each marker type must
+// advance in silent mode without emitting tokens.
+for (const [label, src, end] of [
+  ['addition', '{++added++}', '{++added++}'.length],
+  ['deletion', '{--gone--}', '{--gone--}'.length],
+  ['highlight', '{==hl==}', '{==hl==}'.length],
+  ['substitution', '{~~old~>new~~}', '{~~old~>new~~}'.length],
+  ['comment', '{>>note<<}', '{>>note<<}'.length],
+] as const) {
+  test(`silent mode advances state.pos past a ${label} (link-label scan)`, () => {
+    const { handled, state, classes } = run(src, { silent: true });
+    assert.equal(handled, true);
+    assert.equal(state.pos, end, 'state.pos must advance past the marker');
+    assert.equal(state.tokens.length, 0, 'silent mode must not emit tokens');
+    assert.equal(classes.length, 0);
+  });
+}
+
+test('silent mode leaves an arrow-less {~~x~~} for normal text rules', () => {
+  const { handled, state } = run('{~~x~~}', { silent: true });
   assert.equal(handled, false);
   assert.equal(state.pos, 0);
 });

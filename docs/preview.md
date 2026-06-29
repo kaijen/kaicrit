@@ -57,6 +57,7 @@ than pre-/post-processing the source string the way the Python tooling does:
 | Markers inside code | The inline rule never runs inside fenced/inline code, so markers there stay verbatim. |
 | Markdown *inside* a marker | Correct — the marker body is re-tokenized as its own inline run (`{++ **bold** ++}` → `<ins><strong>bold</strong></ins>`). |
 | Span overlap (Penney's case) | **Contained, not solved.** The body is tokenized with `posMax` clamped to the closing marker, so a `**` that opens inside a marker and closes outside it finds no partner and degrades to literal `**` — never to broken HTML. |
+| Marker inside a link label (`[a {~~o~>n~~} b](url)`) | Rendered. markdown-it scans a link label by running inline rules in **silent mode** (`skipToken`); the rule must advance `state.pos` even when silent, or that scan never moves and older markdown-it builds loop forever — freezing the extension host. The rule advances in both modes and only emits tokens when not silent. |
 
 ### Known limitation: markers must stay within one block
 
