@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.4] - 2026-06-29
+
 ### Fixed
 - **The Markdown preview no longer freezes the whole extension host on a
   CriticMarkup marker placed inside a Markdown link** — e.g.
@@ -576,7 +578,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/kaijen/kaicrit/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/kaijen/kaicrit/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/kaijen/kaicrit/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/kaijen/kaicrit/compare/v0.16.0...v0.16.1
