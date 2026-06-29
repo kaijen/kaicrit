@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-06-29
+
 ### Fixed
 - **The extension no longer freezes (hover stuck on "Loading", accept/reject from
   the changes list unresponsive) on documents with unterminated markers** — the
@@ -560,7 +562,8 @@ security hardening, config scoping and build/CI tooling.
 - Keybindings under `Alt+K` leader and `Alt+A` / `Alt+R` for resolve-at-cursor
 - Commands available via Command Palette under the CriticMarkup category
 
-[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.2...HEAD
+[Unreleased]: https://github.com/kaijen/kaicrit/compare/v0.16.3...HEAD
+[0.16.3]: https://github.com/kaijen/kaicrit/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/kaijen/kaicrit/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/kaijen/kaicrit/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/kaijen/kaicrit/compare/v0.15.0...v0.16.0
