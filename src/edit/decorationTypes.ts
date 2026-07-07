@@ -69,7 +69,10 @@ export function createContentDecorationTypes(): ContentDecorationTypes {
     }),
     comment: vscode.window.createTextEditorDecorationType({
       backgroundColor: themeColor('kaicrit.commentBackground'),
-      fontStyle: 'italic',
+      // NOTE: a plain `fontStyle: 'italic'` here silently breaks rendering of the
+      // whole decoration in recent VS Code builds (the box, color and ⟨ ⟩ all
+      // vanish). Inject the italic via `textDecoration` (raw-CSS smuggling) instead.
+      textDecoration: 'none; font-style: italic;',
       color: themeColor('kaicrit.commentForeground'),
       overviewRulerColor: themeColor('kaicrit.commentBackground'),
       overviewRulerLane: vscode.OverviewRulerLane.Right,

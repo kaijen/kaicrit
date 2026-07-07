@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.5] - 2026-07-07
+
+### Fixed
+- **Comment markers (`{>>…<<}`) are highlighted in the editor again.** Recent VS
+  Code builds silently drop the *entire* rendering of a `TextEditorDecorationType`
+  that carries a plain `fontStyle: 'italic'` — the comment decoration's background
+  box, foreground color and `⟨ ⟩` brackets all vanished, so comments looked like
+  unstyled text (while every other CriticMarkup type still rendered). The comment
+  decoration now applies the italic through `textDecoration` (raw-CSS) instead of
+  the broken `fontStyle` property, restoring the box + italic + brackets. Fix lives
+  in the shared `createContentDecorationTypes()` factory, so the Double-Pane view
+  benefits too.
+
 ## [0.16.4] - 2026-06-29
 
 ### Fixed
