@@ -42,7 +42,7 @@ export function registerEditCommands(
 
   // ── Track Changes (Annotate) ─────────────────────────────────────────────────
 
-  reg('kaicrit.toggleTrackChanges', () => {
+  const toggleTrackChanges = () => {
     const editor = activeEditor();
     if (!editor) { return; }
     const doc = editor.document;
@@ -52,6 +52,14 @@ export function registerEditCommands(
     // expected gesture) so the recorded markup is visible and resolvable.
     if (!tcm.isEnabled(doc) && !em.isEnabled(doc)) { em.toggle(doc); }
     tcm.toggle(doc);
+  };
+  reg('kaicrit.toggleTrackChanges', toggleTrackChanges);
+  // The editor-title button while recording is on: same toggle, but its own
+  // icon, so the button shows the state (a menu item cannot change the icon of
+  // the command it runs). Hidden from the Command Palette.
+  reg('kaicrit.turnOffTrackChanges', () => {
+    const editor = activeEditor();
+    if (editor && tcm.isEnabled(editor.document)) { toggleTrackChanges(); }
   });
 
   // ── Per-file enable/disable ──────────────────────────────────────────────────

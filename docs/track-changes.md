@@ -10,7 +10,9 @@ changes with the usual accept/reject actions.
 ## Toggling
 
 Track Changes is toggled **per document** with the
-`kaicrit.toggleTrackChanges` command (default keybinding `Alt+K Alt+T`). A
+`kaicrit.toggleTrackChanges` command (default keybinding `Alt+K Alt+T`) or the
+button in the editor title bar, which shows a pencil (`$(edit)`) while recording
+is off and a record icon (`$(record)`) while it is on. A
 status-bar item (`$(edit) Track Changes: On/Off`) stays visible in every text
 editor and shows the current state; click it to switch recording on or off for
 the active document. New documents start with the value of the

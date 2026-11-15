@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **The Track Changes button in the editor title bar shows the state.** It kept
+  the same pencil icon whether recording was on or off, so clicking it changed
+  nothing visible in the editor. While recording, the button now shows a record
+  icon (`$(record)`) and turns recording off; it runs the new
+  `kaicrit.turnOffTrackChanges` command, hidden from the Command Palette.
+
 ## [0.16.5] - 2026-07-07
 
 ### Fixed

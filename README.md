@@ -183,7 +183,7 @@ Inserting a comment (`Alt+K Alt+C`) pre-fills `@author today: ` so the metadata 
 
 Turn on **Track Changes** to record your edits as CriticMarkup instead of writing them verbatim — like "track changes" in a word processor. While it is on, deleting wraps text in `{--…--}`, typing wraps it in `{++…++}`, and replacing a selection produces `{~~old~>new~~}`. Review and resolve the result with the usual accept/reject actions.
 
-The mode is **per document**: toggle it with **Toggle Track Changes** (`Alt+K Alt+T`), the editor-title button, or the **`$(edit) Track Changes: On/Off`** status-bar item, which stays visible in every text editor and shows the current state — click it to switch recording on or off. New documents start from the `kaicrit.edit.trackChanges` setting.
+The mode is **per document**: toggle it with **Toggle Track Changes** (`Alt+K Alt+T`), the editor-title button (`$(edit)` while off, `$(record)` while recording), or the **`$(edit) Track Changes: On/Off`** status-bar item, which stays visible in every text editor and shows the current state — click it to switch recording on or off. New documents start from the `kaicrit.edit.trackChanges` setting.
 
 Editing an existing marker behaves predictably: edits *inside* a marker's content are absorbed into it (no nested markup), while deleting any part of a marker's delimiter — e.g. backspacing the `{` of `{++a++}` — **rejects** that whole change instead of leaving broken markup. Pasting text that is *already* CriticMarkup into plain text (`{++a++}`) is kept verbatim rather than re-wrapped into `{++{++a++}++}`; pasting it *inside* an existing marker flattens it to its accept-form so it can't nest either. To accept a change, use the accept action.
 
