@@ -376,6 +376,38 @@ test('no racing edit means no reconcile (single compensating edit only)', async 
   mgr.dispose();
 });
 
+test('an echo reported as a minimal diff is recognised (caret restored, no reconcile)', async () => {
+  const mgr = new TrackChangesManager();
+  const doc = makeDoc('file:///split.md', 'hello world');
+  mgr.toggle(doc as unknown as vscode.TextDocument);
+  const editor = { document: doc, selections: [] as vscode.Selection[] };
+  const visible = vscode.window.visibleTextEditors as unknown[];
+  visible.push(editor);
+
+  const calls = deferredApplyEdit();
+  mgr.handleChange(insertEvent(doc)); // ' world' at 5 → '{++ world++}'
+  assert.equal(calls.length, 1);
+
+  // VS Code reports the replace of ' world' by '{++ world++}' as two insertions.
+  mgr.handleChange({
+    document: doc,
+    reason: undefined,
+    contentChanges: [
+      { rangeOffset: 11, rangeLength: 0, text: '++}' },
+      { rangeOffset: 5, rangeLength: 0, text: '{++' },
+    ],
+  } as unknown as vscode.TextDocumentChangeEvent);
+
+  calls[0].resolve(true);
+  await flush();
+  assert.equal(calls.length, 1, 'the split echo was taken for a racing keystroke');
+  assert.equal(editor.selections.length, 1, 'the caret was not restored');
+  assert.equal(editor.selections[0].active.character, 14, 'caret should sit before ++}');
+
+  visible.splice(visible.indexOf(editor), 1);
+  mgr.dispose();
+});
+
 test('normal mode: guard is released after applyEdit rejects', async () => {
   const mgr = new TrackChangesManager();
   const doc = makeDoc('file:///n.md', '{++ab{++X++}c++}');

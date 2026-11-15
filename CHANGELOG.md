@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Track Changes: typing grows one marker again instead of one marker per
+  character.** VS Code can report the recorder's compensating edit as a minimal
+  diff (wrapping `x` as `{++x++}` arrives as two insertions, `{++` and `++}`), so
+  the recorder did not recognise it as its own edit, took it for a racing
+  keystroke and skipped parking the caret before `++}`. Each next character then
+  landed after the closer: `{~~future~>l~~}{++o++}{++n++}{++g++}`. The echo is now
+  also recognised by the text it produces.
+
 ## [0.16.5] - 2026-07-07
 
 ### Fixed
