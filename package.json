@@ -179,6 +179,12 @@
         "icon": "$(edit)"
       },
       {
+        "command": "kaicrit.turnOffTrackChanges",
+        "title": "Turn Off Track Changes",
+        "category": "CriticMarkup",
+        "icon": "$(record)"
+      },
+      {
         "command": "kaicrit.toggleFileEnabled",
         "title": "Toggle CriticMarkup for This File",
         "category": "CriticMarkup",
@@ -383,6 +389,10 @@
     "menus": {
       "commandPalette": [
         {
+          "command": "kaicrit.turnOffTrackChanges",
+          "when": "false"
+        },
+        {
           "command": "kaicrit.acceptChangeAt",
           "when": "false"
         },
@@ -430,7 +440,12 @@
       "editor/title": [
         {
           "command": "kaicrit.toggleTrackChanges",
-          "when": "editorIsOpen",
+          "when": "editorIsOpen && !kaicrit.trackChanges",
+          "group": "navigation@9"
+        },
+        {
+          "command": "kaicrit.turnOffTrackChanges",
+          "when": "editorIsOpen && kaicrit.trackChanges",
           "group": "navigation@9"
         },
         {
