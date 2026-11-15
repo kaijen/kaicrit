@@ -225,16 +225,22 @@ export class TrackChangesManager {
     // start a second one concurrently (the document is mid-transform), but we must
     // also NOT drop this event — that was the fast-typing bug. Two cases:
     //   - It is the echo of our own WorkspaceEdit → consume it: advance the shadow
-    //     to the text we expected, and stop. Recognised by matchesSelfEdit.
+    //     to the text we expected, and stop. Recognised by matchesSelfEdit, or by
+    //     the text it produces: VS Code may report our single replace as a
+    //     minimal diff (wrapping 'x' as '{++x++}' arrives as two insertions,
+    //     '{++' and '++}'), which matchesSelfEdit does not match. Taking that
+    //     echo for a racing keystroke skipped the caret restore, so the next
+    //     character landed after '++}' and got a marker of its own.
     //   - It is a genuine user edit racing the in-flight compensation → keep its
     //     text in the shadow (replay) and mark the document dirty, so the wrap is
     //     applied once the in-flight edit settles (see beginCompensating's reconcile).
     const inFlight = this.compensating.get(key);
     if (inFlight) {
-      if (matchesSelfEdit(inFlight.edits, raw)) {
+      const next = applyRawEdits(pre, raw);
+      if (matchesSelfEdit(inFlight.edits, raw) || next === inFlight.expected) {
         this.shadow.set(key, inFlight.expected);
       } else {
-        this.shadow.set(key, applyRawEdits(pre, raw));
+        this.shadow.set(key, next);
         this.dirty.add(key);
       }
       return;
